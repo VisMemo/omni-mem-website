@@ -1,23 +1,18 @@
 import { Avatar, Card, CardBody } from '@nextui-org/react'
 
-export function TestimonialsSection() {
+export function TestimonialsSection({ content }: TestimonialsSectionProps) {
   return (
     <section id="stories" className="py-16">
       <div className="flex flex-col gap-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            Memory in the wild
+            {content.eyebrow}
           </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">
-            Teams ship calmer, smarter AI with Omni Memory
-          </h2>
-          <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">
-            From real-time copilots to enterprise knowledge graphs, Omni Memory keeps every model in sync
-            with the context that matters most.
-          </p>
+          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
+          <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">{content.description}</p>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
+          {content.items.map((testimonial) => (
             <TestimonialCard key={testimonial.name} testimonial={testimonial} />
           ))}
         </div>
@@ -43,31 +38,21 @@ function TestimonialCard({ testimonial }: TestimonialCardProps) {
   )
 }
 
-const testimonials: Testimonial[] = [
-  {
-    name: 'Mira Patel',
-    title: 'Director of AI, Atlas Robotics',
-    quote:
-      'We replaced three internal services with Omni Memory. Our agent latency dropped by 38 percent and recall quality went up immediately.',
-  },
-  {
-    name: 'Jordan Lee',
-    title: 'VP Product, Northwind Health',
-    quote:
-      'Omni Memory gave us a single memory layer across voice and chat. Our nurses trust the assistant because it finally remembers context.',
-  },
-  {
-    name: 'Aria Flores',
-    title: 'Founder, Signalwave',
-    quote:
-      'The policy controls are the real win. We can gate memory by project, user, and sensitivity without custom infra.',
-  },
-]
+export interface TestimonialsSectionContent {
+  eyebrow: string
+  title: string
+  description: string
+  items: Testimonial[]
+}
 
-interface Testimonial {
+export interface Testimonial {
   name: string
   title: string
   quote: string
+}
+
+interface TestimonialsSectionProps {
+  content: TestimonialsSectionContent
 }
 
 interface TestimonialCardProps {
