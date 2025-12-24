@@ -34,12 +34,38 @@ export function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
+    if (pathLocale && pathLocale !== locale) {
+      setLocale(pathLocale)
+      return
+    }
+
+    if (!pathLocale) {
+      updateLocalePath({ locale, method: 'replace' })
+    }
+
     document.documentElement.lang = isChinese ? 'zh' : 'en'
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
   }, [isChinese, locale])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    function handlePopState() {
+      const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
+      if (pathLocale && pathLocale !== locale) {
+        setLocale(pathLocale)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [locale])
+
   function handleLocaleToggle() {
-    setLocale((currentLocale) => getNextLocale({ currentLocale }))
+    const nextLocale = getNextLocale({ currentLocale: locale })
+    setLocale(nextLocale)
+    updateLocalePath({ locale: nextLocale, method: 'push' })
   }
 
   return (
@@ -534,11 +560,52 @@ function LogoMark() {
   )
 }
 
+function getLocaleFromPathname({ pathname }: LocalePathnameProps): Locale | null {
+  const segment = pathname.split('/').filter(Boolean)[0]
+  if (!segment) return null
+  if (SUPPORTED_LOCALES.includes(segment as Locale)) return segment as Locale
+  return null
+}
+
+function buildLocalePathname({ pathname, locale }: BuildLocalePathnameProps): string {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return `/${locale}/`
+
+  if (SUPPORTED_LOCALES.includes(segments[0] as Locale)) {
+    segments[0] = locale
+  } else {
+    segments.unshift(locale)
+  }
+
+  const joined = `/${segments.join('/')}`
+  if (segments.length === 1) return `${joined}/`
+  return joined
+}
+
+function updateLocalePath({ locale, method }: UpdateLocalePathProps) {
+  if (typeof window === 'undefined') return
+
+  const nextPath = buildLocalePathname({ pathname: window.location.pathname, locale })
+  const nextUrl = `${nextPath}${window.location.search}${window.location.hash}`
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+
+  if (nextUrl === currentUrl) return
+
+  if (method === 'replace') {
+    window.history.replaceState(null, '', nextUrl)
+  } else {
+    window.history.pushState(null, '', nextUrl)
+  }
+}
+
 function getPreferredLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
 
+  const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
+  if (pathLocale) return pathLocale
+
   const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (storedLocale === 'en' || storedLocale === 'zh') return storedLocale
+  if (storedLocale && SUPPORTED_LOCALES.includes(storedLocale as Locale)) return storedLocale as Locale
 
   const browserLocale = window.navigator.language.toLowerCase()
   if (browserLocale.startsWith('zh')) return 'zh'
@@ -575,6 +642,7 @@ const recall = await memory.search({
 `
 
 const LOCALE_STORAGE_KEY = 'omni-memory-locale'
+const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
 
 const contentByLocale: ContentByLocale = {
   en: {
@@ -1230,6 +1298,20 @@ interface FooterProps {
 
 interface SectionFallbackProps {
   label: string
+}
+
+interface LocalePathnameProps {
+  pathname: string
+}
+
+interface BuildLocalePathnameProps {
+  pathname: string
+  locale: Locale
+}
+
+interface UpdateLocalePathProps {
+  locale: Locale
+  method: 'replace' | 'push'
 }
 
 interface GetNextLocaleProps {
