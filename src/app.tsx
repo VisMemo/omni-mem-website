@@ -29,7 +29,6 @@ const FaqSection = React.lazy(() =>
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale())
   const content = contentByLocale[locale]
-  const isChinese = locale === 'zh'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -44,9 +43,9 @@ export function App() {
       updateLocalePath({ locale, method: 'replace' })
     }
 
-    document.documentElement.lang = isChinese ? 'zh' : 'en'
+    document.documentElement.lang = locale
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-  }, [isChinese, locale])
+  }, [locale])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -196,46 +195,57 @@ function HeroSection({ content }: HeroSectionProps) {
         </div>
       </div>
       <div className="animate-rise" style={{ animationDelay: '180ms' }}>
-        <MemoryPanel content={content.memoryPanel} />
+        <VideoDemoFlashcards label={content.demoFlashcardsLabel} cards={content.demoFlashcards} />
       </div>
     </section>
   )
 }
 
-function MemoryPanel({ content }: MemoryPanelProps) {
+function VideoDemoFlashcards({ label, cards }: VideoDemoFlashcardsProps) {
   return (
-    <Card className="memory-card animate-float">
-      <CardHeader className="flex flex-col items-start gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">{content.eyebrow}</p>
-        <h3 className="text-2xl font-semibold">{content.title}</h3>
-      </CardHeader>
-      <CardBody className="gap-5">
-        <div className="space-y-3">
-          {content.signals.map((signal) => (
-            <MemorySignal key={signal.label} signal={signal} />
-          ))}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {content.metrics.map((metric) => (
-            <div key={metric.label} className="rounded-xl border border-ink/10 bg-white px-3 py-3">
-              <p className="text-lg font-semibold text-ink">{metric.value}</p>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">{metric.label}</p>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Chip className="bg-white/85 text-xs font-semibold uppercase tracking-[0.25em] text-ink sm:col-span-2">
+        {label}
+      </Chip>
+      {cards.map((card) => (
+        <Card key={card.title} className="memory-card overflow-hidden">
+          <CardBody className="gap-3">
+            <div className={`relative h-32 rounded-xl bg-gradient-to-br ${card.gradient}`}>
+              <div className="absolute inset-0 flex items-end gap-[6px] px-4 pb-3">
+                {card.waveform.map((value, index) => (
+                  <span
+                    key={`${card.title}-${index}`}
+                    style={{ height: `${value}%` }}
+                    className="flex-1 rounded-full bg-white/70 shadow-glow"
+                  />
+                ))}
+              </div>
+              <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                <span className="rounded-full bg-ink/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white">
+                  {card.marker}
+                </span>
+                <span className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink">
+                  {card.timestamp}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      </CardBody>
-    </Card>
-  )
-}
-
-function MemorySignal({ signal }: MemorySignalProps) {
-  return (
-    <div className="flex items-start gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3">
-      <span className="mt-2 h-2 w-2 rounded-full bg-accent" />
-      <div>
-        <p className="text-sm font-semibold text-ink">{signal.label}</p>
-        <p className="text-xs text-muted">{signal.description}</p>
-      </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-ink">{card.title}</p>
+              <p className="text-xs text-muted">{card.caption}</p>
+              <div className="flex flex-wrap gap-2">
+                {card.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-ink/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink/70"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      ))}
     </div>
   )
 }
@@ -593,9 +603,10 @@ function updateLocalePath({ locale, method }: UpdateLocalePathProps) {
 
   if (method === 'replace') {
     window.history.replaceState(null, '', nextUrl)
-  } else {
-    window.history.pushState(null, '', nextUrl)
+    return
   }
+
+  window.history.pushState(null, '', nextUrl)
 }
 
 function getPreferredLocale(): Locale {
@@ -663,10 +674,10 @@ const contentByLocale: ContentByLocale = {
     },
     hero: {
       badge: 'New release',
-      badgeDetail: 'Multi-model memory routing',
-      title: 'Omni Memory powers calm, grounded AI with perfect recall.',
+      badgeDetail: 'Multimodal memory system',
+      title: 'Agents live in moments. We give them experience.',
       description:
-        'A unified memory layer for text, audio, images, and events. Capture every signal, enforce policy-aware access, and retrieve the right context in under 500ms.',
+        'Omni Memory is a multimodal memory system that enables AI to understand people beyond prompts, powering deeply personalized AI that evolves with human context over time.',
       primaryCta: 'Start building',
       secondaryCta: 'Book a demo',
       stats: [
@@ -674,30 +685,37 @@ const contentByLocale: ContentByLocale = {
         { value: '500ms', label: 'p95 recall' },
         { value: '99.99%', label: 'uptime SLA' },
       ],
-      memoryPanel: {
-        eyebrow: 'Live memory stream',
-        title: 'Omni Memory Cloud',
-        signals: [
-          {
-            label: 'Meeting transcript',
-            description: 'Auto-tagged with intent, owners, and next steps.',
-          },
-          {
-            label: 'Product screenshot',
-            description: 'Visual context stored with semantic overlays.',
-          },
-          {
-            label: 'Customer escalation',
-            description: 'Urgency scores trigger prioritized recall.',
-          },
-        ],
-        metrics: [
-          { value: '4.2M', label: 'daily writes' },
-          { value: '63%', label: 'higher CSAT' },
-          { value: '3.4x', label: 'longer sessions' },
-          { value: '2.1x', label: 'faster onboarding' },
-        ],
-      },
+      demoFlashcardsLabel: 'Video understanding demo',
+      demoFlashcards: [
+        {
+          title: 'Understands what is on screen',
+          caption:
+            'Tracks the runner, stroller, and skyline so the clip becomes a memory with context.',
+          timestamp: '00:12-00:18',
+          marker: 'Scene change',
+          tags: ['Visual caption', 'Objects tagged', 'Mood: calm'],
+          waveform: [18, 32, 58, 74, 62, 48, 68, 36, 22, 40],
+          gradient: 'from-accent/20 via-white to-ink/5',
+        },
+        {
+          title: 'Understands actions and intent',
+          caption: 'Detects the handshake, luggage pickup, and the host moving toward the guest.',
+          timestamp: '00:41-00:49',
+          marker: 'Action focus',
+          tags: ['Action: greeting', 'Intent: arrival', 'Tone: upbeat'],
+          waveform: [28, 64, 72, 46, 55, 68, 62, 38, 30, 44],
+          gradient: 'from-accent2/20 via-white to-ink/5',
+        },
+        {
+          title: 'Writes a living memory',
+          caption: 'Summarizes the clip and links it to prior visits and preferences automatically.',
+          timestamp: '01:12-01:20',
+          marker: 'Story node',
+          tags: ['Summary ready', 'Face matched', 'Preference linked'],
+          waveform: [22, 30, 44, 62, 78, 66, 50, 58, 34, 26],
+          gradient: 'from-ink/5 via-white to-accent/20',
+        },
+      ],
     },
     logoCloud: {
       label: 'Trusted by memory-first teams',
@@ -971,10 +989,10 @@ const contentByLocale: ContentByLocale = {
     },
     hero: {
       badge: '全新发布',
-      badgeDetail: '多模态记忆路由',
-      title: 'Omni Memory 让 AI 更冷静、更稳健，拥有近乎完美的记忆。',
+      badgeDetail: '多模态记忆系统',
+      title: '记忆，决定智能上限。',
       description:
-        '为文本、音频、图像与事件打造统一记忆层。捕获每个信号，按策略控制访问，并在 500ms 内取回恰当上下文。',
+        'Omni Memory 构建多模态的人生记忆系统，让 AI 超越指令、理解人，并随着人类真实生活的上下文不断成长。',
       primaryCta: '开始构建',
       secondaryCta: '预约演示',
       stats: [
@@ -982,30 +1000,36 @@ const contentByLocale: ContentByLocale = {
         { value: '500ms', label: 'P95 召回' },
         { value: '99.99%', label: '可用性 SLA' },
       ],
-      memoryPanel: {
-        eyebrow: '实时记忆流',
-        title: 'Omni Memory Cloud',
-        signals: [
-          {
-            label: '会议转录',
-            description: '自动标注意图、负责人和下一步动作。',
-          },
-          {
-            label: '产品截图',
-            description: '用语义叠层存储视觉上下文。',
-          },
-          {
-            label: '客户升级事件',
-            description: '紧急度评分触发优先级召回。',
-          },
-        ],
-        metrics: [
-          { value: '4.2M', label: '日写入' },
-          { value: '63%', label: 'CSAT 提升' },
-          { value: '3.4x', label: '会话时长提升' },
-          { value: '2.1x', label: '上手更快' },
-        ],
-      },
+      demoFlashcardsLabel: '视频理解示例',
+      demoFlashcards: [
+        {
+          title: '看懂画面',
+          caption: '跟踪跑步者、推车和天际线，让片段变成带语境的记忆。',
+          timestamp: '00:12-00:18',
+          marker: '场景切换',
+          tags: ['视觉字幕', '对象标注', '情绪：平静'],
+          waveform: [18, 32, 58, 74, 62, 48, 68, 36, 22, 40],
+          gradient: 'from-accent/20 via-white to-ink/5',
+        },
+        {
+          title: '理解动作与意图',
+          caption: '识别握手、提起行李，以及主人迎接访客的动作。',
+          timestamp: '00:41-00:49',
+          marker: '动作聚焦',
+          tags: ['动作：问候', '意图：到达', '语气：愉快'],
+          waveform: [28, 64, 72, 46, 55, 68, 62, 38, 30, 44],
+          gradient: 'from-accent2/20 via-white to-ink/5',
+        },
+        {
+          title: '生成可演进的记忆',
+          caption: '总结片段并自动关联到过往拜访与个人偏好。',
+          timestamp: '01:12-01:20',
+          marker: '故事节点',
+          tags: ['摘要就绪', '人脸匹配', '偏好关联'],
+          waveform: [22, 30, 44, 62, 78, 66, 50, 58, 34, 26],
+          gradient: 'from-ink/5 via-white to-accent/20',
+        },
+      ],
     },
     logoCloud: {
       label: '受记忆优先团队信赖',
@@ -1252,8 +1276,9 @@ interface HeroSectionProps {
   content: HeroContent
 }
 
-interface MemoryPanelProps {
-  content: MemoryPanelContent
+interface VideoDemoFlashcardsProps {
+  label: string
+  cards: VideoFlashcard[]
 }
 
 interface LogoCloudProps {
@@ -1358,14 +1383,8 @@ interface HeroContent {
   primaryCta: string
   secondaryCta: string
   stats: StatItem[]
-  memoryPanel: MemoryPanelContent
-}
-
-interface MemoryPanelContent {
-  eyebrow: string
-  title: string
-  signals: MemorySignalItem[]
-  metrics: StatItem[]
+  demoFlashcardsLabel: string
+  demoFlashcards: VideoFlashcard[]
 }
 
 interface LogoCloudContent {
@@ -1451,13 +1470,14 @@ interface StatItem {
   label: string
 }
 
-interface MemorySignalItem {
-  label: string
-  description: string
-}
-
-interface MemorySignalProps {
-  signal: MemorySignalItem
+interface VideoFlashcard {
+  title: string
+  caption: string
+  timestamp: string
+  marker: string
+  tags: string[]
+  waveform: number[]
+  gradient: string
 }
 
 interface FeatureItem {
