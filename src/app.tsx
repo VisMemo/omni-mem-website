@@ -12,6 +12,17 @@ import {
   Tab,
   Tabs,
 } from '@nextui-org/react'
+import { AuthControl } from './components/auth-control'
+import { DashboardShell } from './components/dashboard-shell'
+import { useSupabaseSession } from './hooks/use-supabase-session'
+import { DashboardPage } from './pages/dashboard'
+import { ApiKeysPage } from './pages/api-keys'
+import { UploadsPage } from './pages/uploads'
+import { UsagePage } from './pages/usage'
+import { MemoryPolicyPage } from './pages/memory-policy'
+import { ProfilePage } from './pages/profile'
+import { SignInPage } from './pages/auth/sign-in'
+import { SignUpPage } from './pages/auth/sign-up'
 import type { FaqSectionContent } from './components/faq-section'
 import type { TestimonialsSectionContent } from './components/testimonial-section'
 
@@ -28,7 +39,23 @@ const FaqSection = React.lazy(() =>
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale())
+  const [routeKey, setRouteKey] = useState<RouteKey>(() =>
+    getRouteFromPathname({ pathname: getBrowserPathname() })
+  )
   const content = contentByLocale[locale]
+  const isChinese = locale === 'zh'
+  const { session, isLoading: isSessionLoading } = useSupabaseSession()
+  const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
+  const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
+  const dashboardPath = buildLocalePathname({ pathname: ROUTE_PATHS.dashboard, locale })
+  const apiKeysPath = buildLocalePathname({ pathname: ROUTE_PATHS.apiKeys, locale })
+  const uploadsPath = buildLocalePathname({ pathname: ROUTE_PATHS.uploads, locale })
+  const usagePath = buildLocalePathname({ pathname: ROUTE_PATHS.usage, locale })
+  const memoryPolicyPath = buildLocalePathname({ pathname: ROUTE_PATHS.memoryPolicy, locale })
+  const profilePath = buildLocalePathname({ pathname: ROUTE_PATHS.profile, locale })
+  const homePath = buildLocalePathname({ pathname: ROUTE_PATHS.home, locale })
+  const isMarketing = routeKey === 'marketing'
+  const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -55,17 +82,74 @@ export function App() {
       if (pathLocale && pathLocale !== locale) {
         setLocale(pathLocale)
       }
+      setRouteKey(getRouteFromPathname({ pathname: window.location.pathname }))
     }
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [locale])
 
+  useEffect(() => {
+    if (!isProtectedRoute) return
+    if (isSessionLoading) return
+    if (session) return
+    navigateTo(signInPath)
+  }, [isProtectedRoute, isSessionLoading, routeKey, session, signInPath])
+
   function handleLocaleToggle() {
     const nextLocale = getNextLocale({ currentLocale: locale })
     setLocale(nextLocale)
     updateLocalePath({ locale: nextLocale, method: 'push' })
   }
+
+  function handleDashboardClick() {
+    if (!session) {
+      navigateTo(signInPath)
+      return
+    }
+    navigateTo(dashboardPath)
+  }
+
+  function handleSignInClick() {
+    navigateTo(signInPath)
+  }
+
+  function navigateTo(pathname: string) {
+    if (typeof window === 'undefined') return
+    window.history.pushState({}, '', pathname)
+    setRouteKey(getRouteFromPathname({ pathname }))
+  }
+
+  const dashboardLink = { label: 'Dashboard', href: dashboardPath }
+  const navLinks = isMarketing
+    ? [dashboardLink, ...content.navbar.navLinks]
+    : [{ label: 'Home', href: homePath }, dashboardLink]
+
+  const dashboardLinks = [
+    { label: 'Overview', path: dashboardPath },
+    { label: 'API Keys', path: apiKeysPath },
+    { label: 'Uploads', path: uploadsPath },
+    { label: 'Usage', path: usagePath },
+    { label: 'Memory Policy', path: memoryPolicyPath },
+    { label: 'Profile', path: profilePath },
+  ]
+
+  const currentDashboardPath = (() => {
+    switch (routeKey) {
+      case 'apiKeys':
+        return apiKeysPath
+      case 'uploads':
+        return uploadsPath
+      case 'usage':
+        return usagePath
+      case 'memoryPolicy':
+        return memoryPolicyPath
+      case 'profile':
+        return profilePath
+      default:
+        return dashboardPath
+    }
+  })()
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
@@ -82,15 +166,27 @@ export function App() {
             </div>
           </NavbarBrand>
           <NavbarContent className="hidden gap-6 md:flex" justify="center">
-            {content.navbar.navLinks.map((link) => (
+            {navLinks.map((link) => (
               <NavbarItem key={link.label}>
-                <a className="text-sm font-medium text-ink/80 hover:text-ink" href={link.href}>
-                  {link.label}
-                </a>
+                {link.href === dashboardPath ? (
+                  <button
+                    className="text-sm font-medium text-ink/80 hover:text-ink"
+                    onClick={handleDashboardClick}
+                  >
+                    {link.label}
+                  </button>
+                ) : (
+                  <a className="text-sm font-medium text-ink/80 hover:text-ink" href={link.href}>
+                    {link.label}
+                  </a>
+                )}
               </NavbarItem>
             ))}
           </NavbarContent>
           <NavbarContent className="gap-3" justify="end">
+            <NavbarItem className="hidden sm:flex">
+              <AuthControl onSignIn={handleSignInClick} />
+            </NavbarItem>
             <NavbarItem>
               <Button
                 className="border border-ink/20 text-ink"
@@ -106,7 +202,7 @@ export function App() {
             <NavbarItem>
               <Button
                 as="a"
-                href="#pricing"
+                href={isMarketing ? '#pricing' : signUpPath}
                 className="bg-accent text-white shadow-glow"
                 radius="full"
               >
@@ -117,24 +213,55 @@ export function App() {
         </Navbar>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-10 sm:px-8">
-        <HeroSection content={content.hero} />
-        <LogoCloud content={content.logoCloud} />
-        <FeatureGrid content={content.features} />
-        <ModelTabs content={content.modalities} />
-        <StepsSection content={content.steps} />
-        <UseCases content={content.useCases} />
-        <DeveloperSection content={content.developers} />
-        <SecuritySection content={content.security} />
-        <Suspense fallback={<SectionFallback label={content.fallbacks.stories} />}>
-          <TestimonialsSection content={content.testimonials} />
-        </Suspense>
-        <Suspense fallback={<SectionFallback label={content.fallbacks.answers} />}>
-          <FaqSection content={content.faq} />
-        </Suspense>
-        <PlansSection content={content.pricing} />
-        <CTASection content={content.cta} />
-      </main>
+      {isMarketing ? (
+        <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-10 sm:px-8">
+          <HeroSection content={content.hero} />
+          <LogoCloud content={content.logoCloud} />
+          <FeatureGrid content={content.features} />
+          <ModelTabs content={content.modalities} />
+          <StepsSection content={content.steps} />
+          <UseCases content={content.useCases} />
+          <DeveloperSection content={content.developers} />
+          <SecuritySection content={content.security} />
+          <Suspense fallback={<SectionFallback label={content.fallbacks.stories} />}>
+            <TestimonialsSection content={content.testimonials} />
+          </Suspense>
+          <Suspense fallback={<SectionFallback label={content.fallbacks.answers} />}>
+            <FaqSection content={content.faq} />
+          </Suspense>
+          <PlansSection content={content.pricing} signUpPath={signUpPath} />
+          <CTASection content={content.cta} signUpPath={signUpPath} />
+        </main>
+      ) : (
+        <main className="min-h-[70vh] px-6 pb-24 pt-10 sm:px-8">
+          {isProtectedRoute ? (
+            <DashboardShell
+              title={getDashboardTitle(routeKey)}
+              currentPath={currentDashboardPath}
+              links={dashboardLinks}
+              onNavigate={navigateTo}
+              onSignIn={handleSignInClick}
+            >
+              {routeKey === 'dashboard' ? <DashboardPage /> : null}
+              {routeKey === 'apiKeys' ? <ApiKeysPage /> : null}
+              {routeKey === 'uploads' ? <UploadsPage /> : null}
+              {routeKey === 'usage' ? <UsagePage /> : null}
+              {routeKey === 'memoryPolicy' ? <MemoryPolicyPage /> : null}
+              {routeKey === 'profile' ? <ProfilePage /> : null}
+            </DashboardShell>
+          ) : null}
+          {routeKey === 'signIn' ? (
+            <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
+              <SignInPage signUpPath={signUpPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
+            </div>
+          ) : null}
+          {routeKey === 'signUp' ? (
+            <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
+              <SignUpPage signInPath={signInPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
+            </div>
+          ) : null}
+        </main>
+      )}
 
       <Footer content={content.footer} />
     </div>
@@ -455,7 +582,7 @@ function SecuritySection({ content }: SecuritySectionProps) {
   )
 }
 
-function PlansSection({ content }: PlansSectionProps) {
+function PlansSection({ content, signUpPath }: PlansSectionProps) {
   return (
     <section id="pricing" className="py-12">
       <div className="grid gap-8">
@@ -486,14 +613,14 @@ function PlansSection({ content }: PlansSectionProps) {
                     </li>
                   ))}
                 </ul>
-                <Button
-                  as="a"
-                  href="mailto:hello@omnimemory.ai"
-                  className="mt-auto bg-accent text-white"
-                  radius="full"
-                >
-                  {plan.cta}
-                </Button>
+                  <Button
+                    as="a"
+                    href={signUpPath}
+                    className="mt-auto bg-accent text-white"
+                    radius="full"
+                  >
+                    {plan.cta}
+                  </Button>
               </CardBody>
             </Card>
           ))}
@@ -503,7 +630,7 @@ function PlansSection({ content }: PlansSectionProps) {
   )
 }
 
-function CTASection({ content }: CTASectionProps) {
+function CTASection({ content, signUpPath }: CTASectionProps) {
   return (
     <section className="py-16">
       <Card className="glass-panel">
@@ -514,11 +641,11 @@ function CTASection({ content }: CTASectionProps) {
             </p>
             <h2 className="text-3xl font-semibold sm:text-4xl">{content.title}</h2>
             <p className="text-base text-muted sm:text-lg">{content.description}</p>
-          </div>
-          <div className="flex flex-wrap gap-3 lg:justify-end">
-            <Button as="a" href="mailto:hello@omnimemory.ai" className="bg-accent text-white" radius="full">
-              {content.primaryCta}
-            </Button>
+            </div>
+            <div className="flex flex-wrap gap-3 lg:justify-end">
+              <Button as="a" href={signUpPath} className="bg-accent text-white" radius="full">
+                {content.primaryCta}
+              </Button>
             <Button as="a" href="#developers" variant="bordered" radius="full">
               {content.secondaryCta}
             </Button>
@@ -607,6 +734,51 @@ function updateLocalePath({ locale, method }: UpdateLocalePathProps) {
   }
 
   window.history.pushState(null, '', nextUrl)
+}
+
+function getRouteFromPathname({ pathname }: RoutePathnameProps): RouteKey {
+  const strippedPath = stripLocaleFromPathname({ pathname })
+  if (strippedPath.startsWith(ROUTE_PATHS.apiKeys)) return 'apiKeys'
+  if (strippedPath.startsWith(ROUTE_PATHS.uploads)) return 'uploads'
+  if (strippedPath.startsWith(ROUTE_PATHS.usage)) return 'usage'
+  if (strippedPath.startsWith(ROUTE_PATHS.memoryPolicy)) return 'memoryPolicy'
+  if (strippedPath.startsWith(ROUTE_PATHS.profile)) return 'profile'
+  if (strippedPath.startsWith(ROUTE_PATHS.dashboard)) return 'dashboard'
+  if (strippedPath.startsWith(ROUTE_PATHS.signIn)) return 'signIn'
+  if (strippedPath.startsWith(ROUTE_PATHS.signUp)) return 'signUp'
+  return 'marketing'
+}
+
+function stripLocaleFromPathname({ pathname }: RoutePathnameProps) {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return '/'
+  const [firstSegment, ...rest] = segments
+  if (SUPPORTED_LOCALES.includes(firstSegment as Locale)) {
+    return `/${rest.join('/')}`
+  }
+  return `/${segments.join('/')}`
+}
+
+function getBrowserPathname() {
+  if (typeof window === 'undefined') return '/'
+  return window.location.pathname
+}
+
+function getDashboardTitle(routeKey: RouteKey) {
+  switch (routeKey) {
+    case 'apiKeys':
+      return 'API Keys'
+    case 'uploads':
+      return 'Uploads'
+    case 'usage':
+      return 'Usage'
+    case 'memoryPolicy':
+      return 'Memory Policy'
+    case 'profile':
+      return 'Profile'
+    default:
+      return 'Your SaaS at a glance'
+  }
 }
 
 function getPreferredLocale(): Locale {
@@ -1311,10 +1483,12 @@ interface SecuritySectionProps {
 
 interface PlansSectionProps {
   content: PricingSectionContent
+  signUpPath: string
 }
 
 interface CTASectionProps {
   content: CtaSectionContent
+  signUpPath: string
 }
 
 interface FooterProps {
@@ -1326,6 +1500,10 @@ interface SectionFallbackProps {
 }
 
 interface LocalePathnameProps {
+  pathname: string
+}
+
+interface RoutePathnameProps {
   pathname: string
 }
 
@@ -1519,3 +1697,26 @@ interface PlanItem {
 }
 
 type Locale = keyof ContentByLocale
+
+type RouteKey =
+  | 'marketing'
+  | 'dashboard'
+  | 'apiKeys'
+  | 'uploads'
+  | 'usage'
+  | 'memoryPolicy'
+  | 'profile'
+  | 'signIn'
+  | 'signUp'
+
+const ROUTE_PATHS = {
+  home: '/',
+  dashboard: '/dashboard',
+  apiKeys: '/dashboard/api-keys',
+  uploads: '/dashboard/uploads',
+  usage: '/dashboard/usage',
+  memoryPolicy: '/dashboard/memory-policy',
+  profile: '/dashboard/profile',
+  signIn: '/auth/sign-in',
+  signUp: '/auth/sign-up',
+} as const
