@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from 'react'
+﻿import React, { Suspense, useEffect, useState } from 'react'
 import {
   Button,
   Card,
@@ -53,7 +53,7 @@ export function App() {
   const usagePath = buildLocalePathname({ pathname: ROUTE_PATHS.usage, locale })
   const memoryPolicyPath = buildLocalePathname({ pathname: ROUTE_PATHS.memoryPolicy, locale })
   const profilePath = buildLocalePathname({ pathname: ROUTE_PATHS.profile, locale })
-  const homePath = buildLocalePathname({ pathname: ROUTE_PATHS.home, locale })
+  const homePath = '/'
   const isMarketing = routeKey === 'marketing'
   const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 

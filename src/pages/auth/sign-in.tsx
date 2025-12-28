@@ -1,4 +1,4 @@
-import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
+﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useState } from 'react'
 import { signInWithPassword } from '../../lib/auth'
 import { useSupabaseSession } from '../../hooks/use-supabase-session'
@@ -45,7 +45,7 @@ export function SignInPage({ signUpPath, dashboardPath, onNavigate }: SignInPage
         <CardBody className="space-y-4">
           <p className="text-sm text-muted">You already have an active session.</p>
           <Button className="bg-accent text-white" radius="full" onPress={() => onNavigate(dashboardPath)}>
-            Go to dashboard
+            进入个人空间
           </Button>
         </CardBody>
       </Card>
@@ -56,7 +56,7 @@ export function SignInPage({ signUpPath, dashboardPath, onNavigate }: SignInPage
     <Card className="glass-panel mx-auto w-full max-w-md">
       <CardHeader className="flex flex-col items-start gap-2">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">Sign in</p>
-        <h1 className="text-2xl font-semibold">Access your dashboard</h1>
+        <h1 className="text-2xl font-semibold">进入个人空间</h1>
       </CardHeader>
       <CardBody className="space-y-4">
         <Input
