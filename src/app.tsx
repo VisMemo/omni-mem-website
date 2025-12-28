@@ -66,10 +66,6 @@ export function App() {
       return
     }
 
-    if (!pathLocale) {
-      updateLocalePath({ locale, method: 'replace' })
-    }
-
     document.documentElement.lang = locale
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
   }, [locale])
@@ -114,24 +110,28 @@ export function App() {
     navigateTo(signInPath)
   }
 
+  function handleSignUpClick() {
+    navigateTo(signUpPath)
+  }
+
   function navigateTo(pathname: string) {
     if (typeof window === 'undefined') return
     window.history.pushState({}, '', pathname)
     setRouteKey(getRouteFromPathname({ pathname }))
   }
 
-  const dashboardLink = { label: 'Dashboard', href: dashboardPath }
+  const dashboardLink = { label: '个人空间', href: dashboardPath }
   const navLinks = isMarketing
     ? [dashboardLink, ...content.navbar.navLinks]
-    : [{ label: 'Home', href: homePath }, dashboardLink]
+    : [{ label: '首页', href: homePath }, dashboardLink]
 
   const dashboardLinks = [
-    { label: 'Overview', path: dashboardPath },
-    { label: 'API Keys', path: apiKeysPath },
-    { label: 'Uploads', path: uploadsPath },
-    { label: 'Usage', path: usagePath },
-    { label: 'Memory Policy', path: memoryPolicyPath },
-    { label: 'Profile', path: profilePath },
+    { label: '概览', path: dashboardPath },
+    { label: 'API Key', path: apiKeysPath },
+    { label: '上传任务', path: uploadsPath },
+    { label: '用量', path: usagePath },
+    { label: '记忆隔离', path: memoryPolicyPath },
+    { label: '个人资料', path: profilePath },
   ]
 
   const currentDashboardPath = (() => {
@@ -185,7 +185,7 @@ export function App() {
           </NavbarContent>
           <NavbarContent className="gap-3" justify="end">
             <NavbarItem className="hidden sm:flex">
-              <AuthControl onSignIn={handleSignInClick} />
+              <AuthControl onSignIn={handleSignInClick} onSignUp={handleSignUpClick} />
             </NavbarItem>
             <NavbarItem>
               <Button
@@ -202,7 +202,7 @@ export function App() {
             <NavbarItem>
               <Button
                 as="a"
-                href={isMarketing ? '#pricing' : signUpPath}
+                href={signUpPath}
                 className="bg-accent text-white shadow-glow"
                 radius="full"
               >
@@ -215,13 +215,13 @@ export function App() {
 
       {isMarketing ? (
         <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-10 sm:px-8">
-          <HeroSection content={content.hero} />
+          <HeroSection content={content.hero} signUpPath={signUpPath} />
           <LogoCloud content={content.logoCloud} />
           <FeatureGrid content={content.features} />
           <ModelTabs content={content.modalities} />
           <StepsSection content={content.steps} />
           <UseCases content={content.useCases} />
-          <DeveloperSection content={content.developers} />
+          <DeveloperSection content={content.developers} signUpPath={signUpPath} />
           <SecuritySection content={content.security} />
           <Suspense fallback={<SectionFallback label={content.fallbacks.stories} />}>
             <TestimonialsSection content={content.testimonials} />
@@ -279,7 +279,7 @@ function BackgroundOrbs() {
   )
 }
 
-function HeroSection({ content }: HeroSectionProps) {
+function HeroSection({ content, signUpPath }: HeroSectionProps) {
   return (
     <section id="product" className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="flex flex-col gap-6">
@@ -299,7 +299,7 @@ function HeroSection({ content }: HeroSectionProps) {
           <p className="max-w-xl text-base text-muted sm:text-lg">{content.description}</p>
         </div>
         <div className="flex flex-wrap gap-3 animate-rise" style={{ animationDelay: '220ms' }}>
-          <Button as="a" href="#pricing" className="bg-accent text-white shadow-glow" radius="full">
+          <Button as="a" href={signUpPath} className="bg-accent text-white shadow-glow" radius="full">
             {content.primaryCta}
           </Button>
           <Button
@@ -526,7 +526,7 @@ function UseCases({ content }: UseCasesProps) {
   )
 }
 
-function DeveloperSection({ content }: DeveloperSectionProps) {
+function DeveloperSection({ content, signUpPath }: DeveloperSectionProps) {
   return (
     <section id="developers" className="py-12">
       <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
@@ -537,7 +537,7 @@ function DeveloperSection({ content }: DeveloperSectionProps) {
           <h2 className="text-3xl font-semibold sm:text-4xl">{content.title}</h2>
           <p className="text-base text-muted sm:text-lg">{content.description}</p>
           <div className="flex flex-wrap gap-3">
-            <Button as="a" href="#pricing" className="bg-accent text-white" radius="full">
+            <Button as="a" href={signUpPath} className="bg-accent text-white" radius="full">
               {content.primaryCta}
             </Button>
             <Button as="a" href="mailto:hello@omnimemory.ai" variant="bordered" radius="full">
@@ -767,17 +767,17 @@ function getBrowserPathname() {
 function getDashboardTitle(routeKey: RouteKey) {
   switch (routeKey) {
     case 'apiKeys':
-      return 'API Keys'
+      return 'API Key'
     case 'uploads':
-      return 'Uploads'
+      return '上传任务'
     case 'usage':
-      return 'Usage'
+      return '用量'
     case 'memoryPolicy':
-      return 'Memory Policy'
+      return '记忆隔离'
     case 'profile':
-      return 'Profile'
+      return '个人资料'
     default:
-      return 'Your SaaS at a glance'
+      return '个人空间概览'
   }
 }
 
@@ -787,13 +787,7 @@ function getPreferredLocale(): Locale {
   const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
   if (pathLocale) return pathLocale
 
-  const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (storedLocale && SUPPORTED_LOCALES.includes(storedLocale as Locale)) return storedLocale as Locale
-
-  const browserLocale = window.navigator.language.toLowerCase()
-  if (browserLocale.startsWith('zh')) return 'zh'
-
-  return 'en'
+  return 'zh'
 }
 
 function getNextLocale({ currentLocale }: GetNextLocaleProps): Locale {
@@ -1446,6 +1440,7 @@ const contentByLocale: ContentByLocale = {
 
 interface HeroSectionProps {
   content: HeroContent
+  signUpPath: string
 }
 
 interface VideoDemoFlashcardsProps {
@@ -1475,6 +1470,7 @@ interface UseCasesProps {
 
 interface DeveloperSectionProps {
   content: DeveloperSectionContent
+  signUpPath: string
 }
 
 interface SecuritySectionProps {

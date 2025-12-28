@@ -232,7 +232,7 @@ export function ApiKeysPage() {
 
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">Existing keys</h3>
+          <h3 className="text-lg font-semibold">已激活APIkey</h3>
           <p className="text-sm text-muted">Keys are shown once on creation.</p>
         </CardHeader>
         <CardBody>

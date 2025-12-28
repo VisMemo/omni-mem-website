@@ -6,9 +6,10 @@ import { useSupabaseSession } from '../hooks/use-supabase-session'
 interface AuthControlProps {
   className?: string
   onSignIn?: () => void
+  onSignUp?: () => void
 }
 
-export function AuthControl({ className, onSignIn }: AuthControlProps) {
+export function AuthControl({ className, onSignIn, onSignUp }: AuthControlProps) {
   const { client, session, error: clientError } = useSupabaseSession()
   const [isBusy, setIsBusy] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -42,16 +43,26 @@ export function AuthControl({ className, onSignIn }: AuthControlProps) {
 
   if (!session) {
     return (
-      <Button
-        className={className}
-        radius="full"
-        size="sm"
-        variant="bordered"
-        isDisabled={!onSignIn}
-        onPress={onSignIn}
-      >
-        Sign in
-      </Button>
+      <div className={className ? `flex items-center gap-2 ${className}` : 'flex items-center gap-2'}>
+        <Button
+          radius="full"
+          size="sm"
+          variant="bordered"
+          isDisabled={!onSignIn}
+          onPress={onSignIn}
+        >
+          Sign in
+        </Button>
+        <Button
+          className="bg-accent text-white"
+          radius="full"
+          size="sm"
+          isDisabled={!onSignUp}
+          onPress={onSignUp}
+        >
+          Sign up
+        </Button>
+      </div>
     )
   }
 

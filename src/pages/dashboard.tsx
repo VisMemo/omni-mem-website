@@ -1,8 +1,9 @@
-import {
+﻿import {
   Button,
   Card,
   CardBody,
   CardHeader,
+  Chip,
   Input,
   Table,
   TableBody,
@@ -27,6 +28,12 @@ type UsageSummaryResponse = {
 
 type GroupBy = 'account' | 'apikey'
 
+type OverviewItem = {
+  title: string
+  description: string
+  status: string
+}
+
 export function DashboardPage() {
   const { session } = useSupabaseSession()
   const [usage, setUsage] = useState<UsageSummaryItem[]>([])
@@ -38,6 +45,33 @@ export function DashboardPage() {
 
   const accountId = session?.user?.id ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
+  const overviewItems = useMemo<OverviewItem[]>(
+    () => [
+      {
+        title: '工作区 / 租户',
+        description: accountId
+          ? `主账户：${accountId}`
+          : '登录后查看 Workspace 成员。',
+        status: '暂未接通',
+      },
+      {
+        title: '套餐 / 订阅',
+        description: '套餐等级、续费日期与计费状态。',
+        status: '暂未接通',
+      },
+      {
+        title: '配额 / 限流',
+        description: '速率限制、存储上限与并发配额。',
+        status: '暂未接通',
+      },
+      {
+        title: '权益配置',
+        description: '功能开关、记忆范围与模型权限。',
+        status: '暂未接通',
+      },
+    ],
+    [accountId],
+  )
 
   useEffect(() => {
     if (!accountId) return
@@ -63,7 +97,7 @@ export function DashboardPage() {
       .then((response) => response.json().then((data) => ({ response, data })))
       .then(({ response, data }: { response: Response; data: UsageSummaryResponse & { message?: string } }) => {
         if (!response.ok) {
-          throw new Error(data?.message ?? 'Failed to load usage summary')
+          throw new Error(data?.message ?? '用量汇总加载失败')
         }
         setUsage(data.data ?? [])
         setStatus('idle')
@@ -78,34 +112,56 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-ink">账户概览</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {overviewItems.map((item) => (
+            <Card key={item.title} className="glass-panel">
+              <CardHeader className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted">{item.title}</p>
+                  <p className="text-sm text-muted">{item.description}</p>
+                </div>
+                <Chip size="sm" variant="flat" className="bg-ink/5 text-ink/70">
+                  {item.status}
+                </Chip>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <h2 className="text-lg font-semibold text-ink">用量仪表盘</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="glass-panel">
           <CardHeader className="flex flex-col items-start gap-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">Total usage</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">总用量</p>
             <h3 className="text-2xl font-semibold text-ink">{totalUsage}</h3>
-            <p className="text-sm text-muted">Range: {fromDate} → {toDate}</p>
+            <p className="text-sm text-muted">时间范围：{fromDate} → {toDate}</p>
           </CardHeader>
         </Card>
         <Card className="glass-panel">
           <CardHeader className="flex flex-col items-start gap-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">Group by</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">分组维度</p>
             <h3 className="text-2xl font-semibold text-ink">{groupBy}</h3>
-            <p className="text-sm text-muted">Usage summary breakdown</p>
+            <p className="text-sm text-muted">用量汇总维度</p>
           </CardHeader>
         </Card>
       </div>
 
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">Usage filters</h3>
+          <h3 className="text-lg font-semibold">用量筛选</h3>
           <div className="flex flex-wrap gap-3">
             <select
               className="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
               value={groupBy}
               onChange={(event) => setGroupBy(event.target.value as GroupBy)}
             >
-              <option value="account">account</option>
-              <option value="apikey">apikey</option>
+              <option value="account">账户</option>
+              <option value="apikey">API Key</option>
             </select>
             <Input
               type="date"
@@ -126,26 +182,26 @@ export function DashboardPage() {
                 setToDate(now.toISOString().slice(0, 10))
               }}
             >
-              Last 30 days
+              最近 30 天
             </Button>
           </div>
         </CardHeader>
         <CardBody>
           {status === 'loading' ? (
-            <div className="text-sm text-muted">Loading usage...</div>
+            <div className="text-sm text-muted">用量加载中…</div>
           ) : status === 'error' ? (
-            <div className="text-sm text-danger-500">{message ?? 'Failed to load usage'}</div>
+            <div className="text-sm text-danger-500">{message ?? '用量加载失败'}</div>
           ) : (
-            <Table removeWrapper aria-label="Usage summary">
+            <Table removeWrapper aria-label="用量汇总">
               <TableHeader>
-                <TableColumn>Key</TableColumn>
-                <TableColumn>Total</TableColumn>
-                <TableColumn>Events</TableColumn>
+                <TableColumn>标识</TableColumn>
+                <TableColumn>总量</TableColumn>
+                <TableColumn>事件</TableColumn>
               </TableHeader>
               <TableBody>
                 {usage.length === 0 ? (
                   <TableRow key="empty">
-                    <TableCell>No usage data yet.</TableCell>
+                    <TableCell>暂无用量数据。</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
                   </TableRow>
