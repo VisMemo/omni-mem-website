@@ -5,11 +5,17 @@ import { useSupabaseSession } from '../../hooks/use-supabase-session'
 
 interface SignInPageProps {
   signUpPath: string
+  passwordResetPath: string
   dashboardPath: string
   onNavigate: (path: string) => void
 }
 
-export function SignInPage({ signUpPath, dashboardPath, onNavigate }: SignInPageProps) {
+export function SignInPage({
+  signUpPath,
+  passwordResetPath,
+  dashboardPath,
+  onNavigate,
+}: SignInPageProps) {
   const { client, session, error } = useSupabaseSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -78,6 +84,12 @@ export function SignInPage({ signUpPath, dashboardPath, onNavigate }: SignInPage
         <Button className="bg-accent text-white" radius="full" isLoading={isBusy} onPress={handleSignIn}>
           Sign in
         </Button>
+        <button
+          className="text-sm font-medium text-ink/70 hover:text-ink"
+          onClick={() => onNavigate(passwordResetPath)}
+        >
+          忘记密码？
+        </button>
         <button
           className="text-sm font-medium text-ink/70 hover:text-ink"
           onClick={() => onNavigate(signUpPath)}

@@ -23,6 +23,7 @@ import { MemoryPolicyPage } from './pages/memory-policy'
 import { ProfilePage } from './pages/profile'
 import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
+import { PasswordResetPage } from './pages/auth/password-reset'
 import type { FaqSectionContent } from './components/faq-section'
 import type { TestimonialsSectionContent } from './components/testimonial-section'
 
@@ -47,6 +48,10 @@ export function App() {
   const { session, isLoading: isSessionLoading } = useSupabaseSession()
   const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
   const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
+  const passwordResetPath = buildLocalePathname({
+    pathname: ROUTE_PATHS.passwordReset,
+    locale,
+  })
   const dashboardPath = buildLocalePathname({ pathname: ROUTE_PATHS.dashboard, locale })
   const apiKeysPath = buildLocalePathname({ pathname: ROUTE_PATHS.apiKeys, locale })
   const uploadsPath = buildLocalePathname({ pathname: ROUTE_PATHS.uploads, locale })
@@ -252,12 +257,22 @@ export function App() {
           ) : null}
           {routeKey === 'signIn' ? (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
-              <SignInPage signUpPath={signUpPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
+              <SignInPage
+                signUpPath={signUpPath}
+                passwordResetPath={passwordResetPath}
+                dashboardPath={dashboardPath}
+                onNavigate={navigateTo}
+              />
             </div>
           ) : null}
           {routeKey === 'signUp' ? (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
               <SignUpPage signInPath={signInPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
+            </div>
+          ) : null}
+          {routeKey === 'passwordReset' ? (
+            <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
+              <PasswordResetPage signInPath={signInPath} onNavigate={navigateTo} />
             </div>
           ) : null}
         </main>
@@ -746,6 +761,7 @@ function getRouteFromPathname({ pathname }: RoutePathnameProps): RouteKey {
   if (strippedPath.startsWith(ROUTE_PATHS.dashboard)) return 'dashboard'
   if (strippedPath.startsWith(ROUTE_PATHS.signIn)) return 'signIn'
   if (strippedPath.startsWith(ROUTE_PATHS.signUp)) return 'signUp'
+  if (strippedPath.startsWith(ROUTE_PATHS.passwordReset)) return 'passwordReset'
   return 'marketing'
 }
 
@@ -1704,6 +1720,7 @@ type RouteKey =
   | 'profile'
   | 'signIn'
   | 'signUp'
+  | 'passwordReset'
 
 const ROUTE_PATHS = {
   home: '/',
@@ -1715,4 +1732,5 @@ const ROUTE_PATHS = {
   profile: '/dashboard/profile',
   signIn: '/auth/sign-in',
   signUp: '/auth/sign-up',
+  passwordReset: '/auth/password-reset',
 } as const
