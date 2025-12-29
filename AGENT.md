@@ -27,7 +27,7 @@ Error Handling and Validation
     - Use guard clauses to handle preconditions and invalid states early.
     - Implement proper error logging and user-friendly error messages.
     - Consider using custom error types or error factories for consistent error handling.
-  
+   
 React
   - Use functional components and interfaces.
   - Use declarative JSX.
