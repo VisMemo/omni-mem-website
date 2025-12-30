@@ -35,7 +35,7 @@ type OverviewItem = {
 }
 
 export function DashboardPage() {
-  const { session } = useSupabaseSession()
+  const { session, refreshSession } = useSupabaseSession()
   const [usage, setUsage] = useState<UsageSummaryItem[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
@@ -87,19 +87,26 @@ export function DashboardPage() {
     setStatus('loading')
     setMessage(null)
 
-    fetch(
-      `${apiBaseUrl}/usage/summary?from=${fromDate}&to=${toDate}&groupBy=${groupBy}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'X-Principal-User-Id': accountId,
-        },
-      },
-    )
+    refreshSession()
+      .then((active) => {
+        const sessionToUse = active ?? session
+        if (!sessionToUse) {
+          throw new Error('Session expired. Please sign in again.')
+        }
+        return fetch(
+          `${apiBaseUrl}/usage/summary?from=${fromDate}&to=${toDate}&groupBy=${groupBy}`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionToUse.access_token}`,
+              'X-Principal-User-Id': sessionToUse.user.id,
+            },
+          },
+        )
+      })
       .then((response) => response.json().then((data) => ({ response, data })))
       .then(({ response, data }: { response: Response; data: UsageSummaryResponse & { message?: string } }) => {
         if (!response.ok) {
-          throw new Error(data?.message ?? '用量汇总加载失败')
+          throw new Error(data?.message ?? 'Failed to load usage summary.')
         }
         setUsage(data.data ?? [])
         setStatus('idle')
@@ -108,7 +115,7 @@ export function DashboardPage() {
         setStatus('error')
         setMessage(String(error))
       })
-  }, [accountId, accessToken, apiBaseUrl, fromDate, toDate, groupBy])
+  }, [accountId, accessToken, apiBaseUrl, fromDate, toDate, groupBy, refreshSession, session])
 
   const totalUsage = useMemo(() => usage.reduce((sum, item) => sum + (item.total ?? 0), 0), [usage])
 

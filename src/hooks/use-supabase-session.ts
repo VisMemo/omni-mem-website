@@ -1,5 +1,5 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getSupabaseClient } from '../lib/supabase'
 
 interface SupabaseSessionState {
@@ -7,6 +7,7 @@ interface SupabaseSessionState {
   session: Session | null
   isLoading: boolean
   error: string | null
+  refreshSession: () => Promise<Session | null>
 }
 
 export function useSupabaseSession(): SupabaseSessionState {
@@ -49,7 +50,34 @@ export function useSupabaseSession(): SupabaseSessionState {
     }
   }, [client])
 
-  return { client, session, isLoading, error }
+  const refreshSession = useCallback(async () => {
+    if (!client) return null
+
+    const { data, error: sessionError } = await client.auth.getSession()
+    if (sessionError) {
+      throw sessionError
+    }
+
+    const current = data.session ?? null
+    if (!current) return null
+
+    const expiresAt = current.expires_at ?? 0
+    const now = Math.floor(Date.now() / 1000)
+    if (expiresAt - now > 60) {
+      return current
+    }
+
+    const { data: refreshed, error: refreshError } = await client.auth.refreshSession()
+    if (refreshError || !refreshed.session) {
+      await client.auth.signOut()
+      throw refreshError ?? new Error('Session expired. Please sign in again.')
+    }
+
+    setSession(refreshed.session)
+    return refreshed.session
+  }, [client])
+
+  return { client, session, isLoading, error, refreshSession }
 }
 
 function getErrorMessage(error: unknown) {

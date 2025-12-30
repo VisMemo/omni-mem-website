@@ -38,7 +38,7 @@ type ApiKeyCreateResponse = {
 }
 
 export function ApiKeysPage() {
-  const { session } = useSupabaseSession()
+  const { session, refreshSession } = useSupabaseSession()
   const [label, setLabel] = useState('')
   const [rows, setRows] = useState<ApiKeyRow[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
@@ -48,6 +48,11 @@ export function ApiKeysPage() {
   const accountId = session?.user?.id ?? null
   const accessToken = session?.access_token ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
+
+  async function getActiveSession() {
+    const refreshed = await refreshSession()
+    return refreshed ?? session
+  }
 
   async function fetchKeys(currentAccountId: string, token: string) {
     const response = await fetch(`${apiBaseUrl}/apikeys`, {
@@ -70,7 +75,13 @@ export function ApiKeysPage() {
     setStatus('loading')
     setMessage(null)
 
-    fetchKeys(accountId, accessToken)
+    getActiveSession()
+      .then((active) => {
+        if (!active) {
+          throw new Error('Session expired. Please sign in again.')
+        }
+        return fetchKeys(active.user.id, active.access_token)
+      })
       .then(() => {
         if (cancelled) return
         setStatus('idle')
@@ -84,7 +95,7 @@ export function ApiKeysPage() {
     return () => {
       cancelled = true
     }
-  }, [accountId, accessToken, apiBaseUrl])
+  }, [accountId, accessToken, apiBaseUrl, refreshSession])
 
   async function handleCreateKey() {
     if (!accountId || !accessToken) {
@@ -97,12 +108,17 @@ export function ApiKeysPage() {
     setMessage(null)
 
     try {
+      const active = await getActiveSession()
+      if (!active) {
+        throw new Error('Session expired. Please sign in again.')
+      }
+
       const response = await fetch(`${apiBaseUrl}/apikeys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Principal-User-Id': accountId,
-          Authorization: `Bearer ${accessToken}`,
+          'X-Principal-User-Id': active.user.id,
+          Authorization: `Bearer ${active.access_token}`,
           'X-Request-Id': crypto.randomUUID(),
         },
         body: JSON.stringify({ label }),
@@ -122,7 +138,7 @@ export function ApiKeysPage() {
           : 'Created. The key is only shown once.',
       )
 
-      await fetchKeys(accountId, accessToken)
+      await fetchKeys(active.user.id, active.access_token)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -141,6 +157,11 @@ export function ApiKeysPage() {
     setMessage(null)
 
     try {
+      const active = await getActiveSession()
+      if (!active) {
+        throw new Error('Session expired. Please sign in again.')
+      }
+
       const requestId = crypto.randomUUID()
       const method = action === 'delete' ? 'DELETE' : 'POST'
       const endpoint =
@@ -152,8 +173,8 @@ export function ApiKeysPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Principal-User-Id': accountId,
-          Authorization: `Bearer ${accessToken}`,
+          'X-Principal-User-Id': active.user.id,
+          Authorization: `Bearer ${active.access_token}`,
           'X-Request-Id': requestId,
         },
       })
@@ -175,7 +196,7 @@ export function ApiKeysPage() {
         setMessage(`${action} success`)
       }
 
-      await fetchKeys(accountId, accessToken)
+      await fetchKeys(active.user.id, active.access_token)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
