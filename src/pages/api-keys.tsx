@@ -46,11 +46,13 @@ export function ApiKeysPage() {
   const [lastPlaintext, setLastPlaintext] = useState<string | null>(null)
 
   const accountId = session?.user?.id ?? null
+  const accessToken = session?.access_token ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
 
-  async function fetchKeys(currentAccountId: string) {
+  async function fetchKeys(currentAccountId: string, token: string) {
     const response = await fetch(`${apiBaseUrl}/apikeys`, {
       headers: {
+        Authorization: `Bearer ${token}`,
         'X-Principal-User-Id': currentAccountId,
       },
     })
@@ -62,13 +64,13 @@ export function ApiKeysPage() {
   }
 
   useEffect(() => {
-    if (!accountId) return
+    if (!accountId || !accessToken) return
 
     let cancelled = false
     setStatus('loading')
     setMessage(null)
 
-    fetchKeys(accountId)
+    fetchKeys(accountId, accessToken)
       .then(() => {
         if (cancelled) return
         setStatus('idle')
@@ -82,10 +84,10 @@ export function ApiKeysPage() {
     return () => {
       cancelled = true
     }
-  }, [accountId, apiBaseUrl])
+  }, [accountId, accessToken, apiBaseUrl])
 
   async function handleCreateKey() {
-    if (!accountId) {
+    if (!accountId || !accessToken) {
       setStatus('error')
       setMessage('Please sign in to create an API key.')
       return
@@ -100,6 +102,7 @@ export function ApiKeysPage() {
         headers: {
           'Content-Type': 'application/json',
           'X-Principal-User-Id': accountId,
+          Authorization: `Bearer ${accessToken}`,
           'X-Request-Id': crypto.randomUUID(),
         },
         body: JSON.stringify({ label }),
@@ -119,7 +122,7 @@ export function ApiKeysPage() {
           : 'Created. The key is only shown once.',
       )
 
-      await fetchKeys(accountId)
+      await fetchKeys(accountId, accessToken)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -128,7 +131,7 @@ export function ApiKeysPage() {
   }
 
   async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
-    if (!accountId) {
+    if (!accountId || !accessToken) {
       setStatus('error')
       setMessage('Please sign in to manage API keys.')
       return
@@ -150,6 +153,7 @@ export function ApiKeysPage() {
         headers: {
           'Content-Type': 'application/json',
           'X-Principal-User-Id': accountId,
+          Authorization: `Bearer ${accessToken}`,
           'X-Request-Id': requestId,
         },
       })
@@ -171,7 +175,7 @@ export function ApiKeysPage() {
         setMessage(`${action} success`)
       }
 
-      await fetchKeys(accountId)
+      await fetchKeys(accountId, accessToken)
       setStatus('idle')
     } catch (error) {
       setStatus('error')

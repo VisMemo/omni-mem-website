@@ -1,4 +1,4 @@
-﻿import {
+import {
   Button,
   Card,
   CardBody,
@@ -44,6 +44,7 @@ export function DashboardPage() {
   const [toDate, setToDate] = useState('')
 
   const accountId = session?.user?.id ?? null
+  const accessToken = session?.access_token ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const overviewItems = useMemo<OverviewItem[]>(
     () => [
@@ -74,7 +75,7 @@ export function DashboardPage() {
   )
 
   useEffect(() => {
-    if (!accountId) return
+    if (!accountId || !accessToken) return
     if (!fromDate || !toDate) {
       const now = new Date()
       const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -90,6 +91,7 @@ export function DashboardPage() {
       `${apiBaseUrl}/usage/summary?from=${fromDate}&to=${toDate}&groupBy=${groupBy}`,
       {
         headers: {
+          Authorization: `Bearer ${accessToken}`,
           'X-Principal-User-Id': accountId,
         },
       },
@@ -106,7 +108,7 @@ export function DashboardPage() {
         setStatus('error')
         setMessage(String(error))
       })
-  }, [accountId, apiBaseUrl, fromDate, toDate, groupBy])
+  }, [accountId, accessToken, apiBaseUrl, fromDate, toDate, groupBy])
 
   const totalUsage = useMemo(() => usage.reduce((sum, item) => sum + (item.total ?? 0), 0), [usage])
 

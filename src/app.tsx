@@ -64,11 +64,11 @@ export function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
-    if (pathLocale && pathLocale !== locale) {
-      setLocale(pathLocale)
-      return
+    const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
+    if (normalizedPath !== window.location.pathname) {
+      const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
+      window.history.replaceState(null, '', nextUrl)
+      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
     }
 
     document.documentElement.lang = locale
@@ -79,11 +79,12 @@ export function App() {
     if (typeof window === 'undefined') return
 
     function handlePopState() {
-      const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
-      if (pathLocale && pathLocale !== locale) {
-        setLocale(pathLocale)
+      const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
+      if (normalizedPath !== window.location.pathname) {
+        const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
+        window.history.replaceState(null, '', nextUrl)
       }
-      setRouteKey(getRouteFromPathname({ pathname: window.location.pathname }))
+      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -720,35 +721,12 @@ function getLocaleFromPathname({ pathname }: LocalePathnameProps): Locale | null
 }
 
 function buildLocalePathname({ pathname, locale }: BuildLocalePathnameProps): string {
-  const segments = pathname.split('/').filter(Boolean)
-  if (segments.length === 0) return `/${locale}/`
-
-  if (SUPPORTED_LOCALES.includes(segments[0] as Locale)) {
-    segments[0] = locale
-  } else {
-    segments.unshift(locale)
-  }
-
-  const joined = `/${segments.join('/')}`
-  if (segments.length === 1) return `${joined}/`
-  return joined
+  return pathname
 }
 
 function updateLocalePath({ locale, method }: UpdateLocalePathProps) {
   if (typeof window === 'undefined') return
-
-  const nextPath = buildLocalePathname({ pathname: window.location.pathname, locale })
-  const nextUrl = `${nextPath}${window.location.search}${window.location.hash}`
-  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
-
-  if (nextUrl === currentUrl) return
-
-  if (method === 'replace') {
-    window.history.replaceState(null, '', nextUrl)
-    return
-  }
-
-  window.history.pushState(null, '', nextUrl)
+  window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
 }
 
 function getRouteFromPathname({ pathname }: RoutePathnameProps): RouteKey {
