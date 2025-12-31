@@ -18,9 +18,12 @@ import { getApiEnv } from '../lib/env'
 type UploadRow = {
   id: string
   file: string
+  fileType: string
   status: string
   scope: string
+  createdAt: string
   updatedAt: string
+  balanceUsed: number
   error?: string | null
   progress?: number | null
 }
@@ -46,6 +49,21 @@ type UploadStatusResponse = {
   message?: string
 }
 
+type UploadHistoryResponse = {
+  data: Array<{
+    id: string
+    filename?: string | null
+    mime?: string | null
+    status: string
+    memory_scope?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+    request_id?: string | null
+    size_bytes?: number | null
+    balance_used?: number | null
+  }>
+}
+
 const ACTIVE_STATUSES = new Set(['init', 'uploaded', 'processing'])
 
 export function UploadsPage() {
@@ -54,6 +72,7 @@ export function UploadsPage() {
   const [uploads, setUploads] = useState<UploadRow[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [message, setMessage] = useState<string | null>(null)
+  const [inlineStatus, setInlineStatus] = useState<string | null>(null)
   const [pollingUploadId, setPollingUploadId] = useState<string | null>(null)
 
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
@@ -111,11 +130,13 @@ export function UploadsPage() {
     if (!selectedFile || !accountId || !accessToken) {
       setStatus('error')
       setMessage('Please sign in and choose a file before uploading.')
+      setInlineStatus(null)
       return
     }
 
     setStatus('loading')
     setMessage(null)
+    setInlineStatus(null)
 
     try {
       const active = await getActiveSession()
@@ -149,9 +170,12 @@ export function UploadsPage() {
       upsertUpload({
         id: initData.upload_id,
         file: selectedFile.name,
+        fileType: getFileTypeLabel(selectedFile.name, selectedFile.type),
         status: 'uploading',
         scope,
+        createdAt: now,
         updatedAt: now,
+        balanceUsed: 0,
         error: null,
         progress: 0,
       })
@@ -176,20 +200,71 @@ export function UploadsPage() {
       upsertUpload({
         id: initData.upload_id,
         file: selectedFile.name,
+        fileType: getFileTypeLabel(selectedFile.name, selectedFile.type),
         status: 'uploaded',
         scope,
+        createdAt: now,
         updatedAt: new Date().toISOString(),
+        balanceUsed: 0,
         error: null,
         progress: 100,
       })
       setStatus('success')
-      setMessage('Upload sent to OSS. Waiting for processing.')
+      setMessage(null)
       setSelectedFile(null)
     } catch (error) {
       setStatus('error')
       setMessage(String(error))
+      setInlineStatus(null)
     }
   }
+
+  useEffect(() => {
+    if (!accountId || !accessToken) return
+
+    let cancelled = false
+
+    async function loadUploadHistory() {
+      try {
+        const active = await getActiveSession()
+        if (!active) return
+
+        const response = await fetch(`${apiBaseUrl}/uploads/history`, {
+          headers: {
+            Authorization: `Bearer ${active.access_token}`,
+            'X-Principal-User-Id': active.user.id,
+          },
+        })
+        const data = (await response.json()) as UploadHistoryResponse
+        if (!response.ok) {
+          return
+        }
+
+        if (cancelled) return
+        const rows = (data.data ?? []).map((row) => ({
+          id: row.id,
+          file: row.filename ?? 'upload',
+          fileType: getFileTypeLabel(row.filename ?? 'upload', row.mime ?? ''),
+          status: row.status,
+          scope: row.memory_scope ?? 'user',
+          createdAt: row.created_at ?? row.updated_at ?? new Date().toISOString(),
+          updatedAt: row.updated_at ?? new Date().toISOString(),
+          balanceUsed: Number(row.balance_used ?? 0),
+          error: null,
+          progress: null,
+        }))
+
+        setUploads((prev) => mergeUploadRows(prev, rows))
+      } catch {
+        return
+      }
+    }
+
+    loadUploadHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [accountId, accessToken, apiBaseUrl, refreshSession])
 
   useEffect(() => {
     if (!pollingUploadId || !accountId || !accessToken) return
@@ -224,6 +299,10 @@ export function UploadsPage() {
           updatedAt: data.updated_at ?? new Date().toISOString(),
           error: data.error_message ?? null,
         })
+
+        if (data.status === 'done') {
+          setInlineStatus('记忆已同步')
+        }
 
         if (!ACTIVE_STATUSES.has(data.status)) {
           setPollingUploadId(null)
@@ -274,22 +353,25 @@ export function UploadsPage() {
             {selectedFile ? `Size: ${formatBytes(selectedFile.size)}` : 'No file selected'}
           </div>
         </div>
-        {message ? <p className="text-sm text-muted">{message}</p> : null}
+        {inlineStatus ? <p className="text-sm text-accent">{inlineStatus}</p> : null}
+        {message ? <p className="text-sm text-danger">{message}</p> : null}
 
         <Table removeWrapper aria-label="Uploads">
           <TableHeader>
-            <TableColumn>File</TableColumn>
-            <TableColumn>Status</TableColumn>
-            <TableColumn>Scope</TableColumn>
-            <TableColumn>Updated</TableColumn>
+            <TableColumn>文件名</TableColumn>
+            <TableColumn>文件格式</TableColumn>
+            <TableColumn>上传状态</TableColumn>
+            <TableColumn>上传时间</TableColumn>
+            <TableColumn>消耗积分</TableColumn>
           </TableHeader>
           <TableBody emptyContent="No uploads yet.">
             {uploads.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.file}</TableCell>
+                <TableCell>{row.fileType}</TableCell>
                 <TableCell>{renderStatusCell(row)}</TableCell>
-                <TableCell>{row.scope}</TableCell>
-                <TableCell>{row.updatedAt}</TableCell>
+                <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
+                <TableCell>{row.balanceUsed}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -314,8 +396,11 @@ function formatStatus(row: UploadRow) {
   if (row.status === 'uploaded') {
     return '上传已完成'
   }
+  if (row.status === 'processing') {
+    return '处理中'
+  }
   if (row.status === 'done') {
-    return '记忆已同步完成'
+    return '记忆已同步'
   }
   if (row.status === 'failed') {
     return row.error ? `Failed: ${row.error}` : 'Failed'
@@ -338,4 +423,40 @@ function renderStatusCell(row: UploadRow) {
       </div>
     </div>
   )
+}
+
+function getFileTypeLabel(filename: string, mime: string) {
+  if (mime) {
+    return mime
+  }
+  const ext = filename.split('.').pop()
+  return ext ? ext.toLowerCase() : 'unknown'
+}
+
+function formatTimestamp(value: string) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
+}
+
+function mergeUploadRows(existing: UploadRow[], incoming: UploadRow[]) {
+  const map = new Map(existing.map((row) => [row.id, row]))
+  for (const row of incoming) {
+    const current = map.get(row.id)
+    if (current) {
+      map.set(row.id, {
+        ...row,
+        progress: current.progress ?? row.progress ?? null,
+        error: current.error ?? row.error ?? null,
+      })
+    } else {
+      map.set(row.id, row)
+    }
+  }
+
+  const incomingIds = new Set(incoming.map((row) => row.id))
+  const ordered = incoming.map((row) => map.get(row.id)!).filter(Boolean)
+  const extras = existing.filter((row) => !incomingIds.has(row.id))
+  return [...ordered, ...extras]
 }
