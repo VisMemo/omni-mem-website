@@ -22,6 +22,7 @@ type UploadRow = {
   scope: string
   updatedAt: string
   error?: string | null
+  progress?: number | null
 }
 
 type UploadInitResponse = {
@@ -74,6 +75,38 @@ export function UploadsPage() {
     })
   }
 
+  async function uploadWithProgress(options: {
+    url: string
+    method: string
+    headers: Record<string, string>
+    body: Blob
+    onProgress: (percent: number) => void
+  }) {
+    const { url, method, headers, body, onProgress } = options
+
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open(method, url)
+      for (const [key, value] of Object.entries(headers)) {
+        xhr.setRequestHeader(key, value)
+      }
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return
+        const percent = Math.round((event.loaded / event.total) * 100)
+        onProgress(percent)
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve()
+          return
+        }
+        reject(new Error('Upload to object storage failed.'))
+      }
+      xhr.onerror = () => reject(new Error('Upload to object storage failed.'))
+      xhr.send(body)
+    })
+  }
+
   async function handleUpload() {
     if (!selectedFile || !accountId || !accessToken) {
       setStatus('error')
@@ -116,23 +149,29 @@ export function UploadsPage() {
       upsertUpload({
         id: initData.upload_id,
         file: selectedFile.name,
-        status: 'init',
+        status: 'uploading',
         scope,
         updatedAt: now,
         error: null,
+        progress: 0,
       })
       setPollingUploadId(initData.upload_id)
 
       const uploadHeaders = initData.upload_headers ?? {}
       const uploadMethod = initData.upload_method ?? 'PUT'
-      const uploadResult = await fetch(initData.upload_url, {
+      await uploadWithProgress({
+        url: initData.upload_url,
         method: uploadMethod,
         headers: uploadHeaders,
         body: selectedFile,
+        onProgress: (percent) => {
+          upsertUpload({
+            id: initData.upload_id,
+            progress: percent,
+            updatedAt: new Date().toISOString(),
+          })
+        },
       })
-      if (!uploadResult.ok) {
-        throw new Error('Upload to object storage failed.')
-      }
 
       upsertUpload({
         id: initData.upload_id,
@@ -141,6 +180,7 @@ export function UploadsPage() {
         scope,
         updatedAt: new Date().toISOString(),
         error: null,
+        progress: 100,
       })
       setStatus('success')
       setMessage('Upload sent to OSS. Waiting for processing.')
@@ -247,7 +287,7 @@ export function UploadsPage() {
             {uploads.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.file}</TableCell>
-                <TableCell>{formatStatus(row)}</TableCell>
+                <TableCell>{renderStatusCell(row)}</TableCell>
                 <TableCell>{row.scope}</TableCell>
                 <TableCell>{row.updatedAt}</TableCell>
               </TableRow>
@@ -268,6 +308,9 @@ function formatBytes(bytes: number) {
 }
 
 function formatStatus(row: UploadRow) {
+  if (row.status === 'uploading') {
+    return '上传中'
+  }
   if (row.status === 'uploaded') {
     return '上传已完成'
   }
@@ -280,4 +323,19 @@ function formatStatus(row: UploadRow) {
   return row.status
 }
 
+function renderStatusCell(row: UploadRow) {
+  const label = formatStatus(row)
+  if (row.status !== 'uploading') {
+    return label
+  }
 
+  const progress = row.progress ?? 0
+  return (
+    <div className="flex flex-col gap-1">
+      <span>{`${label} ${progress}%`}</span>
+      <div className="h-1.5 w-24 overflow-hidden rounded bg-white/10">
+        <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  )
+}
