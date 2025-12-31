@@ -268,11 +268,16 @@ function formatBytes(bytes: number) {
 }
 
 function formatStatus(row: UploadRow) {
+  if (row.status === 'uploaded') {
+    return '上传已完成'
+  }
   if (row.status === 'done') {
-    return 'Done (记忆已同步完成)'
+    return '记忆已同步完成'
   }
   if (row.status === 'failed') {
     return row.error ? `Failed: ${row.error}` : 'Failed'
   }
   return row.status
 }
+
+
