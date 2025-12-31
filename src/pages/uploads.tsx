@@ -65,11 +65,11 @@ export function UploadsPage() {
     return refreshed ?? session
   }
 
-  function upsertUpload(row: UploadRow) {
+  function upsertUpload(row: Partial<UploadRow> & { id: string }) {
     setUploads((prev) => {
       const existing = prev.find((item) => item.id === row.id)
       if (!existing) {
-        return [row, ...prev]
+        return [row as UploadRow, ...prev]
       }
       return prev.map((item) => (item.id === row.id ? { ...item, ...row } : item))
     })
