@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -37,6 +38,9 @@ export function UsagePage() {
   const [balance, setBalance] = useState<number | null>(null)
   const [rows, setRows] = useState<UsageLedgerRow[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const pageSize = 10
 
   async function getActiveSession() {
     const refreshed = await refreshSession()
@@ -60,7 +64,7 @@ export function UsagePage() {
               'X-Principal-User-Id': active.user.id,
             },
           }),
-          fetch(`${apiBaseUrl}/usage/ledger`, {
+          fetch(`${apiBaseUrl}/usage/ledger?page=${page}&pageSize=${pageSize}`, {
             headers: {
               Authorization: `Bearer ${active.access_token}`,
               'X-Principal-User-Id': active.user.id,
@@ -83,6 +87,7 @@ export function UsagePage() {
             createdAt: row.created_at ?? new Date().toISOString(),
           }))
           setRows(mapped)
+          setHasNext(mapped.length === pageSize)
         }
       } catch (err) {
         if (cancelled) return
@@ -94,7 +99,7 @@ export function UsagePage() {
     return () => {
       cancelled = true
     }
-  }, [apiBaseUrl, refreshSession, session?.access_token, session?.user?.id])
+  }, [apiBaseUrl, refreshSession, session?.access_token, session?.user?.id, page])
 
   return (
     <Card className="glass-panel">
@@ -126,6 +131,25 @@ export function UsagePage() {
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+            isDisabled={page <= 1}
+          >
+            上一页
+          </Button>
+          <span className="text-sm text-muted">第 {page} 页</span>
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => setPage((prev) => prev + 1)}
+            isDisabled={!hasNext}
+          >
+            下一页
+          </Button>
+        </div>
       </CardBody>
     </Card>
   )

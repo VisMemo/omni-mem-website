@@ -44,6 +44,9 @@ export function ApiKeysPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [lastPlaintext, setLastPlaintext] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const pageSize = 10
 
   const accountId = session?.user?.id ?? null
   const accessToken = session?.access_token ?? null
@@ -54,18 +57,23 @@ export function ApiKeysPage() {
     return refreshed ?? session
   }
 
-  async function fetchKeys(currentAccountId: string, token: string) {
-    const response = await fetch(`${apiBaseUrl}/apikeys`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Principal-User-Id': currentAccountId,
+  async function fetchKeys(currentAccountId: string, token: string, pageNumber: number) {
+    const response = await fetch(
+      `${apiBaseUrl}/apikeys?page=${pageNumber}&pageSize=${pageSize}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-Principal-User-Id': currentAccountId,
+        },
       },
-    })
+    )
     const data = (await response.json()) as ApiKeyListResponse & { message?: string }
     if (!response.ok) {
       throw new Error(data?.message ?? 'Failed to load API keys')
     }
-    setRows(data.data ?? [])
+    const nextRows = data.data ?? []
+    setRows(nextRows)
+    setHasNext(nextRows.length === pageSize)
   }
 
   useEffect(() => {
@@ -80,7 +88,7 @@ export function ApiKeysPage() {
         if (!active) {
           throw new Error('Session expired. Please sign in again.')
         }
-        return fetchKeys(active.user.id, active.access_token)
+        return fetchKeys(active.user.id, active.access_token, page)
       })
       .then(() => {
         if (cancelled) return
@@ -95,7 +103,7 @@ export function ApiKeysPage() {
     return () => {
       cancelled = true
     }
-  }, [accountId, accessToken, apiBaseUrl, refreshSession])
+  }, [accountId, accessToken, apiBaseUrl, refreshSession, page])
 
   async function handleCreateKey() {
     if (!accountId || !accessToken) {
@@ -138,7 +146,7 @@ export function ApiKeysPage() {
           : 'Created. The key is only shown once.',
       )
 
-      await fetchKeys(active.user.id, active.access_token)
+      await fetchKeys(active.user.id, active.access_token, page)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -196,7 +204,7 @@ export function ApiKeysPage() {
         setMessage(`${action} success`)
       }
 
-      await fetchKeys(active.user.id, active.access_token)
+      await fetchKeys(active.user.id, active.access_token, page)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -323,6 +331,25 @@ export function ApiKeysPage() {
               )}
             </TableBody>
           </Table>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+              isDisabled={page <= 1}
+            >
+              上一页
+            </Button>
+            <span className="text-sm text-muted">第 {page} 页</span>
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => setPage((prev) => prev + 1)}
+              isDisabled={!hasNext}
+            >
+              下一页
+            </Button>
+          </div>
         </CardBody>
       </Card>
     </div>

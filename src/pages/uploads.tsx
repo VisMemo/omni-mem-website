@@ -74,6 +74,9 @@ export function UploadsPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [inlineStatus, setInlineStatus] = useState<string | null>(null)
   const [pollingUploadId, setPollingUploadId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const pageSize = 10
 
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const accountId = session?.user?.id ?? null
@@ -229,12 +232,15 @@ export function UploadsPage() {
         const active = await getActiveSession()
         if (!active) return
 
-        const response = await fetch(`${apiBaseUrl}/uploads/history`, {
-          headers: {
-            Authorization: `Bearer ${active.access_token}`,
-            'X-Principal-User-Id': active.user.id,
+        const response = await fetch(
+          `${apiBaseUrl}/uploads/history?page=${page}&pageSize=${pageSize}`,
+          {
+            headers: {
+              Authorization: `Bearer ${active.access_token}`,
+              'X-Principal-User-Id': active.user.id,
+            },
           },
-        })
+        )
         const data = (await response.json()) as UploadHistoryResponse
         if (!response.ok) {
           return
@@ -255,6 +261,7 @@ export function UploadsPage() {
         }))
 
         setUploads((prev) => mergeUploadRows(prev, rows))
+        setHasNext(rows.length === pageSize)
       } catch {
         return
       }
@@ -264,7 +271,7 @@ export function UploadsPage() {
     return () => {
       cancelled = true
     }
-  }, [accountId, accessToken, apiBaseUrl, refreshSession])
+  }, [accountId, accessToken, apiBaseUrl, refreshSession, page])
 
   useEffect(() => {
     if (!pollingUploadId || !accountId || !accessToken) return
@@ -376,6 +383,25 @@ export function UploadsPage() {
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+            isDisabled={page <= 1}
+          >
+            上一页
+          </Button>
+          <span className="text-sm text-muted">第 {page} 页</span>
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => setPage((prev) => prev + 1)}
+            isDisabled={!hasNext}
+          >
+            下一页
+          </Button>
+        </div>
       </CardBody>
     </Card>
   )
