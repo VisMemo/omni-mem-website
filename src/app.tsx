@@ -767,7 +767,7 @@ function getDashboardTitle(routeKey: RouteKey) {
     case 'usage':
       return '用量'
     case 'memoryPolicy':
-      return '记忆隔离'
+      return '通用设置'
     case 'profile':
       return '个人资料'
     default:

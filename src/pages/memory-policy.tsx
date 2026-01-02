@@ -79,7 +79,7 @@ export function MemoryPolicyPage() {
     })
     const data = (await response.json()) as MemoryPolicyResponse & { message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? '加载记忆隔离失败')
+      throw new Error(data?.message ?? '加载通用设置失败')
     }
     setDefaultScope(data.default_scope ?? 'user')
   }
