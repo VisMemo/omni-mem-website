@@ -136,7 +136,7 @@ export function App() {
     { label: 'API Key', path: apiKeysPath },
     { label: '上传任务', path: uploadsPath },
     { label: '用量', path: usagePath },
-    { label: '记忆隔离', path: memoryPolicyPath },
+    { label: '通用设置', path: memoryPolicyPath },
     { label: '个人资料', path: profilePath },
   ]
 
