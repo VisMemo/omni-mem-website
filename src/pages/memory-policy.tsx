@@ -358,13 +358,13 @@ export function MemoryPolicyPage() {
           {llmStatus === 'loading' ? (
             <div className="text-sm text-muted">加载中...</div>
           ) : (
-            <Table removeWrapper aria-label="LLM Keys">
+            <Table removeWrapper aria-label="LLM Keys" className="w-full">
               <TableHeader>
                 <TableColumn>备注</TableColumn>
-                <TableColumn>绑定范围</TableColumn>
-                <TableColumn>最后使用时间</TableColumn>
-                <TableColumn>是否可用</TableColumn>
-                <TableColumn>操作</TableColumn>
+                <TableColumn className="min-w-[220px]">绑定范围</TableColumn>
+                <TableColumn className="w-40">最后使用时间</TableColumn>
+                <TableColumn className="w-40">是否可用</TableColumn>
+                <TableColumn className="w-24">操作</TableColumn>
               </TableHeader>
               <TableBody>
                 {llmKeys.length === 0 ? (
@@ -402,6 +402,7 @@ export function MemoryPolicyPage() {
                         <TableCell>
                           <Select
                             aria-label="绑定范围"
+                            className="min-w-[200px]"
                             selectedKeys={new Set([selectedKey])}
                             onSelectionChange={(keys) => {
                               const value = String(Array.from(keys)[0] ?? '')
