@@ -26,12 +26,39 @@ type UsageSummaryResponse = {
   data: UsageSummaryItem[]
 }
 
+type ScopeEntitlements = {
+  credit_default: number
+  memory_node_limit: number
+  rate_limit_3s: number
+  allow_apikey_scope: boolean
+}
+
+type ScopeResponse = {
+  scope: string
+  entitlements?: ScopeEntitlements | null
+}
+
+type BalanceResponse = {
+  balance: number
+}
+
 type GroupBy = 'account' | 'apikey'
 
 type OverviewItem = {
   title: string
   description: string
   status: string
+}
+
+function formatNumber(value?: number | null) {
+  if (value === null || value === undefined) return '-'
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? String(numeric) : '-'
+}
+
+function formatSwitch(value?: boolean | null) {
+  if (value === null || value === undefined) return '-'
+  return value ? '已开启' : '未开启'
 }
 
 export function DashboardPage() {
@@ -42,10 +69,21 @@ export function DashboardPage() {
   const [groupBy, setGroupBy] = useState<GroupBy>('account')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [overviewStatus, setOverviewStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [overviewMessage, setOverviewMessage] = useState<string | null>(null)
+  const [scopeInfo, setScopeInfo] = useState<ScopeResponse | null>(null)
+  const [balanceInfo, setBalanceInfo] = useState<BalanceResponse | null>(null)
 
   const accountId = session?.user?.id ?? null
   const accessToken = session?.access_token ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
+  const entitlements = scopeInfo?.entitlements ?? null
+  const overviewStatusLabel = useMemo(() => {
+    if (!accountId) return '未登录'
+    if (overviewStatus === 'loading') return '加载中'
+    if (overviewStatus === 'error') return '加载失败'
+    return '已接通'
+  }, [accountId, overviewStatus])
   const overviewItems = useMemo<OverviewItem[]>(
     () => [
       {
@@ -53,26 +91,76 @@ export function DashboardPage() {
         description: accountId
           ? `主账户：${accountId}`
           : '登录后查看 Workspace 成员。',
-        status: '暂未接通',
+        status: overviewStatusLabel,
       },
       {
         title: '套餐 / 订阅',
-        description: '套餐等级、续费日期与计费状态。',
-        status: '暂未接通',
+        description: accountId
+          ? `当前套餐：${scopeInfo?.scope ?? '-'}，余额：${formatNumber(balanceInfo?.balance)}`
+          : '登录后查看套餐信息。',
+        status: overviewStatusLabel,
       },
       {
         title: '配额 / 限流',
-        description: '速率限制、存储上限与并发配额。',
-        status: '暂未接通',
+        description: accountId
+          ? `节点上限：${formatNumber(entitlements?.memory_node_limit)}，3秒限流：${formatNumber(entitlements?.rate_limit_3s)}`
+          : '登录后查看配额信息。',
+        status: overviewStatusLabel,
       },
       {
         title: '权益配置',
-        description: '功能开关、记忆范围与模型权限。',
-        status: '暂未接通',
+        description: accountId
+          ? `默认额度：${formatNumber(entitlements?.credit_default)}，API Key Scope：${formatSwitch(entitlements?.allow_apikey_scope)}`
+          : '登录后查看权益配置。',
+        status: overviewStatusLabel,
       },
     ],
-    [accountId],
+    [accountId, balanceInfo, entitlements, overviewStatusLabel, scopeInfo],
   )
+
+  useEffect(() => {
+    if (!accountId || !accessToken) return
+    setOverviewStatus('loading')
+    setOverviewMessage(null)
+    refreshSession()
+      .then((active) => {
+        const sessionToUse = active ?? session
+        if (!sessionToUse) {
+          throw new Error('Session expired. Please sign in again.')
+        }
+        const headers = {
+          Authorization: `Bearer ${sessionToUse.access_token}`,
+          'X-Principal-User-Id': sessionToUse.user.id,
+        }
+        return Promise.all([
+          fetch(`${apiBaseUrl}/settings/scope`, { headers })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }: { response: Response; data: ScopeResponse & { message?: string } }) => {
+              if (!response.ok) {
+                throw new Error(data?.message ?? 'Failed to load scope information.')
+              }
+              return data
+            }),
+          fetch(`${apiBaseUrl}/balance`, { headers })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }: { response: Response; data: BalanceResponse & { message?: string } }) => {
+              if (!response.ok) {
+                throw new Error(data?.message ?? 'Failed to load balance.')
+              }
+              return data
+            }),
+        ])
+      })
+      .then(([scopeData, balanceData]) => {
+        setScopeInfo(scopeData)
+        setBalanceInfo(balanceData)
+        setOverviewStatus('idle')
+      })
+      .catch((error) => {
+        setOverviewStatus('error')
+        setOverviewMessage(String(error))
+      })
+  }, [accountId, accessToken, apiBaseUrl, refreshSession, session])
 
   useEffect(() => {
     if (!accountId || !accessToken) return
@@ -140,6 +228,11 @@ export function DashboardPage() {
             </Card>
           ))}
         </div>
+        {overviewStatus === 'loading' ? (
+          <p className="text-sm text-muted">概览加载中…</p>
+        ) : overviewStatus === 'error' ? (
+          <p className="text-sm text-danger-500">{overviewMessage ?? '概览加载失败'}</p>
+        ) : null}
       </div>
 
       <h2 className="text-lg font-semibold text-ink">用量仪表盘</h2>
