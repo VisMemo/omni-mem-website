@@ -1,17 +1,5 @@
-﻿import React, { Suspense, useEffect, useState } from 'react'
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  Tab,
-  Tabs,
-} from '@nextui-org/react'
+import { useEffect, useState, useRef } from 'react'
+import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { AuthControl } from './components/auth-control'
 import { DashboardShell } from './components/dashboard-shell'
 import { useSupabaseSession } from './hooks/use-supabase-session'
@@ -24,34 +12,20 @@ import { ProfilePage } from './pages/profile'
 import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
 import { PasswordResetPage } from './pages/auth/password-reset'
-import type { FaqSectionContent } from './components/faq-section'
-import type { TestimonialsSectionContent } from './components/testimonial-section'
-
-const TestimonialsSection = React.lazy(() =>
-  import('./components/testimonial-section').then((module) => ({
-    default: module.TestimonialsSection,
-  }))
-)
-const FaqSection = React.lazy(() =>
-  import('./components/faq-section').then((module) => ({
-    default: module.FaqSection,
-  }))
-)
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale())
   const [routeKey, setRouteKey] = useState<RouteKey>(() =>
     getRouteFromPathname({ pathname: getBrowserPathname() })
   )
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 })
+  const [isHovering, setIsHovering] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const content = contentByLocale[locale]
-  const isChinese = locale === 'zh'
   const { session, isLoading: isSessionLoading } = useSupabaseSession()
   const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
   const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
-  const passwordResetPath = buildLocalePathname({
-    pathname: ROUTE_PATHS.passwordReset,
-    locale,
-  })
+  const passwordResetPath = buildLocalePathname({ pathname: ROUTE_PATHS.passwordReset, locale })
   const dashboardPath = buildLocalePathname({ pathname: ROUTE_PATHS.dashboard, locale })
   const apiKeysPath = buildLocalePathname({ pathname: ROUTE_PATHS.apiKeys, locale })
   const uploadsPath = buildLocalePathname({ pathname: ROUTE_PATHS.uploads, locale })
@@ -62,6 +36,46 @@ export function App() {
   const isMarketing = routeKey === 'marketing'
   const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 
+  // Custom cursor
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX - 10, y: e.clientY - 10 })
+    }
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (target.matches('a, button, [data-hover]')) {
+        setIsHovering(true)
+      }
+    }
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (target.matches('a, button, [data-hover]')) {
+        setIsHovering(false)
+      }
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseover', handleMouseOver)
+    document.addEventListener('mouseout', handleMouseOut)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseover', handleMouseOver)
+      document.removeEventListener('mouseout', handleMouseOut)
+    }
+  }, [])
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
@@ -70,14 +84,12 @@ export function App() {
       window.history.replaceState(null, '', nextUrl)
       setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
     }
-
     document.documentElement.lang = locale
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
   }, [locale])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
     function handlePopState() {
       const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
       if (normalizedPath !== window.location.pathname) {
@@ -86,7 +98,6 @@ export function App() {
       }
       setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
     }
-
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [locale])
@@ -101,7 +112,6 @@ export function App() {
   function handleLocaleToggle() {
     const nextLocale = getNextLocale({ currentLocale: locale })
     setLocale(nextLocale)
-    updateLocalePath({ locale: nextLocale, method: 'push' })
   }
 
   function handleDashboardClick() {
@@ -126,11 +136,6 @@ export function App() {
     setRouteKey(getRouteFromPathname({ pathname }))
   }
 
-  const dashboardLink = { label: '个人空间', href: dashboardPath }
-  const navLinks = isMarketing
-    ? [dashboardLink, ...content.navbar.navLinks]
-    : [{ label: '首页', href: homePath }, dashboardLink]
-
   const dashboardLinks = [
     { label: '概览', path: dashboardPath },
     { label: 'API Key', path: apiKeysPath },
@@ -142,105 +147,77 @@ export function App() {
 
   const currentDashboardPath = (() => {
     switch (routeKey) {
-      case 'apiKeys':
-        return apiKeysPath
-      case 'uploads':
-        return uploadsPath
-      case 'usage':
-        return usagePath
-      case 'memoryPolicy':
-        return memoryPolicyPath
-      case 'profile':
-        return profilePath
-      default:
-        return dashboardPath
+      case 'apiKeys': return apiKeysPath
+      case 'uploads': return uploadsPath
+      case 'usage': return usagePath
+      case 'memoryPolicy': return memoryPolicyPath
+      case 'profile': return profilePath
+      default: return dashboardPath
     }
   })()
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
-      <BackgroundOrbs />
-      <header>
-        <Navbar className="bg-transparent" maxWidth="xl" isBordered={false}>
-          <NavbarBrand className="gap-3">
+    <div className="relative min-h-screen">
+      {/* Custom Cursor */}
+      <div
+        className={`cursor ${isHovering ? 'hovering' : ''}`}
+        style={{ left: cursorPos.x, top: cursorPos.y }}
+      />
+
+      {/* Noise Texture */}
+      <div className="noise" />
+
+      {/* Navbar */}
+      <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="container navbar-inner">
+          <a href={homePath} className="logo">
             <LogoMark />
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-                {content.navbar.brandName}
-              </span>
-              <span className="text-xs text-muted">{content.navbar.brandSubtitle}</span>
+            <span>{content.navbar.brandName}</span>
+          </a>
+
+          {isMarketing && (
+            <div className="navbar-links">
+              {content.navbar.navLinks.map((link) => (
+                <a key={link.label} href={link.href} className="navbar-link">
+                  {link.label}
+                </a>
+              ))}
             </div>
-          </NavbarBrand>
-          <NavbarContent className="hidden gap-6 md:flex" justify="center">
-            {navLinks.map((link) => (
-              <NavbarItem key={link.label}>
-                {link.href === dashboardPath ? (
-                  <button
-                    className="text-sm font-medium text-ink/80 hover:text-ink"
-                    onClick={handleDashboardClick}
-                  >
-                    {link.label}
-                  </button>
-                ) : (
-                  <a className="text-sm font-medium text-ink/80 hover:text-ink" href={link.href}>
-                    {link.label}
-                  </a>
-                )}
-              </NavbarItem>
-            ))}
-          </NavbarContent>
-          <NavbarContent className="gap-3" justify="end">
-            <NavbarItem className="hidden sm:flex">
-              <AuthControl onSignIn={handleSignInClick} onSignUp={handleSignUpClick} />
-            </NavbarItem>
-            <NavbarItem>
-              <Button
-                className="border border-ink/20 text-ink"
-                radius="full"
-                size="sm"
-                variant="bordered"
-                onPress={handleLocaleToggle}
-                aria-label={content.navbar.toggleAriaLabel}
-              >
-                {content.navbar.toggleLabel}
-              </Button>
-            </NavbarItem>
-            <NavbarItem>
-              <Button
-                as="a"
-                href={signUpPath}
-                className="bg-accent text-white shadow-glow"
-                radius="full"
-              >
-                {content.navbar.ctaLabel}
-              </Button>
-            </NavbarItem>
-          </NavbarContent>
-        </Navbar>
-      </header>
+          )}
+
+          <div className="navbar-actions">
+            <button
+              onClick={handleLocaleToggle}
+              className="btn-ghost"
+              style={{ fontSize: '0.875rem' }}
+            >
+              {content.navbar.toggleLabel}
+            </button>
+            <AuthControl onSignIn={handleSignInClick} onSignUp={handleSignUpClick} />
+            <a href={signUpPath} className="btn-primary" style={{ padding: '0.75rem 1.5rem' }}>
+              {content.navbar.ctaLabel}
+            </a>
+          </div>
+        </div>
+      </nav>
 
       {isMarketing ? (
-        <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-10 sm:px-8">
+        <main>
           <HeroSection content={content.hero} signUpPath={signUpPath} />
-          <LogoCloud content={content.logoCloud} />
-          <FeatureGrid content={content.features} />
-          <ModelTabs content={content.modalities} />
-          <StepsSection content={content.steps} />
-          <UseCases content={content.useCases} />
+          <MarqueeSection />
+          <StatsSection content={content.stats} />
+          <FeaturesSection content={content.features} />
+          <HowItWorksSection content={content.howItWorks} />
           <DeveloperSection content={content.developers} signUpPath={signUpPath} />
-          <SecuritySection content={content.security} />
-          <Suspense fallback={<SectionFallback label={content.fallbacks.stories} />}>
-            <TestimonialsSection content={content.testimonials} />
-          </Suspense>
-          <Suspense fallback={<SectionFallback label={content.fallbacks.answers} />}>
-            <FaqSection content={content.faq} />
-          </Suspense>
-          <PlansSection content={content.pricing} signUpPath={signUpPath} />
-          <CTASection content={content.cta} signUpPath={signUpPath} />
+          <TestimonialsSection content={content.testimonials} />
+          <PricingSection content={content.pricing} signUpPath={signUpPath} />
+          <FaqSection content={content.faq} />
+          <CtaSection content={content.cta} signUpPath={signUpPath} />
+          <Footer content={content.footer} />
         </main>
       ) : (
-        <main className="min-h-[70vh] px-6 pb-24 pt-10 sm:px-8">
-          {isProtectedRoute ? (
+        <main className="min-h-[70vh] px-6 pb-24 pt-28 sm:px-8">
+          {isProtectedRoute && (
             <DashboardShell
               title={getDashboardTitle(routeKey)}
               currentPath={currentDashboardPath}
@@ -248,488 +225,582 @@ export function App() {
               onNavigate={navigateTo}
               onSignIn={handleSignInClick}
             >
-              {routeKey === 'dashboard' ? <DashboardPage /> : null}
-              {routeKey === 'apiKeys' ? <ApiKeysPage /> : null}
-              {routeKey === 'uploads' ? <UploadsPage /> : null}
-              {routeKey === 'usage' ? <UsagePage /> : null}
-              {routeKey === 'memoryPolicy' ? <MemoryPolicyPage /> : null}
-              {routeKey === 'profile' ? <ProfilePage /> : null}
+              {routeKey === 'dashboard' && <DashboardPage />}
+              {routeKey === 'apiKeys' && <ApiKeysPage />}
+              {routeKey === 'uploads' && <UploadsPage />}
+              {routeKey === 'usage' && <UsagePage />}
+              {routeKey === 'memoryPolicy' && <MemoryPolicyPage />}
+              {routeKey === 'profile' && <ProfilePage />}
             </DashboardShell>
-          ) : null}
-          {routeKey === 'signIn' ? (
+          )}
+          {routeKey === 'signIn' && (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
-              <SignInPage
-                signUpPath={signUpPath}
-                passwordResetPath={passwordResetPath}
-                dashboardPath={dashboardPath}
-                onNavigate={navigateTo}
-              />
+              <SignInPage signUpPath={signUpPath} passwordResetPath={passwordResetPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
             </div>
-          ) : null}
-          {routeKey === 'signUp' ? (
+          )}
+          {routeKey === 'signUp' && (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
               <SignUpPage signInPath={signInPath} dashboardPath={dashboardPath} onNavigate={navigateTo} />
             </div>
-          ) : null}
-          {routeKey === 'passwordReset' ? (
+          )}
+          {routeKey === 'passwordReset' && (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
               <PasswordResetPage signInPath={signInPath} onNavigate={navigateTo} />
             </div>
-          ) : null}
+          )}
         </main>
       )}
-
-      <Footer content={content.footer} />
     </div>
   )
 }
 
-function BackgroundOrbs() {
-  return (
-    <div className="pointer-events-none absolute inset-0 -z-10">
-      <div className="hero-surface absolute inset-0" />
-      <div className="grid-overlay absolute inset-0" />
-      <div className="absolute -top-24 left-0 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle_at_center,rgba(15,139,118,0.25),transparent_70%)] blur-2xl" />
-      <div className="absolute right-[-120px] top-32 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(243,106,61,0.28),transparent_70%)] blur-2xl" />
-    </div>
-  )
-}
+// ============ SECTIONS ============
 
-function HeroSection({ content, signUpPath }: HeroSectionProps) {
+function HeroSection({ content, signUpPath }: { content: HeroContent; signUpPath: string }) {
+  const containerRef = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start']
+  })
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+
   return (
-    <section id="product" className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="flex flex-col gap-6">
-        <div
-          className="flex flex-wrap items-center gap-3 animate-rise"
-          style={{ animationDelay: '60ms' }}
-        >
-          <Chip className="bg-white/80 text-xs font-semibold uppercase tracking-[0.25em] text-ink">
-            {content.badge}
-          </Chip>
-          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-muted">
-            {content.badgeDetail}
+    <section ref={containerRef} className="hero">
+      <motion.div style={{ y, opacity }}>
+        <div className="hero-eyebrow">{content.badge}</div>
+
+        <h1 className="hero-title">
+          <span className="line">
+            <span className="word">{content.titleLine1}</span>
           </span>
-        </div>
-        <div className="space-y-4 animate-rise" style={{ animationDelay: '140ms' }}>
-          <h1 className="text-4xl font-semibold sm:text-5xl lg:text-6xl">{content.title}</h1>
-          <p className="max-w-xl text-base text-muted sm:text-lg">{content.description}</p>
-        </div>
-        <div className="flex flex-wrap gap-3 animate-rise" style={{ animationDelay: '220ms' }}>
-          <Button as="a" href={signUpPath} className="bg-accent text-white shadow-glow" radius="full">
+          <span className="line">
+            <span className="word">
+              {content.titleLine2.split(' ').map((word, i) => (
+                <span key={i}>
+                  {i === content.titleLine2.split(' ').length - 1 ? (
+                    <span className="hero-accent">{word}</span>
+                  ) : (
+                    word + ' '
+                  )}
+                </span>
+              ))}
+            </span>
+          </span>
+        </h1>
+
+        <p className="hero-description">{content.description}</p>
+
+        <motion.div
+          className="flex gap-4 mt-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+        >
+          <a href={signUpPath} className="btn-primary">
             {content.primaryCta}
-          </Button>
-          <Button
-            as="a"
-            href="mailto:hello@omnimemory.ai"
-            className="border border-ink/20 text-ink"
-            radius="full"
-            variant="bordered"
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </a>
+          <a href="#developers" className="btn-secondary">
+            {content.secondaryCta}
+          </a>
+        </motion.div>
+      </motion.div>
+
+      {/* Floating Memory Fragments */}
+      <div className="memory-fragments">
+        <motion.div
+          className="fragment fragment-1"
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <span className="font-mono text-xs text-vermillion">TEXT</span>
+          <p className="mt-1 text-ink-muted">User prefers concise responses</p>
+        </motion.div>
+        <motion.div
+          className="fragment fragment-2"
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+        >
+          <span className="font-mono text-xs text-gold">AUDIO</span>
+          <p className="mt-1 text-ink-muted">Meeting context captured</p>
+        </motion.div>
+        <motion.div
+          className="fragment fragment-3"
+          animate={{ y: [0, -12, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        >
+          <span className="font-mono text-xs text-petrol">EVENT</span>
+          <p className="mt-1 text-ink-muted">Project milestone reached</p>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+function MarqueeSection() {
+  const items = ['Text', 'Audio', 'Images', 'Events', 'Conversations', 'Documents', 'Memories']
+
+  return (
+    <div className="marquee-wrap">
+      <div className="marquee">
+        {[...items, ...items].map((item, i) => (
+          <span key={i} className="marquee-item">
+            {item}<span className="dot" />
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StatsSection({ content }: { content: StatsContent }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <section className="py-section">
+      <div className="container">
+        <motion.div
+          ref={ref}
+          className="stats-grid"
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+        >
+          {content.items.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: i * 0.1, duration: 0.6 }}
+            >
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-label">{stat.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+function FeaturesSection({ content }: { content: FeaturesSectionContent }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <section id="features" className="py-section">
+      <div className="container">
+        <div className="section-number">01</div>
+
+        <motion.div
+          ref={ref}
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+        >
+          <span className="section-label">{content.eyebrow}</span>
+          <h2 className="mt-6 mb-4 max-w-2xl">{content.title}</h2>
+          <p className="text-ink-muted text-lg max-w-xl mb-16">{content.description}</p>
+        </motion.div>
+
+        <div className="bento-grid">
+          {content.items.map((feature, i) => (
+            <motion.div
+              key={feature.title}
+              className={`bento-card ${i === 0 ? 'bento-large' : 'bento-small'}`}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+            >
+              <div className="bento-icon">{feature.icon}</div>
+              <div className="font-mono text-xs text-vermillion mb-2">{feature.tag}</div>
+              <h3 className="bento-title">{feature.title}</h3>
+              <p className="bento-description">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HowItWorksSection({ content }: { content: HowItWorksContent }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <section id="how-it-works" className="py-section bg-ivory-dark/30">
+      <div className="container">
+        <div className="section-number">02</div>
+
+        <div className="grid lg:grid-cols-2 gap-16 items-start">
+          <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="section-label">{content.eyebrow}</span>
+            <h2 className="mt-6 mb-4">{content.title}</h2>
+            <p className="text-ink-muted text-lg max-w-md">{content.description}</p>
+          </motion.div>
+
+          <div className="process-timeline">
+            {content.steps.map((step, i) => (
+              <motion.div
+                key={step.title}
+                className="process-step"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+              >
+                <div className="process-number">0{i + 1}</div>
+                <h3 className="process-title">{step.title}</h3>
+                <p className="process-description">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; signUpPath: string }) {
+  return (
+    <section id="developers" className="split-section">
+      <div className="split-left">
+        <div className="section-number" style={{ color: 'rgba(252, 250, 245, 0.05)' }}>03</div>
+        <span className="section-label" style={{ color: 'rgba(252, 250, 245, 0.5)' }}>
+          <span style={{ background: 'rgb(var(--gold))', width: 24, height: 1, display: 'inline-block', marginRight: '1rem' }} />
+          {content.eyebrow}
+        </span>
+        <h2 className="mt-6 mb-6" style={{ color: 'rgb(var(--ivory))' }}>{content.title}</h2>
+        <p className="text-lg mb-10" style={{ color: 'rgba(252, 250, 245, 0.6)' }}>{content.description}</p>
+        <div className="flex gap-4">
+          <a href={signUpPath} className="btn-primary" style={{ background: 'rgb(var(--vermillion))' }}>
+            {content.primaryCta}
+          </a>
+          <a
+            href="#"
+            className="btn-secondary"
+            style={{ borderColor: 'rgba(252, 250, 245, 0.2)', color: 'rgb(var(--ivory))' }}
           >
             {content.secondaryCta}
-          </Button>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3 animate-rise" style={{ animationDelay: '300ms' }}>
-          {content.stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-ink/10 bg-white/70 px-4 py-3">
-              <p className="text-2xl font-semibold text-ink">{stat.value}</p>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">{stat.label}</p>
-            </div>
-          ))}
+          </a>
         </div>
       </div>
-      <div className="animate-rise" style={{ animationDelay: '180ms' }}>
-        <VideoDemoFlashcards label={content.demoFlashcardsLabel} cards={content.demoFlashcards} />
-      </div>
-    </section>
-  )
-}
 
-function VideoDemoFlashcards({ label, cards }: VideoDemoFlashcardsProps) {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Chip className="bg-white/85 text-xs font-semibold uppercase tracking-[0.25em] text-ink sm:col-span-2">
-        {label}
-      </Chip>
-      {cards.map((card) => (
-        <Card key={card.title} className="memory-card overflow-hidden">
-          <CardBody className="gap-3">
-            <div className={`relative h-32 rounded-xl bg-gradient-to-br ${card.gradient}`}>
-              <div className="absolute inset-0 flex items-end gap-[6px] px-4 pb-3">
-                {card.waveform.map((value, index) => (
-                  <span
-                    key={`${card.title}-${index}`}
-                    style={{ height: `${value}%` }}
-                    className="flex-1 rounded-full bg-white/70 shadow-glow"
-                  />
-                ))}
-              </div>
-              <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-ink/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white">
-                  {card.marker}
-                </span>
-                <span className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink">
-                  {card.timestamp}
-                </span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-ink">{card.title}</p>
-              <p className="text-xs text-muted">{card.caption}</p>
-              <div className="flex flex-wrap gap-2">
-                {card.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-ink/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink/70"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
-function LogoCloud({ content }: LogoCloudProps) {
-  return (
-    <section className="py-12">
-      <div className="flex flex-col gap-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">{content.label}</p>
-        <div className="flex flex-wrap gap-4">
-          {content.logos.map((logo) => (
-            <span
-              key={logo}
-              className="rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink"
-            >
-              {logo}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function FeatureGrid({ content }: FeatureGridProps) {
-  return (
-    <section id="features" className="py-12">
-      <div className="grid gap-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-          <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">{content.description}</p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {content.items.map((feature) => (
-            <Card key={feature.title} className="glass-panel">
-              <CardHeader className="flex flex-col items-start gap-3">
-                <Chip className="bg-accent/10 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                  {feature.pill}
-                </Chip>
-                <h3 className="text-xl font-semibold">{feature.title}</h3>
-              </CardHeader>
-              <CardBody className="text-sm text-muted sm:text-base">{feature.description}</CardBody>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function ModelTabs({ content }: ModelTabsProps) {
-  return (
-    <section id="modalities" className="py-12">
-      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-          <p className="mt-3 text-base text-muted sm:text-lg">{content.description}</p>
-        </div>
-        <Card className="glass-panel">
-          <CardBody>
-            <Tabs aria-label={content.ariaLabel} variant="light" className="w-full">
-              {content.items.map((modality) => (
-                <Tab key={modality.title} title={modality.title}>
-                  <div className="space-y-3 pt-4">
-                    <p className="text-sm text-muted sm:text-base">{modality.description}</p>
-                    <ul className="space-y-2 text-sm text-ink">
-                      {modality.bullets.map((bullet) => (
-                        <li key={bullet} className="flex items-center gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                          {bullet}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </Tab>
-              ))}
-            </Tabs>
-          </CardBody>
-        </Card>
-      </div>
-    </section>
-  )
-}
-
-function StepsSection({ content }: StepsSectionProps) {
-  return (
-    <section id="how-it-works" className="py-12">
-      <div className="grid gap-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {content.items.map((step) => (
-            <Card key={step.title} className="glass-panel">
-              <CardHeader className="flex flex-col items-start gap-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                  {step.step}
-                </span>
-                <h3 className="text-xl font-semibold">{step.title}</h3>
-              </CardHeader>
-              <CardBody className="text-sm text-muted sm:text-base">{step.description}</CardBody>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function UseCases({ content }: UseCasesProps) {
-  return (
-    <section id="use-cases" className="py-12">
-      <div className="grid gap-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {content.items.map((useCase) => (
-            <Card key={useCase.title} className="glass-panel">
-              <CardHeader className="flex flex-col items-start gap-3">
-                <h3 className="text-xl font-semibold">{useCase.title}</h3>
-                <p className="text-sm text-muted">{useCase.description}</p>
-              </CardHeader>
-              <CardBody>
-                <ul className="space-y-2 text-sm text-ink">
-                  {useCase.bullets.map((bullet) => (
-                    <li key={bullet} className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent2" />
-                      {bullet}
-                    </li>
-                  ))}
-                </ul>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function DeveloperSection({ content, signUpPath }: DeveloperSectionProps) {
-  return (
-    <section id="developers" className="py-12">
-      <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-          <p className="text-base text-muted sm:text-lg">{content.description}</p>
-          <div className="flex flex-wrap gap-3">
-            <Button as="a" href={signUpPath} className="bg-accent text-white" radius="full">
-              {content.primaryCta}
-            </Button>
-            <Button as="a" href="mailto:hello@omnimemory.ai" variant="bordered" radius="full">
-              {content.secondaryCta}
-            </Button>
+      <div className="split-right">
+        <div className="code-editor">
+          <div className="code-editor-header">
+            <div className="code-editor-dot" />
+            <div className="code-editor-dot" />
+            <div className="code-editor-dot" />
           </div>
-        </div>
-        <Card className="code-surface">
-          <CardBody>
-            <pre className="overflow-x-auto text-sm text-ink">
-              <code>{content.codeSample}</code>
+          <div className="code-editor-body">
+            <pre>
+              <code dangerouslySetInnerHTML={{ __html: highlightCode(content.code) }} />
             </pre>
-          </CardBody>
-        </Card>
-      </div>
-    </section>
-  )
-}
-
-function SecuritySection({ content }: SecuritySectionProps) {
-  return (
-    <section id="security" className="py-12">
-      <div className="grid gap-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {content.items.map((item) => (
-            <Card key={item.title} className="glass-panel">
-              <CardHeader className="flex flex-col items-start gap-2">
-                <h3 className="text-lg font-semibold">{item.title}</h3>
-              </CardHeader>
-              <CardBody className="text-sm text-muted sm:text-base">{item.description}</CardBody>
-            </Card>
-          ))}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function PlansSection({ content, signUpPath }: PlansSectionProps) {
-  return (
-    <section id="pricing" className="py-12">
-      <div className="grid gap-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-          <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">{content.description}</p>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {content.plans.map((plan) => (
-            <Card key={plan.title} className="glass-panel h-full">
-              <CardHeader className="flex flex-col items-start gap-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                  {plan.badge}
-                </p>
-                <h3 className="text-xl font-semibold">{plan.title}</h3>
-                <p className="text-3xl font-semibold text-ink">{plan.price}</p>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted">{plan.caption}</p>
-              </CardHeader>
-              <CardBody className="flex flex-col gap-4">
-                <ul className="space-y-2 text-sm text-ink">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                  <Button
-                    as="a"
-                    href={signUpPath}
-                    className="mt-auto bg-accent text-white"
-                    radius="full"
-                  >
-                    {plan.cta}
-                  </Button>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+function TestimonialsSection({ content }: { content: TestimonialsContent }) {
+  const [activeIndex, setActiveIndex] = useState(0)
 
-function CTASection({ content, signUpPath }: CTASectionProps) {
   return (
-    <section className="py-16">
-      <Card className="glass-panel">
-        <CardBody className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
-          <div className="space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-              {content.eyebrow}
-            </p>
-            <h2 className="text-3xl font-semibold sm:text-4xl">{content.title}</h2>
-            <p className="text-base text-muted sm:text-lg">{content.description}</p>
+    <section id="testimonials" className="py-section">
+      <div className="container">
+        <div className="section-number">04</div>
+
+        <span className="section-label">{content.eyebrow}</span>
+        <h2 className="mt-6 mb-16 max-w-2xl">{content.title}</h2>
+
+        <div className="testimonial-editorial">
+          <motion.p
+            key={activeIndex}
+            className="testimonial-quote"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            {content.items[activeIndex].quote}
+          </motion.p>
+
+          <motion.div
+            key={`author-${activeIndex}`}
+            className="testimonial-author"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="testimonial-avatar">
+              {content.items[activeIndex].name[0]}
             </div>
-            <div className="flex flex-wrap gap-3 lg:justify-end">
-              <Button as="a" href={signUpPath} className="bg-accent text-white" radius="full">
-                {content.primaryCta}
-              </Button>
-            <Button as="a" href="#developers" variant="bordered" radius="full">
-              {content.secondaryCta}
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+            <div className="testimonial-info">
+              <div className="testimonial-name">{content.items[activeIndex].name}</div>
+              <div className="testimonial-title">{content.items[activeIndex].title}</div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="flex gap-4 mt-12">
+          {content.items.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className="w-12 h-1 rounded-full transition-all"
+              style={{
+                background: i === activeIndex ? 'rgb(var(--vermillion))' : 'rgb(var(--ink) / 0.1)',
+              }}
+            />
+          ))}
+        </div>
+      </div>
     </section>
   )
 }
 
-function SectionFallback({ label }: SectionFallbackProps) {
+function PricingSection({ content, signUpPath }: { content: PricingContent; signUpPath: string }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
   return (
-    <div className="my-12 rounded-3xl border border-ink/10 bg-white/70 px-6 py-8 text-sm text-muted">
-      {label}
-    </div>
+    <section id="pricing" className="py-section bg-ivory-dark/30">
+      <div className="container">
+        <div className="section-number">05</div>
+
+        <motion.div
+          ref={ref}
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+        >
+          <span className="section-label">{content.eyebrow}</span>
+          <h2 className="mt-6 mb-4">{content.title}</h2>
+          <p className="text-ink-muted text-lg">{content.description}</p>
+        </motion.div>
+
+        <div className="pricing-grid">
+          {content.plans.map((plan, i) => (
+            <motion.div
+              key={plan.name}
+              className={`pricing-card ${i === 1 ? 'featured' : ''}`}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+            >
+              <div className="pricing-badge">{plan.badge}</div>
+              <h3 className="pricing-name">{plan.name}</h3>
+              <div className="pricing-price">{plan.price}</div>
+              <div className="pricing-period">{plan.period}</div>
+
+              <div className="pricing-features">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="pricing-feature">{feature}</div>
+                ))}
+              </div>
+
+              <a
+                href={signUpPath}
+                className={i === 1 ? 'btn-primary w-full justify-center' : 'btn-secondary w-full justify-center'}
+                style={i === 1 ? { background: 'rgb(var(--vermillion))' } : {}}
+              >
+                {plan.cta}
+              </a>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
-function Footer({ content }: FooterProps) {
+function FaqSection({ content }: { content: FaqContent }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
   return (
-    <footer className="border-t border-ink/10 bg-white/70">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <LogoMark />
+    <section id="faq" className="py-section">
+      <div className="container">
+        <div className="section-number">06</div>
+
+        <div className="grid lg:grid-cols-2 gap-16">
           <div>
-            <p className="text-sm font-semibold">{content.brandName}</p>
-            <p className="text-xs text-muted">{content.brandSubtitle}</p>
+            <span className="section-label">{content.eyebrow}</span>
+            <h2 className="mt-6 mb-4">{content.title}</h2>
+            <p className="text-ink-muted text-lg">{content.description}</p>
+          </div>
+
+          <div>
+            {content.items.map((item, i) => (
+              <div key={item.question} className="faq-item" data-open={openIndex === i}>
+                <button
+                  className="faq-trigger"
+                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                >
+                  <span>{item.question}</span>
+                  <span className="faq-icon" />
+                </button>
+                {openIndex === i && (
+                  <motion.div
+                    className="faq-content"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {item.answer}
+                  </motion.div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.2em] text-muted">
-          {content.links.map((link) => (
-            <a key={link.label} href={link.href} className="hover:text-ink">
-              {link.label}
+      </div>
+    </section>
+  )
+}
+
+function CtaSection({ content, signUpPath }: { content: CtaContent; signUpPath: string }) {
+  return (
+    <section className="cta-section">
+      <div className="container relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="cta-title">{content.title}</h2>
+          <p className="cta-description">{content.description}</p>
+
+          <div className="flex gap-4 mt-10">
+            <a
+              href={signUpPath}
+              className="btn-primary"
+              style={{ background: 'rgb(var(--vermillion))' }}
+            >
+              {content.primaryCta}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </a>
-          ))}
+            <a
+              href="#developers"
+              className="btn-secondary"
+              style={{ borderColor: 'rgba(252, 250, 245, 0.2)', color: 'rgb(var(--ivory))' }}
+            >
+              {content.secondaryCta}
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+function Footer({ content }: { content: FooterContent }) {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-grid">
+          <div>
+            <div className="footer-brand">{content.brandName}</div>
+            <p className="footer-tagline">{content.tagline}</p>
+          </div>
+
+          <div>
+            <div className="footer-heading">Product</div>
+            {content.links.slice(0, 2).map((link) => (
+              <a key={link.label} href={link.href} className="footer-link">
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <div>
+            <div className="footer-heading">Resources</div>
+            {content.links.slice(2).map((link) => (
+              <a key={link.label} href={link.href} className="footer-link">
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <div>
+            <div className="footer-heading">Company</div>
+            <a href="#" className="footer-link">About</a>
+            <a href="#" className="footer-link">Blog</a>
+            <a href="#" className="footer-link">Careers</a>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <span>{content.copyright}</span>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-vermillion transition-colors">Privacy</a>
+            <a href="#" className="hover:text-vermillion transition-colors">Terms</a>
+          </div>
         </div>
       </div>
     </footer>
   )
 }
 
+// ============ COMPONENTS ============
+
 function LogoMark() {
   return (
-    <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-ink/10 bg-white/80">
-      <span className="absolute h-6 w-6 rounded-full bg-accent/70" />
-      <span className="absolute h-4 w-4 rounded-full bg-accent2/80" />
-      <span className="relative text-xs font-semibold text-white">omni</span>
+    <div className="logo-mark">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#logo-gradient)" />
+        <circle cx="16" cy="16" r="6" fill="rgb(252, 250, 245)" />
+        <circle cx="16" cy="16" r="3" fill="url(#logo-gradient)" />
+        <defs>
+          <linearGradient id="logo-gradient" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#e84132" />
+            <stop offset="1" stopColor="#d4af37" />
+          </linearGradient>
+        </defs>
+      </svg>
     </div>
   )
 }
 
-function getLocaleFromPathname({ pathname }: LocalePathnameProps): Locale | null {
+function highlightCode(code: string): string {
+  return code
+    .replace(/(import|from|const|await|new|async)/g, '<span class="keyword">$1</span>')
+    .replace(/('.*?')/g, '<span class="string">$1</span>')
+    .replace(/(OmniMemory|memory)/g, '<span class="function">$1</span>')
+    .replace(/(apiKey|userId|modality|content|metadata|query|limit):/g, '<span class="property">$1</span>:')
+    .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
+}
+
+// ============ UTILITIES ============
+
+function getLocaleFromPathname({ pathname }: { pathname: string }): Locale | null {
   const segment = pathname.split('/').filter(Boolean)[0]
   if (!segment) return null
   if (SUPPORTED_LOCALES.includes(segment as Locale)) return segment as Locale
   return null
 }
 
-function buildLocalePathname({ pathname, locale }: BuildLocalePathnameProps): string {
+function buildLocalePathname({ pathname }: { pathname: string; locale: Locale }): string {
   return pathname
 }
 
-function updateLocalePath({ locale, method }: UpdateLocalePathProps) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-}
-
-function getRouteFromPathname({ pathname }: RoutePathnameProps): RouteKey {
+function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
   const strippedPath = stripLocaleFromPathname({ pathname })
   if (strippedPath.startsWith(ROUTE_PATHS.apiKeys)) return 'apiKeys'
   if (strippedPath.startsWith(ROUTE_PATHS.uploads)) return 'uploads'
@@ -743,7 +814,7 @@ function getRouteFromPathname({ pathname }: RoutePathnameProps): RouteKey {
   return 'marketing'
 }
 
-function stripLocaleFromPathname({ pathname }: RoutePathnameProps) {
+function stripLocaleFromPathname({ pathname }: { pathname: string }) {
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return '/'
   const [firstSegment, ...rest] = segments
@@ -760,945 +831,30 @@ function getBrowserPathname() {
 
 function getDashboardTitle(routeKey: RouteKey) {
   switch (routeKey) {
-    case 'apiKeys':
-      return 'API Key'
-    case 'uploads':
-      return '上传任务'
-    case 'usage':
-      return '用量'
-    case 'memoryPolicy':
-      return '通用设置'
-    case 'profile':
-      return '个人资料'
-    default:
-      return '个人空间概览'
+    case 'apiKeys': return 'API Key'
+    case 'uploads': return '上传任务'
+    case 'usage': return '用量'
+    case 'memoryPolicy': return '通用设置'
+    case 'profile': return '个人资料'
+    default: return '个人空间概览'
   }
 }
 
 function getPreferredLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
-
   const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
   if (pathLocale) return pathLocale
-
   return 'zh'
 }
 
-function getNextLocale({ currentLocale }: GetNextLocaleProps): Locale {
-  if (currentLocale === 'en') return 'zh'
-  return 'en'
+function getNextLocale({ currentLocale }: { currentLocale: Locale }): Locale {
+  return currentLocale === 'en' ? 'zh' : 'en'
 }
 
-const codeSample = `import { OmniMemory } from '@omni/memory'
-
-const memory = new OmniMemory({
-  apiKey: process.env.OMNI_MEMORY_KEY,
-})
-
-await memory.write({
-  userId: 'user_1287',
-  modality: 'audio',
-  content: transcript,
-  metadata: {
-    account: 'northwind',
-    sentiment: 'positive',
-  },
-})
-
-const recall = await memory.search({
-  userId: 'user_1287',
-  query: 'renewal concerns',
-  limit: 6,
-})
-`
+// ============ CONSTANTS ============
 
 const LOCALE_STORAGE_KEY = 'omni-memory-locale'
 const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
-
-const contentByLocale: ContentByLocale = {
-  en: {
-    navbar: {
-      brandName: 'omni memory',
-      brandSubtitle: 'multi-model memory service',
-      navLinks: [
-        { label: 'Product', href: '#product' },
-        { label: 'Features', href: '#features' },
-        { label: 'How it works', href: '#how-it-works' },
-        { label: 'Developers', href: '#developers' },
-        { label: 'Security', href: '#security' },
-        { label: 'Pricing', href: '#pricing' },
-      ],
-      ctaLabel: 'Start building',
-      toggleLabel: '中文',
-      toggleAriaLabel: 'Switch to Chinese',
-    },
-    hero: {
-      badge: 'New release',
-      badgeDetail: 'Multimodal memory system',
-      title: 'Agents live in moments. We give them experience.',
-      description:
-        'Omni Memory is a multimodal memory system that enables AI to understand people beyond prompts, powering deeply personalized AI that evolves with human context over time.',
-      primaryCta: 'Start building',
-      secondaryCta: 'Book a demo',
-      stats: [
-        { value: '15B', label: 'memories indexed' },
-        { value: '500ms', label: 'p95 recall' },
-        { value: '99.99%', label: 'uptime SLA' },
-      ],
-      demoFlashcardsLabel: 'Video understanding demo',
-      demoFlashcards: [
-        {
-          title: 'Understands what is on screen',
-          caption:
-            'Tracks the runner, stroller, and skyline so the clip becomes a memory with context.',
-          timestamp: '00:12-00:18',
-          marker: 'Scene change',
-          tags: ['Visual caption', 'Objects tagged', 'Mood: calm'],
-          waveform: [18, 32, 58, 74, 62, 48, 68, 36, 22, 40],
-          gradient: 'from-accent/20 via-white to-ink/5',
-        },
-        {
-          title: 'Understands actions and intent',
-          caption: 'Detects the handshake, luggage pickup, and the host moving toward the guest.',
-          timestamp: '00:41-00:49',
-          marker: 'Action focus',
-          tags: ['Action: greeting', 'Intent: arrival', 'Tone: upbeat'],
-          waveform: [28, 64, 72, 46, 55, 68, 62, 38, 30, 44],
-          gradient: 'from-accent2/20 via-white to-ink/5',
-        },
-        {
-          title: 'Writes a living memory',
-          caption: 'Summarizes the clip and links it to prior visits and preferences automatically.',
-          timestamp: '01:12-01:20',
-          marker: 'Story node',
-          tags: ['Summary ready', 'Face matched', 'Preference linked'],
-          waveform: [22, 30, 44, 62, 78, 66, 50, 58, 34, 26],
-          gradient: 'from-ink/5 via-white to-accent/20',
-        },
-      ],
-    },
-    logoCloud: {
-      label: 'Trusted by memory-first teams',
-      logos: ['Atlas Robotics', 'Northwind', 'Signalwave', 'Aurora Labs', 'Harbor AI', 'Mosaic Health'],
-    },
-    features: {
-      eyebrow: 'Memory platform',
-      title: 'A memory fabric designed for multi-model AI',
-      description:
-        'Omni Memory orchestrates storage, enrichment, and retrieval so your agents can learn from every interaction without drowning in data.',
-      items: [
-        {
-          pill: 'Recall engine',
-          title: 'Context that stays fresh',
-          description:
-            'Hybrid vector and symbolic retrieval keeps the right memories at the surface, with decay curves and freshness scoring.',
-        },
-        {
-          pill: 'Policy-aware',
-          title: 'Fine-grained governance',
-          description:
-            'Scope by tenant, role, and sensitivity labels. Every memory is filtered before it reaches the model.',
-        },
-        {
-          pill: 'Knowledge graph',
-          title: 'Memory relationships at scale',
-          description:
-            'Entity graphs connect people, projects, and intents so recall spans conversations, docs, and files.',
-        },
-        {
-          pill: 'Observability',
-          title: 'Measure recall quality',
-          description:
-            'Inspect how memories influenced output, tune ranking with feedback loops, and audit usage.',
-        },
-      ],
-    },
-    modalities: {
-      eyebrow: 'Modalities',
-      title: 'Every input becomes memory, not noise',
-      description:
-        'Normalize multi-modal data into a single timeline. Every write is enriched with intent, entity, and urgency signals.',
-      ariaLabel: 'Memory modalities',
-      items: [
-        {
-          title: 'Text',
-          description:
-            'Streams from chat, docs, and notes are summarized and stored in long-term memory.',
-          bullets: ['Entity extraction', 'Intent tagging', 'Automatic summarization'],
-        },
-        {
-          title: 'Audio',
-          description:
-            'Voice memory layers preserve tone and decisions for support, sales, and care teams.',
-          bullets: ['Speaker diarization', 'Highlights and action items', 'Sentiment signals'],
-        },
-        {
-          title: 'Images',
-          description:
-            'Screenshots and diagrams become searchable context with rich annotations.',
-          bullets: ['Visual captioning', 'Object and layout cues', 'Versioned snapshots'],
-        },
-        {
-          title: 'Events',
-          description:
-            'Product usage and telemetry are rolled into memory for personalized experiences.',
-          bullets: ['Session timelines', 'Behavioral triggers', 'Retention scoring'],
-        },
-      ],
-    },
-    steps: {
-      eyebrow: 'How it works',
-      title: 'From ingestion to recall in three steps',
-      items: [
-        {
-          step: 'Step 01',
-          title: 'Ingest anything',
-          description:
-            'Stream conversations, files, events, and embeddings into Omni Memory in real time.',
-        },
-        {
-          step: 'Step 02',
-          title: 'Enrich and score',
-          description: 'We classify, dedupe, and apply decay to keep recall fresh and relevant.',
-        },
-        {
-          step: 'Step 03',
-          title: 'Retrieve with policy',
-          description:
-            'Query by user, intent, and time horizon to deliver the right context instantly.',
-        },
-      ],
-    },
-    useCases: {
-      eyebrow: 'Use cases',
-      title: 'Built for teams shipping memory-first experiences',
-      items: [
-        {
-          title: 'Agentic copilots',
-          description: 'Give agents continuity across sessions and channels.',
-          bullets: ['Long-lived memory', 'Cross-tool grounding', 'Persona consistency'],
-        },
-        {
-          title: 'Customer support',
-          description: 'Resolve issues faster with a shared memory graph across teams.',
-          bullets: ['Account timelines', 'Policy-safe recall', 'Fewer escalations'],
-        },
-        {
-          title: 'Enterprise knowledge',
-          description: 'Connect knowledge sources into one memory layer.',
-          bullets: ['Doc + chat fusion', 'Role-aware access', 'Adaptive summarization'],
-        },
-        {
-          title: 'Personalization',
-          description: 'Remember preferences without storing raw PII.',
-          bullets: ['Preference embeddings', 'Privacy controls', 'Predictive insights'],
-        },
-      ],
-    },
-    developers: {
-      eyebrow: 'Developers',
-      title: 'Memory in minutes, not quarters',
-      description:
-        'Drop in the Omni Memory SDK and start writing memories with structured metadata. Query with filters, decay curves, and safety rails in one call.',
-      primaryCta: 'View SDKs',
-      secondaryCta: 'Talk to engineering',
-      codeSample,
-    },
-    security: {
-      eyebrow: 'Security',
-      title: 'Governance, privacy, and control in every recall',
-      items: [
-        {
-          title: 'SOC 2 Type II ready',
-          description: 'Enterprise controls, audit trails, and encryption at rest and in transit.',
-        },
-        {
-          title: 'Data residency controls',
-          description: 'Pin memory storage to your region with configurable retention windows.',
-        },
-        {
-          title: 'Consent and redaction',
-          description: 'Automated PII redaction and consent metadata per memory record.',
-        },
-      ],
-    },
-    pricing: {
-      eyebrow: 'Pricing',
-      title: 'Plans that scale with your memory',
-      description:
-        'Start free, then upgrade as your memory footprint grows. Usage-based pricing keeps costs predictable as you scale.',
-      plans: [
-        {
-          badge: 'Starter',
-          title: 'Build',
-          price: 'Free',
-          caption: 'Up to 2M memories',
-          cta: 'Create account',
-          features: ['Multi-model memory API', 'Community support', 'Basic analytics'],
-        },
-        {
-          badge: 'Growth',
-          title: 'Scale',
-          price: '$499 / mo',
-          caption: 'Up to 50M memories',
-          cta: 'Talk to sales',
-          features: ['Policy filters', 'Priority recall caches', 'Advanced observability'],
-        },
-        {
-          badge: 'Enterprise',
-          title: 'Govern',
-          price: 'Custom',
-          caption: 'Unlimited memories',
-          cta: 'Schedule workshop',
-          features: ['Dedicated VPC', 'Data residency', 'Custom SLAs'],
-        },
-      ],
-    },
-    cta: {
-      eyebrow: 'Ready',
-      title: 'Give every model the memory it deserves',
-      description:
-        'Launch faster, ground agents in real context, and make your AI experiences feel human.',
-      primaryCta: 'Start a pilot',
-      secondaryCta: 'Explore docs',
-    },
-    footer: {
-      brandName: 'omni memory',
-      brandSubtitle: 'Memory infrastructure for every model',
-      links: [
-        { label: 'Product', href: '#product' },
-        { label: 'Developers', href: '#developers' },
-        { label: 'Security', href: '#security' },
-        { label: 'FAQ', href: '#faq' },
-      ],
-    },
-    testimonials: {
-      eyebrow: 'Memory in the wild',
-      title: 'Teams ship calmer, smarter AI with Omni Memory',
-      description:
-        'From real-time copilots to enterprise knowledge graphs, Omni Memory keeps every model in sync with the context that matters most.',
-      items: [
-        {
-          name: 'Mira Patel',
-          title: 'Director of AI, Atlas Robotics',
-          quote:
-            'We replaced three internal services with Omni Memory. Our agent latency dropped by 38 percent and recall quality went up immediately.',
-        },
-        {
-          name: 'Jordan Lee',
-          title: 'VP Product, Northwind Health',
-          quote:
-            'Omni Memory gave us a single memory layer across voice and chat. Our nurses trust the assistant because it finally remembers context.',
-        },
-        {
-          name: 'Aria Flores',
-          title: 'Founder, Signalwave',
-          quote:
-            'The policy controls are the real win. We can gate memory by project, user, and sensitivity without custom infra.',
-        },
-      ],
-    },
-    faq: {
-      eyebrow: 'FAQ',
-      title: 'Everything you need to know about Omni Memory',
-      description:
-        'Clear answers for product, security, and data governance. Need more detail? Our team will walk you through the architecture.',
-      items: [
-        {
-          title: 'How does omni memory support multiple models?',
-          description:
-            'Omni Memory normalizes embeddings, metadata, and policies across providers. You can write once and retrieve across GPT, Claude, Gemini, or custom models.',
-        },
-        {
-          title: 'What types of data can be stored?',
-          description:
-            'Text, audio transcripts, images with extracted captions, and structured events are all supported. Memory chunks are enriched with entity, intent, and timeline signals.',
-        },
-        {
-          title: 'Can we control retention and access?',
-          description:
-            'Yes. Set TTLs, per-tenant scopes, and sensitivity labels. Retrieval respects your policy filters before ranking results.',
-        },
-        {
-          title: 'How is latency kept low?',
-          description:
-            'We use multi-region recall caches, streaming updates, and hybrid vector plus symbolic retrieval to keep p95 recall under 500ms.',
-        },
-      ],
-    },
-    fallbacks: {
-      stories: 'Loading stories',
-      answers: 'Loading answers',
-    },
-  },
-  zh: {
-    navbar: {
-      brandName: 'omni memory',
-      brandSubtitle: '多模态记忆服务',
-      navLinks: [
-        { label: '产品', href: '#product' },
-        { label: '功能', href: '#features' },
-        { label: '工作原理', href: '#how-it-works' },
-        { label: '开发者', href: '#developers' },
-        { label: '安全', href: '#security' },
-        { label: '价格', href: '#pricing' },
-      ],
-      ctaLabel: '开始构建',
-      toggleLabel: 'EN',
-      toggleAriaLabel: '切换到英文',
-    },
-    hero: {
-      badge: '全新发布',
-      badgeDetail: '多模态记忆系统',
-      title: '记忆，决定智能上限。',
-      description:
-        'Omni Memory 构建多模态的人生记忆系统，让 AI 超越指令、理解人，并随着人类真实生活的上下文不断成长。',
-      primaryCta: '开始构建',
-      secondaryCta: '预约演示',
-      stats: [
-        { value: '15B', label: '已索引记忆' },
-        { value: '500ms', label: 'P95 召回' },
-        { value: '99.99%', label: '可用性 SLA' },
-      ],
-      demoFlashcardsLabel: '视频理解示例',
-      demoFlashcards: [
-        {
-          title: '看懂画面',
-          caption: '跟踪跑步者、推车和天际线，让片段变成带语境的记忆。',
-          timestamp: '00:12-00:18',
-          marker: '场景切换',
-          tags: ['视觉字幕', '对象标注', '情绪：平静'],
-          waveform: [18, 32, 58, 74, 62, 48, 68, 36, 22, 40],
-          gradient: 'from-accent/20 via-white to-ink/5',
-        },
-        {
-          title: '理解动作与意图',
-          caption: '识别握手、提起行李，以及主人迎接访客的动作。',
-          timestamp: '00:41-00:49',
-          marker: '动作聚焦',
-          tags: ['动作：问候', '意图：到达', '语气：愉快'],
-          waveform: [28, 64, 72, 46, 55, 68, 62, 38, 30, 44],
-          gradient: 'from-accent2/20 via-white to-ink/5',
-        },
-        {
-          title: '生成可演进的记忆',
-          caption: '总结片段并自动关联到过往拜访与个人偏好。',
-          timestamp: '01:12-01:20',
-          marker: '故事节点',
-          tags: ['摘要就绪', '人脸匹配', '偏好关联'],
-          waveform: [22, 30, 44, 62, 78, 66, 50, 58, 34, 26],
-          gradient: 'from-ink/5 via-white to-accent/20',
-        },
-      ],
-    },
-    logoCloud: {
-      label: '受记忆优先团队信赖',
-      logos: ['Atlas Robotics', 'Northwind', 'Signalwave', 'Aurora Labs', 'Harbor AI', 'Mosaic Health'],
-    },
-    features: {
-      eyebrow: '记忆平台',
-      title: '为多模态 AI 设计的记忆织体',
-      description:
-        'Omni Memory 协同存储、增强与检索，让你的智能体从每次交互中学习，而不被数据淹没。',
-      items: [
-        {
-          pill: '召回引擎',
-          title: '上下文始终新鲜',
-          description:
-            '混合向量与符号检索让正确记忆浮现，并通过衰减曲线和新鲜度评分保持更新。',
-        },
-        {
-          pill: '策略感知',
-          title: '精细化治理',
-          description: '按租户、角色与敏感级别划定范围。每条记忆在进入模型前都会被过滤。',
-        },
-        {
-          pill: '知识图谱',
-          title: '规模化记忆关系',
-          description: '实体图谱连接人、项目与意图，让召回跨越对话、文档与文件。',
-        },
-        {
-          pill: '可观测性',
-          title: '衡量召回质量',
-          description: '洞察记忆如何影响输出，通过反馈回路调优排序，并审计使用情况。',
-        },
-      ],
-    },
-    modalities: {
-      eyebrow: '模态',
-      title: '每一次输入都是记忆，而非噪音',
-      description:
-        '将多模态数据归一到同一时间线。每次写入都包含意图、实体与紧急度信号。',
-      ariaLabel: '记忆模态',
-      items: [
-        {
-          title: '文本',
-          description: '来自聊天、文档与笔记的流式内容会被总结并存入长期记忆。',
-          bullets: ['实体抽取', '意图标注', '自动摘要'],
-        },
-        {
-          title: '音频',
-          description: '语音记忆层保留语气与决策，服务支持、销售和护理团队。',
-          bullets: ['说话人分离', '重点与行动项', '情绪信号'],
-        },
-        {
-          title: '图像',
-          description: '截图和示意图通过丰富标注变为可检索上下文。',
-          bullets: ['视觉字幕', '对象与布局线索', '版本化快照'],
-        },
-        {
-          title: '事件',
-          description: '产品使用与遥测数据被纳入记忆，打造个性化体验。',
-          bullets: ['会话时间线', '行为触发器', '留存评分'],
-        },
-      ],
-    },
-    steps: {
-      eyebrow: '工作原理',
-      title: '从摄取到召回只需三步',
-      items: [
-        {
-          step: '步骤 01',
-          title: '摄取一切',
-          description: '实时将对话、文件、事件和向量嵌入流入 Omni Memory。',
-        },
-        {
-          step: '步骤 02',
-          title: '增强与评分',
-          description: '我们进行分类、去重并应用衰减，使召回保持新鲜与相关。',
-        },
-        {
-          step: '步骤 03',
-          title: '按策略检索',
-          description: '按用户、意图和时间范围查询，瞬时提供合适上下文。',
-        },
-      ],
-    },
-    useCases: {
-      eyebrow: '应用场景',
-      title: '为打造记忆优先体验的团队而生',
-      items: [
-        {
-          title: '智能体副驾',
-          description: '让智能体跨会话与渠道保持连续性。',
-          bullets: ['长期记忆', '跨工具对齐', '角色一致性'],
-        },
-        {
-          title: '客户支持',
-          description: '跨团队共享记忆图谱，加速问题解决。',
-          bullets: ['账户时间线', '合规召回', '更少升级'],
-        },
-        {
-          title: '企业知识',
-          description: '将知识源连接为统一记忆层。',
-          bullets: ['文档 + 聊天融合', '角色感知访问', '自适应摘要'],
-        },
-        {
-          title: '个性化',
-          description: '在不存储原始 PII 的前提下记住偏好。',
-          bullets: ['偏好嵌入', '隐私控制', '预测洞察'],
-        },
-      ],
-    },
-    developers: {
-      eyebrow: '开发者',
-      title: '几分钟接入，而不是几个季度',
-      description:
-        '接入 Omni Memory SDK，即可写入带结构化元数据的记忆。一个调用内完成过滤、衰减曲线与安全护栏的查询。',
-      primaryCta: '查看 SDK',
-      secondaryCta: '联系工程团队',
-      codeSample,
-    },
-    security: {
-      eyebrow: '安全',
-      title: '每次召回都具备治理、隐私与控制',
-      items: [
-        {
-          title: 'SOC 2 Type II 就绪',
-          description: '企业级控制、审计追踪，以及静态与传输加密。',
-        },
-        {
-          title: '数据驻留控制',
-          description: '将记忆存储固定在指定区域，并可配置保留窗口。',
-        },
-        {
-          title: '同意与脱敏',
-          description: '每条记忆记录自动 PII 脱敏并记录同意元数据。',
-        },
-      ],
-    },
-    pricing: {
-      eyebrow: '价格',
-      title: '随记忆规模扩展的套餐',
-      description: '从免费开始，随记忆规模增长升级。按量计费让扩展成本可预测。',
-      plans: [
-        {
-          badge: '入门',
-          title: '构建',
-          price: '免费',
-          caption: '最多 200 万条记忆',
-          cta: '创建账号',
-          features: ['多模态记忆 API', '社区支持', '基础分析'],
-        },
-        {
-          badge: '成长',
-          title: '扩展',
-          price: '$499 / 月',
-          caption: '最多 5000 万条记忆',
-          cta: '联系销售',
-          features: ['策略过滤', '优先召回缓存', '高级可观测性'],
-        },
-        {
-          badge: '企业',
-          title: '治理',
-          price: '定制',
-          caption: '无限记忆',
-          cta: '安排研讨会',
-          features: ['专属 VPC', '数据驻留', '定制 SLA'],
-        },
-      ],
-    },
-    cta: {
-      eyebrow: '准备好了',
-      title: '让每个模型拥有应得的记忆',
-      description: '更快上线，让智能体扎根真实语境，让 AI 体验更有人情味。',
-      primaryCta: '启动试点',
-      secondaryCta: '查看文档',
-    },
-    footer: {
-      brandName: 'omni memory',
-      brandSubtitle: '面向每个模型的记忆基础设施',
-      links: [
-        { label: '产品', href: '#product' },
-        { label: '开发者', href: '#developers' },
-        { label: '安全', href: '#security' },
-        { label: '常见问题', href: '#faq' },
-      ],
-    },
-    testimonials: {
-      eyebrow: '真实场景中的记忆',
-      title: '团队借助 Omni Memory 打造更冷静、更聪明的 AI',
-      description:
-        '从实时副驾到企业知识图谱，Omni Memory 让每个模型与最重要的上下文保持同步。',
-      items: [
-        {
-          name: 'Mira Patel',
-          title: 'Atlas Robotics AI 负责人',
-          quote: '我们用 Omni Memory 替换了三个内部服务。智能体延迟降低 38%，召回质量立刻提升。',
-        },
-        {
-          name: 'Jordan Lee',
-          title: 'Northwind Health 产品副总裁',
-          quote: 'Omni Memory 为语音与聊天提供统一记忆层。护士们信任助手，因为它终于记得上下文。',
-        },
-        {
-          name: 'Aria Flores',
-          title: 'Signalwave 创始人',
-          quote: '策略控制才是真正的胜利。我们无需自建基础设施，就能按项目、用户与敏感度限制记忆访问。',
-        },
-      ],
-    },
-    faq: {
-      eyebrow: '常见问题',
-      title: '关于 Omni Memory 的一切',
-      description: '关于产品、安全与数据治理的清晰解答。需要更多细节？我们的团队将带你了解架构。',
-      items: [
-        {
-          title: 'Omni Memory 如何支持多模型？',
-          description:
-            'Omni Memory 在不同提供商间统一嵌入、元数据与策略。一次写入，可跨 GPT、Claude、Gemini 或自定义模型检索。',
-        },
-        {
-          title: '可以存储哪些类型的数据？',
-          description:
-            '支持文本、音频转录、带提取字幕的图像，以及结构化事件。记忆块会被增强为包含实体、意图与时间线信号。',
-        },
-        {
-          title: '能否控制保留周期与访问权限？',
-          description:
-            '可以。设置 TTL、按租户划定范围与敏感标签。检索在排序前会先遵循你的策略过滤。',
-        },
-        {
-          title: '如何保持低延迟？',
-          description:
-            '我们使用多区域召回缓存、流式更新以及向量+符号混合检索，将 P95 召回控制在 500ms 内。',
-        },
-      ],
-    },
-    fallbacks: {
-      stories: '加载案例',
-      answers: '加载解答',
-    },
-  },
-}
-
-interface HeroSectionProps {
-  content: HeroContent
-  signUpPath: string
-}
-
-interface VideoDemoFlashcardsProps {
-  label: string
-  cards: VideoFlashcard[]
-}
-
-interface LogoCloudProps {
-  content: LogoCloudContent
-}
-
-interface FeatureGridProps {
-  content: FeatureSectionContent
-}
-
-interface ModelTabsProps {
-  content: ModalitiesSectionContent
-}
-
-interface StepsSectionProps {
-  content: StepsSectionContent
-}
-
-interface UseCasesProps {
-  content: UseCasesSectionContent
-}
-
-interface DeveloperSectionProps {
-  content: DeveloperSectionContent
-  signUpPath: string
-}
-
-interface SecuritySectionProps {
-  content: SecuritySectionContent
-}
-
-interface PlansSectionProps {
-  content: PricingSectionContent
-  signUpPath: string
-}
-
-interface CTASectionProps {
-  content: CtaSectionContent
-  signUpPath: string
-}
-
-interface FooterProps {
-  content: FooterContent
-}
-
-interface SectionFallbackProps {
-  label: string
-}
-
-interface LocalePathnameProps {
-  pathname: string
-}
-
-interface RoutePathnameProps {
-  pathname: string
-}
-
-interface BuildLocalePathnameProps {
-  pathname: string
-  locale: Locale
-}
-
-interface UpdateLocalePathProps {
-  locale: Locale
-  method: 'replace' | 'push'
-}
-
-interface GetNextLocaleProps {
-  currentLocale: Locale
-}
-
-interface ContentByLocale {
-  en: AppContent
-  zh: AppContent
-}
-
-interface AppContent {
-  navbar: NavbarContent
-  hero: HeroContent
-  logoCloud: LogoCloudContent
-  features: FeatureSectionContent
-  modalities: ModalitiesSectionContent
-  steps: StepsSectionContent
-  useCases: UseCasesSectionContent
-  developers: DeveloperSectionContent
-  security: SecuritySectionContent
-  pricing: PricingSectionContent
-  cta: CtaSectionContent
-  footer: FooterContent
-  testimonials: TestimonialsSectionContent
-  faq: FaqSectionContent
-  fallbacks: FallbackContent
-}
-
-interface NavbarContent {
-  brandName: string
-  brandSubtitle: string
-  navLinks: NavLink[]
-  ctaLabel: string
-  toggleLabel: string
-  toggleAriaLabel: string
-}
-
-interface HeroContent {
-  badge: string
-  badgeDetail: string
-  title: string
-  description: string
-  primaryCta: string
-  secondaryCta: string
-  stats: StatItem[]
-  demoFlashcardsLabel: string
-  demoFlashcards: VideoFlashcard[]
-}
-
-interface LogoCloudContent {
-  label: string
-  logos: string[]
-}
-
-interface FeatureSectionContent {
-  eyebrow: string
-  title: string
-  description: string
-  items: FeatureItem[]
-}
-
-interface ModalitiesSectionContent {
-  eyebrow: string
-  title: string
-  description: string
-  ariaLabel: string
-  items: ModalityItem[]
-}
-
-interface StepsSectionContent {
-  eyebrow: string
-  title: string
-  items: StepItem[]
-}
-
-interface UseCasesSectionContent {
-  eyebrow: string
-  title: string
-  items: UseCaseItem[]
-}
-
-interface DeveloperSectionContent {
-  eyebrow: string
-  title: string
-  description: string
-  primaryCta: string
-  secondaryCta: string
-  codeSample: string
-}
-
-interface SecuritySectionContent {
-  eyebrow: string
-  title: string
-  items: SecurityItem[]
-}
-
-interface PricingSectionContent {
-  eyebrow: string
-  title: string
-  description: string
-  plans: PlanItem[]
-}
-
-interface CtaSectionContent {
-  eyebrow: string
-  title: string
-  description: string
-  primaryCta: string
-  secondaryCta: string
-}
-
-interface FooterContent {
-  brandName: string
-  brandSubtitle: string
-  links: NavLink[]
-}
-
-interface FallbackContent {
-  stories: string
-  answers: string
-}
-
-interface NavLink {
-  label: string
-  href: string
-}
-
-interface StatItem {
-  value: string
-  label: string
-}
-
-interface VideoFlashcard {
-  title: string
-  caption: string
-  timestamp: string
-  marker: string
-  tags: string[]
-  waveform: number[]
-  gradient: string
-}
-
-interface FeatureItem {
-  pill: string
-  title: string
-  description: string
-}
-
-interface ModalityItem {
-  title: string
-  description: string
-  bullets: string[]
-}
-
-interface StepItem {
-  step: string
-  title: string
-  description: string
-}
-
-interface UseCaseItem {
-  title: string
-  description: string
-  bullets: string[]
-}
-
-interface SecurityItem {
-  title: string
-  description: string
-}
-
-interface PlanItem {
-  badge: string
-  title: string
-  price: string
-  caption: string
-  cta: string
-  features: string[]
-}
-
-type Locale = keyof ContentByLocale
-
-type RouteKey =
-  | 'marketing'
-  | 'dashboard'
-  | 'apiKeys'
-  | 'uploads'
-  | 'usage'
-  | 'memoryPolicy'
-  | 'profile'
-  | 'signIn'
-  | 'signUp'
-  | 'passwordReset'
 
 const ROUTE_PATHS = {
   home: '/',
@@ -1712,3 +868,268 @@ const ROUTE_PATHS = {
   signUp: '/auth/sign-up',
   passwordReset: '/auth/password-reset',
 } as const
+
+const CODE_SAMPLE = `import { OmniMemory } from '@omni/memory'
+
+const memory = new OmniMemory({
+  apiKey: process.env.OMNI_MEMORY_KEY,
+})
+
+// Write a memory
+await memory.write({
+  userId: 'user_1287',
+  modality: 'audio',
+  content: transcript,
+  metadata: { sentiment: 'positive' },
+})
+
+// Search memories
+const recall = await memory.search({
+  userId: 'user_1287',
+  query: 'recent discussions',
+  limit: 5,
+})`
+
+// ============ CONTENT ============
+
+const contentByLocale: Record<Locale, AppContent> = {
+  en: {
+    navbar: {
+      brandName: 'Omni Memory',
+      navLinks: [
+        { label: 'Features', href: '#features' },
+        { label: 'How it Works', href: '#how-it-works' },
+        { label: 'Developers', href: '#developers' },
+        { label: 'Pricing', href: '#pricing' },
+      ],
+      ctaLabel: 'Get Started',
+      toggleLabel: '中文',
+    },
+    hero: {
+      badge: 'Now in Beta',
+      titleLine1: 'The Memory Layer',
+      titleLine2: 'for Intelligent AI',
+      description: 'Give your AI applications persistent, cross-session memory. Capture context from conversations, audio, and events—so your AI truly understands.',
+      primaryCta: 'Start Building',
+      secondaryCta: 'View Documentation',
+    },
+    stats: {
+      items: [
+        { value: '15B+', label: 'Memories Stored' },
+        { value: '<500ms', label: 'Recall Latency' },
+        { value: '99.99%', label: 'Uptime SLA' },
+      ],
+    },
+    features: {
+      eyebrow: 'Capabilities',
+      title: 'Memory infrastructure built for AI',
+      description: 'Everything you need to give your AI persistent, contextual memory that scales.',
+      items: [
+        { icon: '🧠', tag: 'Recall', title: 'Intelligent Retrieval', description: 'Hybrid vector and symbolic search with decay curves. Get the right context at the right time, every time.' },
+        { icon: '🛡️', tag: 'Policy', title: 'Access Control', description: 'Scope memories by tenant, role, and sensitivity.' },
+        { icon: '🔗', tag: 'Graph', title: 'Connected Memory', description: 'Entity graphs link people, projects, and intents.' },
+        { icon: '📊', tag: 'Analytics', title: 'Memory Insights', description: 'Trace how memories influence outputs.' },
+      ],
+    },
+    howItWorks: {
+      eyebrow: 'Process',
+      title: 'From ingestion to recall',
+      description: 'A simple three-step process to give your AI persistent memory.',
+      steps: [
+        { title: 'Ingest', description: 'Stream conversations, files, and events into Omni Memory via our simple API.' },
+        { title: 'Enrich', description: 'We classify, dedupe, and score memories with decay curves to keep recall fresh.' },
+        { title: 'Retrieve', description: 'Query by user, intent, and time horizon. Get policy-filtered context in milliseconds.' },
+      ],
+    },
+    developers: {
+      eyebrow: 'For Developers',
+      title: 'Memory in minutes, not months',
+      description: 'Drop in the SDK and start writing memories with structured metadata. Query with filters and safety rails in one API call.',
+      primaryCta: 'Read Docs',
+      secondaryCta: 'Talk to Us',
+      code: CODE_SAMPLE,
+    },
+    testimonials: {
+      eyebrow: 'Testimonials',
+      title: 'Teams building with Omni Memory',
+      items: [
+        { name: 'Sarah Chen', title: 'Head of AI, Aurora Labs', quote: 'We replaced three internal services with Omni Memory. Agent latency dropped 40% immediately—it just works.' },
+        { name: 'Marcus Williams', title: 'VP Product, Northwind', quote: 'Our clinical assistants finally remember patient context across sessions. Game changer for healthcare AI.' },
+        { name: 'Elena Rodriguez', title: 'Founder, Signalwave', quote: 'The policy controls let us scope memory by project without building custom infrastructure. Shipped in a week.' },
+      ],
+    },
+    pricing: {
+      eyebrow: 'Pricing',
+      title: 'Plans that scale with you',
+      description: 'Start free, upgrade as you grow. Predictable, usage-based pricing.',
+      plans: [
+        { badge: 'Starter', name: 'Build', price: 'Free', period: 'forever', cta: 'Start Free', features: ['2M memories', 'Multi-modal API', 'Community support'] },
+        { badge: 'Growth', name: 'Scale', price: '$499', period: '/month', cta: 'Start Trial', features: ['50M memories', 'Policy engine', 'Priority support', 'Advanced analytics'] },
+        { badge: 'Enterprise', name: 'Govern', price: 'Custom', period: '', cta: 'Contact Us', features: ['Unlimited memories', 'Dedicated VPC', 'Custom SLAs', 'Dedicated support'] },
+      ],
+    },
+    faq: {
+      eyebrow: 'FAQ',
+      title: 'Common questions',
+      description: 'Everything you need to know about Omni Memory.',
+      items: [
+        { question: 'What AI models are supported?', answer: 'We normalize across providers. Write once, retrieve across GPT, Claude, Gemini, or custom models.' },
+        { question: 'What data types can be stored?', answer: 'Text, audio transcripts, images with context, and structured events. All enriched with entity and intent signals.' },
+        { question: 'How do you handle privacy?', answer: 'Automated PII detection, configurable retention, consent tracking, and right-to-forget workflows. SOC 2 Type II certified.' },
+        { question: "What's the retrieval latency?", answer: 'P95 recall under 500ms globally with multi-region caching and hybrid retrieval.' },
+      ],
+    },
+    cta: {
+      title: 'Give your AI the memory it deserves',
+      description: 'Start building with persistent, contextual memory. Free tier available.',
+      primaryCta: 'Start Building',
+      secondaryCta: 'View Documentation',
+    },
+    footer: {
+      brandName: 'Omni Memory',
+      tagline: 'The memory layer for intelligent AI applications.',
+      links: [
+        { label: 'Features', href: '#features' },
+        { label: 'Pricing', href: '#pricing' },
+        { label: 'Documentation', href: '#developers' },
+        { label: 'FAQ', href: '#faq' },
+      ],
+      copyright: '© 2025 Omni Memory. All rights reserved.',
+    },
+  },
+  zh: {
+    navbar: {
+      brandName: 'Omni Memory',
+      navLinks: [
+        { label: '功能', href: '#features' },
+        { label: '原理', href: '#how-it-works' },
+        { label: '开发者', href: '#developers' },
+        { label: '价格', href: '#pricing' },
+      ],
+      ctaLabel: '开始使用',
+      toggleLabel: 'EN',
+    },
+    hero: {
+      badge: '公测中',
+      titleLine1: '记忆层',
+      titleLine2: '为智能 AI 而生',
+      description: '为你的 AI 应用提供持久的跨会话记忆。从对话、音频和事件中捕获上下文，让 AI 真正理解用户。',
+      primaryCta: '开始构建',
+      secondaryCta: '查看文档',
+    },
+    stats: {
+      items: [
+        { value: '150亿+', label: '记忆存储' },
+        { value: '<500ms', label: '召回延迟' },
+        { value: '99.99%', label: '可用性 SLA' },
+      ],
+    },
+    features: {
+      eyebrow: '核心能力',
+      title: '为 AI 构建的记忆基础设施',
+      description: '一切所需，让你的 AI 拥有持久的、可扩展的上下文记忆。',
+      items: [
+        { icon: '🧠', tag: '召回', title: '智能检索', description: '混合向量与符号检索，配合衰减曲线。在正确的时间获取正确的上下文。' },
+        { icon: '🛡️', tag: '策略', title: '访问控制', description: '按租户、角色和敏感级别划定记忆范围。' },
+        { icon: '🔗', tag: '图谱', title: '关联记忆', description: '实体图谱连接人、项目和意图。' },
+        { icon: '📊', tag: '分析', title: '记忆洞察', description: '追踪记忆如何影响输出。' },
+      ],
+    },
+    howItWorks: {
+      eyebrow: '工作原理',
+      title: '从摄取到召回',
+      description: '简单三步，让你的 AI 拥有持久记忆。',
+      steps: [
+        { title: '摄取', description: '通过简单 API 将对话、文件和事件流入 Omni Memory。' },
+        { title: '增强', description: '我们对记忆分类、去重和评分，应用衰减曲线保持召回新鲜。' },
+        { title: '检索', description: '按用户、意图和时间范围查询。毫秒级获取策略过滤的上下文。' },
+      ],
+    },
+    developers: {
+      eyebrow: '开发者',
+      title: '分钟级接入，而非数月',
+      description: '接入 SDK 即可写入带结构化元数据的记忆。一次 API 调用完成过滤和安全护栏的查询。',
+      primaryCta: '阅读文档',
+      secondaryCta: '联系我们',
+      code: CODE_SAMPLE,
+    },
+    testimonials: {
+      eyebrow: '用户故事',
+      title: '使用 Omni Memory 的团队',
+      items: [
+        { name: 'Sarah Chen', title: 'Aurora Labs AI 负责人', quote: '我们用 Omni Memory 替换了三个内部服务。智能体延迟立即降低 40%——开箱即用。' },
+        { name: 'Marcus Williams', title: 'Northwind 产品副总裁', quote: '我们的临床助手终于能跨会话记住患者上下文了。医疗 AI 的游戏规则改变者。' },
+        { name: 'Elena Rodriguez', title: 'Signalwave 创始人', quote: '策略控制让我们无需自建基础设施就能按项目划定记忆范围。一周内上线。' },
+      ],
+    },
+    pricing: {
+      eyebrow: '价格',
+      title: '随你扩展的套餐',
+      description: '从免费开始，随增长升级。可预测的按量计费。',
+      plans: [
+        { badge: '入门', name: '构建', price: '免费', period: '永久', cta: '免费开始', features: ['200万条记忆', '多模态 API', '社区支持'] },
+        { badge: '成长', name: '扩展', price: '¥3,499', period: '/月', cta: '开始试用', features: ['5000万条记忆', '策略引擎', '优先支持', '高级分析'] },
+        { badge: '企业', name: '治理', price: '定制', period: '', cta: '联系我们', features: ['无限记忆', '专属 VPC', '定制 SLA', '专属支持'] },
+      ],
+    },
+    faq: {
+      eyebrow: '常见问题',
+      title: '常见问题',
+      description: '关于 Omni Memory 的一切。',
+      items: [
+        { question: '支持哪些 AI 模型？', answer: '我们在不同提供商间统一。一次写入，可跨 GPT、Claude、Gemini 或自定义模型检索。' },
+        { question: '可以存储哪些数据类型？', answer: '文本、音频转录、带上下文的图像，以及结构化事件。都增强了实体和意图信号。' },
+        { question: '如何处理隐私？', answer: '自动 PII 检测、可配置保留期、同意追踪和遗忘权工作流。已通过 SOC 2 Type II 认证。' },
+        { question: '检索延迟是多少？', answer: 'P95 召回全球低于 500ms，使用多区域缓存和混合检索。' },
+      ],
+    },
+    cta: {
+      title: '让你的 AI 拥有应得的记忆',
+      description: '立即开始使用持久的上下文记忆。免费套餐可用。',
+      primaryCta: '开始构建',
+      secondaryCta: '查看文档',
+    },
+    footer: {
+      brandName: 'Omni Memory',
+      tagline: '智能 AI 应用的记忆层。',
+      links: [
+        { label: '功能', href: '#features' },
+        { label: '价格', href: '#pricing' },
+        { label: '文档', href: '#developers' },
+        { label: '常见问题', href: '#faq' },
+      ],
+      copyright: '© 2025 Omni Memory. 保留所有权利。',
+    },
+  },
+}
+
+// ============ TYPES ============
+
+type Locale = 'en' | 'zh'
+type RouteKey = 'marketing' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
+
+interface AppContent {
+  navbar: NavbarContent
+  hero: HeroContent
+  stats: StatsContent
+  features: FeaturesSectionContent
+  howItWorks: HowItWorksContent
+  developers: DeveloperContent
+  testimonials: TestimonialsContent
+  pricing: PricingContent
+  faq: FaqContent
+  cta: CtaContent
+  footer: FooterContent
+}
+
+interface NavbarContent { brandName: string; navLinks: { label: string; href: string }[]; ctaLabel: string; toggleLabel: string }
+interface HeroContent { badge: string; titleLine1: string; titleLine2: string; description: string; primaryCta: string; secondaryCta: string }
+interface StatsContent { items: { value: string; label: string }[] }
+interface FeaturesSectionContent { eyebrow: string; title: string; description: string; items: { icon: string; tag: string; title: string; description: string }[] }
+interface HowItWorksContent { eyebrow: string; title: string; description: string; steps: { title: string; description: string }[] }
+interface DeveloperContent { eyebrow: string; title: string; description: string; primaryCta: string; secondaryCta: string; code: string }
+interface TestimonialsContent { eyebrow: string; title: string; items: { name: string; title: string; quote: string }[] }
+interface PricingContent { eyebrow: string; title: string; description: string; plans: { badge: string; name: string; price: string; period: string; cta: string; features: string[] }[] }
+interface FaqContent { eyebrow: string; title: string; description: string; items: { question: string; answer: string }[] }
+interface CtaContent { title: string; description: string; primaryCta: string; secondaryCta: string }
+interface FooterContent { brandName: string; tagline: string; links: { label: string; href: string }[]; copyright: string }

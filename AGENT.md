@@ -45,3 +45,37 @@ React
   - Use useActionState with react-hook-form for form validation.
   - Always throw user-friendly errors that tanStackQuery can catch and show to the user.
     
+## Package Manager
+
+- **Always use `bun`**
+- **Do NOT use `npm`**
+
+---
+
+## Workflow Steps
+
+### 1. Make changes
+Implement code changes as needed.
+
+---
+
+### 2. Typecheck (fast)
+
+```sh
+1. Make changes
+
+2. Typecheck 
+bun run typecheck
+
+3. Run tests
+bun run test -- -t "test name" ##single suite
+bun run test:file -- "glob" ##Specific test files
+
+4. Lint before committing
+bun run lint:file -- "file1.ts" ##Specific files
+
+bun run lint ##All files
+
+5. before creating PR
+bun run lint:claude && bun run test 
+
