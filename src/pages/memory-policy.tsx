@@ -19,6 +19,8 @@ import { getApiEnv } from '../lib/env'
 
 type MemoryPolicyResponse = {
   default_scope: 'user' | 'apikey'
+  allow_apikey_scope?: boolean
+  scope?: string
 }
 
 type ApiKeyRow = {
@@ -32,6 +34,7 @@ type LlmKeyRow = {
   label?: string | null
   provider?: string | null
   model_name?: string | null
+  is_default?: boolean | null
   scope_type?: string | null
   api_key_id?: string | null
   masked_key?: string | null
@@ -106,6 +109,7 @@ export function MemoryPolicyPage() {
   const [defaultScope, setDefaultScope] = useState<'user' | 'apikey'>('user')
   const [policyStatus, setPolicyStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const [policyMessage, setPolicyMessage] = useState<string | null>(null)
+  const [allowApikeyScope, setAllowApikeyScope] = useState(true)
 
   const [llmKeys, setLlmKeys] = useState<LlmKeyRow[]>([])
   const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([])
@@ -142,6 +146,7 @@ export function MemoryPolicyPage() {
       throw new Error(data?.message ?? '加载通用设置失败')
     }
     setDefaultScope(data.default_scope ?? 'user')
+    setAllowApikeyScope(Boolean(data.allow_apikey_scope))
   }
 
   async function loadLlmKeys() {
@@ -191,6 +196,11 @@ export function MemoryPolicyPage() {
   async function updateMemoryPolicy(nextScope: 'user' | 'apikey') {
     const activeSession = await getSession()
     if (!activeSession) return
+    if (nextScope === 'apikey' && !allowApikeyScope) {
+      setPolicyStatus('error')
+      setPolicyMessage('API key scope is not enabled for the current plan.')
+      return
+    }
     setPolicyStatus('saving')
     setPolicyMessage(null)
     const response = await fetch(`${apiBaseUrl}/settings/memory-policy`, {
@@ -249,7 +259,7 @@ export function MemoryPolicyPage() {
         api_key: normalizedKey,
         provider: formProvider,
         model_name: formModelName,
-        scope_type: null,
+        is_default: false,
       }),
     })
     const data = (await response.json()) as { message?: string }
@@ -271,15 +281,14 @@ export function MemoryPolicyPage() {
     if (!activeSession) return
     setLlmStatus('loading')
     setLlmMessage(null)
-    const payload: { scope_type: string | null; api_key_id: string | null } = {
-      scope_type: null,
+    const payload: { is_default: boolean; api_key_id: string | null } = {
+      is_default: false,
       api_key_id: null,
     }
     if (value === 'all') {
-      payload.scope_type = 'all'
+      payload.is_default = true
       payload.api_key_id = null
     } else if (value) {
-      payload.scope_type = 'apikey'
       payload.api_key_id = value
     }
     const response = await fetch(`${apiBaseUrl}/llm-keys/${keyId}`, {
@@ -353,6 +362,7 @@ export function MemoryPolicyPage() {
             <Select
               label="默认隔离范围"
               selectedKeys={new Set([defaultScope])}
+              disabledKeys={allowApikeyScope ? [] : ['apikey']}
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as 'user' | 'apikey'
                 updateMemoryPolicy(value)
@@ -361,6 +371,11 @@ export function MemoryPolicyPage() {
               <SelectItem key="user">用户级</SelectItem>
               <SelectItem key="apikey">API Key 级</SelectItem>
             </Select>
+            {!allowApikeyScope ? (
+              <p className="text-xs text-warning-500">
+                API key scope is disabled for the current plan.
+              </p>
+            ) : null}
             {policyStatus === 'error' ? (
               <p className="text-xs text-danger-500">{policyMessage ?? '保存失败'}</p>
             ) : null}
@@ -455,9 +470,10 @@ export function MemoryPolicyPage() {
                 ) : (
                   llmKeys.map((row) => {
                     let selectedKey = 'none'
-                    if (row.scope_type === 'all') {
+                    const isDefault = Boolean(row.is_default) || row.scope_type === 'all'
+                    if (isDefault) {
                       selectedKey = 'all'
-                    } else if (row.scope_type === 'apikey' && row.api_key_id) {
+                    } else if (row.api_key_id) {
                       selectedKey = row.api_key_id
                     }
                     return (
