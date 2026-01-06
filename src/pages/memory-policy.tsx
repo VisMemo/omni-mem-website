@@ -30,13 +30,72 @@ type ApiKeyRow = {
 type LlmKeyRow = {
   id: string
   label?: string | null
-  base_url?: string | null
+  provider?: string | null
+  model_name?: string | null
   scope_type?: string | null
   api_key_id?: string | null
   masked_key?: string | null
   last_used_at?: string | null
-  last_tested_at?: string | null
-  last_test_status?: string | null
+}
+
+const PROVIDER_MODELS: Record<string, string[]> = {
+  openai: [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'gpt-4-turbo',
+    'gpt-4',
+    'gpt-3.5-turbo',
+    'o1-preview',
+    'o1-mini',
+    'text-embedding-3-small',
+  ],
+  anthropic: [
+    'claude-3-7-sonnet',
+    'claude-3-5-sonnet',
+    'claude-3-5-haiku',
+    'claude-3-opus',
+    'claude-3-sonnet',
+    'claude-3-haiku',
+  ],
+  google: [
+    'gemini/gemini-1.5-pro',
+    'gemini/gemini-1.5-flash',
+    'gemini/gemini-2.0-flash-exp',
+    'vertex_ai/gemini-1.5-pro',
+  ],
+  azure: ['azure/gpt-4o', 'azure/gpt-4-turbo', 'azure/gpt-35-turbo'],
+  aws_bedrock: [
+    'bedrock/anthropic.claude-3-5-sonnet-v2:0',
+    'bedrock/meta.llama3-1-70b-instruct-v1:0',
+    'bedrock/amazon.nova-pro-v1:0',
+    'bedrock/cohere.command-r-plus-v1:0',
+  ],
+  groq: [
+    'groq/llama-3.1-70b-versatile',
+    'groq/llama-3.1-8b-instant',
+    'groq/mixtral-8x7b-32768',
+    'groq/gemma2-9b-it',
+  ],
+  deepseek: ['deepseek/deepseek-chat', 'deepseek/deepseek-reasoner'],
+  mistral: [
+    'mistral/mistral-large-latest',
+    'mistral/mistral-small-latest',
+    'mistral/codestral-latest',
+  ],
+  openrouter: [
+    'openrouter/anthropic/claude-3.5-sonnet',
+    'openrouter/google/gemini-pro-1.5',
+    'openrouter/meta-llama/llama-3.1-405b',
+  ],
+  ollama: ['ollama/llama3', 'ollama/mistral', 'ollama/phi3', 'ollama/qwen2'],
+  together_ai: [
+    'together_ai/meta-llama/Llama-3.1-70b-instruct-turbo',
+    'together_ai/Qwen/Qwen2.5-72B-Instruct',
+  ],
+  perplexity: [
+    'perplexity/llama-3.1-sonar-huge-128k-online',
+    'perplexity/llama-3.1-sonar-large-128k-chat',
+  ],
 }
 
 export function MemoryPolicyPage() {
@@ -52,7 +111,8 @@ export function MemoryPolicyPage() {
   const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([])
   const [formLabel, setFormLabel] = useState('')
   const [formKey, setFormKey] = useState('')
-  const [formBaseUrl, setFormBaseUrl] = useState('')
+  const [formProvider, setFormProvider] = useState('')
+  const [formModelName, setFormModelName] = useState('')
   const [llmStatus, setLlmStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [llmMessage, setLlmMessage] = useState<string | null>(null)
 
@@ -153,8 +213,23 @@ export function MemoryPolicyPage() {
   }
 
   async function handleAddLlmKey() {
-    if (!formKey || !formBaseUrl) {
-      setLlmMessage('请填写 LLM Key 和请求地址')
+    const normalizedLabel = formLabel.trim()
+    const normalizedKey = formKey.trim()
+    if (!normalizedLabel) {
+      setLlmMessage('请填写备注（label）')
+      setLlmStatus('error')
+      return
+    }
+    const normalizedLower = normalizedLabel.toLowerCase()
+    if (
+      llmKeys.some((item) => (item.label ?? '').trim().toLowerCase() === normalizedLower)
+    ) {
+      setLlmMessage('备注（label）已存在，请更换')
+      setLlmStatus('error')
+      return
+    }
+    if (!normalizedKey || !formProvider || !formModelName) {
+      setLlmMessage('请填写 LLM Key，并选择平台与模型')
       setLlmStatus('error')
       return
     }
@@ -170,9 +245,10 @@ export function MemoryPolicyPage() {
         'X-Principal-User-Id': activeSession.user.id,
       },
       body: JSON.stringify({
-        label: formLabel || null,
-        api_key: formKey,
-        base_url: formBaseUrl,
+        label: normalizedLabel,
+        api_key: normalizedKey,
+        provider: formProvider,
+        model_name: formModelName,
         scope_type: null,
       }),
     })
@@ -184,7 +260,8 @@ export function MemoryPolicyPage() {
     }
     setFormLabel('')
     setFormKey('')
-    setFormBaseUrl('')
+    setFormProvider('')
+    setFormModelName('')
     await loadLlmKeys()
     setLlmStatus('idle')
   }
@@ -218,28 +295,6 @@ export function MemoryPolicyPage() {
     if (!response.ok) {
       setLlmStatus('error')
       setLlmMessage(data?.message ?? '更新失败')
-      return
-    }
-    await loadLlmKeys()
-    setLlmStatus('idle')
-  }
-
-  async function handleTestKey(keyId: string) {
-    const activeSession = await getSession()
-    if (!activeSession) return
-    setLlmStatus('loading')
-    setLlmMessage(null)
-    const response = await fetch(`${apiBaseUrl}/llm-keys/${keyId}/test`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${activeSession.access_token}`,
-        'X-Principal-User-Id': activeSession.user.id,
-      },
-    })
-    const data = (await response.json()) as { message?: string }
-    if (!response.ok) {
-      setLlmStatus('error')
-      setLlmMessage(data?.message ?? '测试失败')
       return
     }
     await loadLlmKeys()
@@ -316,7 +371,7 @@ export function MemoryPolicyPage() {
               <p className="text-sm font-medium">LLM Key 设置</p>
               <p className="text-xs text-muted">添加并绑定不同的 LLM Key。</p>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-4">
               <Input
                 label="备注"
                 placeholder="例如：主用 OpenAI"
@@ -330,12 +385,32 @@ export function MemoryPolicyPage() {
                 value={formKey}
                 onChange={(event) => setFormKey(event.target.value)}
               />
-              <Input
-                label="请求地址"
-                placeholder="https://api.openai.com"
-                value={formBaseUrl}
-                onChange={(event) => setFormBaseUrl(event.target.value)}
-              />
+              <Select
+                label="平台（provider）"
+                selectedKeys={formProvider ? new Set([formProvider]) : new Set([])}
+                onSelectionChange={(keys) => {
+                  const value = String(Array.from(keys)[0] ?? '')
+                  setFormProvider(value)
+                  setFormModelName('')
+                }}
+              >
+                {Object.keys(PROVIDER_MODELS).map((provider) => (
+                  <SelectItem key={provider}>{provider}</SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="模型名称（model_name）"
+                isDisabled={!formProvider}
+                selectedKeys={formModelName ? new Set([formModelName]) : new Set([])}
+                onSelectionChange={(keys) => {
+                  const value = String(Array.from(keys)[0] ?? '')
+                  setFormModelName(value)
+                }}
+              >
+                {(PROVIDER_MODELS[formProvider] ?? []).map((model) => (
+                  <SelectItem key={model}>{model}</SelectItem>
+                ))}
+              </Select>
             </div>
             <div>
               <Button onPress={handleAddLlmKey} className="bg-ink text-white">
@@ -352,7 +427,7 @@ export function MemoryPolicyPage() {
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-1">
           <h3 className="text-lg font-semibold">LLM Key 列表</h3>
-          <p className="text-sm text-muted">选择绑定范围，或测试可用性。</p>
+          <p className="text-sm text-muted">选择绑定范围，或删除。</p>
         </CardHeader>
         <CardBody>
           {llmStatus === 'loading' ? (
@@ -361,15 +436,17 @@ export function MemoryPolicyPage() {
             <Table removeWrapper aria-label="LLM Keys" className="w-full">
               <TableHeader>
                 <TableColumn>备注</TableColumn>
+                <TableColumn>平台</TableColumn>
+                <TableColumn>模型</TableColumn>
                 <TableColumn className="min-w-[220px]">绑定范围</TableColumn>
                 <TableColumn className="w-40">最后使用时间</TableColumn>
-                <TableColumn className="w-40">是否可用</TableColumn>
                 <TableColumn className="w-24">操作</TableColumn>
               </TableHeader>
               <TableBody>
                 {llmKeys.length === 0 ? (
                   <TableRow key="empty">
                     <TableCell>暂无 LLM Key</TableCell>
+                    <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
@@ -383,21 +460,18 @@ export function MemoryPolicyPage() {
                     } else if (row.scope_type === 'apikey' && row.api_key_id) {
                       selectedKey = row.api_key_id
                     }
-                    const statusLabel =
-                      row.last_test_status === 'ok'
-                        ? '可用'
-                        : row.last_test_status === 'failed'
-                          ? '不可用'
-                          : '未测试'
                     return (
                       <TableRow key={row.id}>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="text-sm">{row.label || row.masked_key || '未命名'}</div>
-                            {row.base_url ? (
-                              <div className="text-xs text-muted">{row.base_url}</div>
-                            ) : null}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{row.provider || '-'}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{row.model_name || '-'}</div>
                         </TableCell>
                         <TableCell>
                           <Select
@@ -417,18 +491,6 @@ export function MemoryPolicyPage() {
                           </Select>
                         </TableCell>
                         <TableCell>{formatDate(row.last_used_at)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{statusLabel}</span>
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              onPress={() => handleTestKey(row.id)}
-                            >
-                              测试
-                            </Button>
-                          </div>
-                        </TableCell>
                         <TableCell>
                           <Button
                             size="sm"
