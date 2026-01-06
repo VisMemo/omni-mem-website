@@ -386,7 +386,8 @@ export function UploadsPage() {
         <div className="mt-4 flex items-center justify-end gap-2">
           <Button
             size="sm"
-            variant="flat"
+            variant="bordered"
+            className="border-ink/20 text-ink"
             onPress={() => setPage((prev) => Math.max(1, prev - 1))}
             isDisabled={page <= 1}
           >
@@ -395,7 +396,8 @@ export function UploadsPage() {
           <span className="text-sm text-muted">第 {page} 页</span>
           <Button
             size="sm"
-            variant="flat"
+            variant="bordered"
+            className="border-ink/20 text-ink"
             onPress={() => setPage((prev) => prev + 1)}
             isDisabled={!hasNext}
           >

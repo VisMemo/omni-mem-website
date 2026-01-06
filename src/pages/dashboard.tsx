@@ -276,7 +276,8 @@ export function DashboardPage() {
               onChange={(event) => setToDate(event.target.value)}
             />
             <Button
-              variant="flat"
+              variant="bordered"
+              className="border-ink/20 text-ink"
               onPress={() => {
                 const now = new Date()
                 const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)

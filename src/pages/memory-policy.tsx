@@ -510,7 +510,8 @@ export function MemoryPolicyPage() {
                         <TableCell>
                           <Button
                             size="sm"
-                            variant="flat"
+                            variant="bordered"
+                            className="border-danger-300 text-danger-600"
                             color="danger"
                             onPress={() => handleDeleteKey(row.id)}
                           >

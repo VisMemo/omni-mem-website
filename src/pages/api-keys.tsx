@@ -244,7 +244,8 @@ export function ApiKeysPage() {
               {lastPlaintext ? (
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="bordered"
+                  className="border-ink/20 text-ink"
                   onPress={async () => {
                     try {
                       await navigator.clipboard.writeText(lastPlaintext)
@@ -301,7 +302,8 @@ export function ApiKeysPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="bordered"
+                          className="border-ink/20 text-ink"
                           onPress={() => handleAction('revoke', row.id)}
                           isDisabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
                         >
@@ -318,7 +320,8 @@ export function ApiKeysPage() {
                         <Button
                           size="sm"
                           color="danger"
-                          variant="light"
+                          variant="bordered"
+                          className="border-danger-300 text-danger-600"
                           onPress={() => handleAction('delete', row.id)}
                           isDisabled={status === 'loading' || Boolean(row.deleted_at)}
                         >
@@ -334,7 +337,8 @@ export function ApiKeysPage() {
           <div className="mt-4 flex items-center justify-end gap-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="bordered"
+              className="border-ink/20 text-ink"
               onPress={() => setPage((prev) => Math.max(1, prev - 1))}
               isDisabled={page <= 1}
             >
@@ -343,7 +347,8 @@ export function ApiKeysPage() {
             <span className="text-sm text-muted">第 {page} 页</span>
             <Button
               size="sm"
-              variant="flat"
+              variant="bordered"
+              className="border-ink/20 text-ink"
               onPress={() => setPage((prev) => prev + 1)}
               isDisabled={!hasNext}
             >
