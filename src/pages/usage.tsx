@@ -152,7 +152,7 @@ export function UsagePage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((summary) => (
-          <div key={summary.title} className="rounded-xl border border-ink/10 bg-white/80 p-4">
+          <div key={summary.title} className="rounded-xl bg-white/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
               {summary.title}
             </p>
@@ -162,13 +162,13 @@ export function UsagePage() {
         ))}
       </section>
 
-      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="rounded-xl bg-white/70 p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-ink">用量明细</h2>
           <p className="text-xs text-ink/50">按时间</p>
         </div>
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        <div className="mt-4 overflow-hidden rounded-lg border border-ink/10">
+        <div className="mt-4 overflow-hidden rounded-lg bg-white/60">
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>

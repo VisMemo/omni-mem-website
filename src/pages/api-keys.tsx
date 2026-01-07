@@ -229,7 +229,7 @@ export function ApiKeysPage() {
         </div>
       </header>
 
-      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="rounded-xl bg-white/70 p-6">
         <h2 className="text-lg font-semibold text-ink">创建 API 密钥</h2>
         <p className="text-sm text-ink/60">
           标签用于区分用途，生成后的密钥仅显示一次。
@@ -278,12 +278,12 @@ export function ApiKeysPage() {
         ) : null}
       </section>
 
-      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="rounded-xl bg-white/70 p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-ink">当前密钥</h2>
           <p className="text-xs text-ink/50">共 {rows.length} 个</p>
         </div>
-        <div className="mt-4 overflow-hidden rounded-lg border border-ink/10">
+        <div className="mt-4 overflow-hidden rounded-lg bg-white/60">
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>

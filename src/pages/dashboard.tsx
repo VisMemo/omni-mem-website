@@ -206,7 +206,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <header className="rounded-xl bg-white/70 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">控制台</p>
         <h1 className="text-2xl font-semibold text-ink">概览</h1>
         <p className="text-sm text-ink/60">用量、配额与权益的整体视图。</p>
@@ -214,7 +214,7 @@ export function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {overviewItems.map((item) => (
-          <div key={item.title} className="rounded-xl border border-ink/10 bg-white/80 p-4">
+          <div key={item.title} className="rounded-xl bg-white/70 p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
                 {item.title}
@@ -235,13 +235,13 @@ export function DashboardPage() {
         <p className="text-sm text-red-600">{overviewMessage ?? '概览加载失败'}</p>
       ) : null}
 
-      <section className="space-y-4 rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="space-y-4 rounded-xl bg-white/70 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-ink">用量概览</h2>
             <p className="text-sm text-ink/60">当前按 {groupByLabel} 统计。</p>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-ink/10 bg-white/80 px-2 py-1">
+          <div className="flex items-center gap-2 rounded-lg bg-white/60 px-2 py-1">
             <button
               type="button"
               className={`rounded-md px-3 py-1.5 text-sm ${
@@ -293,7 +293,7 @@ export function DashboardPage() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-ink/10">
+        <div className="overflow-hidden rounded-lg bg-white/60">
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Bell, ChevronDown, Menu, X, type LucideIcon } from 'lucide-react'
+import { Menu, X, type LucideIcon } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { signOut } from '../lib/auth'
 
@@ -36,7 +36,6 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const { client, session, error } = useSupabaseSession()
   const [navOpen, setNavOpen] = useState(false)
-  const [accountOpen, setAccountOpen] = useState(false)
   const [signOutError, setSignOutError] = useState<string | null>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -56,8 +55,6 @@ export function DashboardShell({
     const result = await signOut({ client })
     if (!result.ok) {
       setSignOutError(result.error ?? '退出登录失败。')
-    } else {
-      setAccountOpen(false)
     }
     setIsSigningOut(false)
   }
@@ -70,7 +67,7 @@ export function DashboardShell({
         className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
         onClick={() => setNavOpen(false)}
       />
-      <div className="absolute left-0 top-0 h-full w-72 bg-ivory p-6 shadow-xl">
+      <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-ivory p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">导航</div>
           <button
@@ -82,93 +79,37 @@ export function DashboardShell({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <NavSections
-          sections={sections}
-          currentPath={currentPath}
-          onNavigate={(path) => {
-            onNavigate(path)
-            setNavOpen(false)
-          }}
-        />
-      </div>
-    </div>
-  ) : null
-
-  return (
-    <div className="dashboard-shell min-h-screen bg-ivory text-ink">
-      {mobileNav}
-      <header className="sticky top-0 z-30 border-b border-ink/10 bg-ivory/90 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
-              onClick={() => setNavOpen(true)}
-              aria-label="打开导航"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-ink/10 bg-white/80">
-                <span className="absolute h-6 w-6 rounded-full bg-vermillion/70" />
-                <span className="absolute h-4 w-4 rounded-full bg-gold/80" />
-                <span className="relative text-xs font-semibold text-white">omni</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Omni Memory 控制台</p>
-                <p className="text-xs text-ink/60">个人空间</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70"
-              aria-label="通知"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
-            {error ? (
-              <button
-                type="button"
-                className="rounded-full border border-ink/10 bg-white/80 px-3 py-2 text-xs text-ink/50"
-                disabled
-                title={error}
-              >
-                认证不可用
-              </button>
-            ) : session ? (
-              <div className="relative">
+        <div className="flex-1 overflow-y-auto pr-2">
+          <NavSections
+            sections={sections}
+            currentPath={currentPath}
+            onNavigate={(path) => {
+              onNavigate(path)
+              setNavOpen(false)
+            }}
+          />
+          <div className="mt-6 border-t border-ink/10 pt-4">
+            {error ? <p className="text-xs text-red-600">{error}</p> : null}
+            {session ? (
+              <div className="space-y-3">
+                <p className="text-xs text-ink/60">{accountLabel}</p>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-full border border-ink/10 bg-white/80 px-2 py-1 text-sm"
-                  onClick={() => setAccountOpen((prev) => !prev)}
+                  className="w-full rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
                 >
-                  <span className="h-7 w-7 rounded-full bg-ink/10" />
-                  <span className="hidden text-sm font-medium sm:inline">{accountLabel}</span>
-                  <ChevronDown className="h-4 w-4 text-ink/60" />
+                  {isSigningOut ? '退出中…' : '退出登录'}
                 </button>
-                {accountOpen ? (
-                  <div className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-ink/10 bg-white p-2 shadow-lg">
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-ink/80 hover:bg-ink/5"
-                      onClick={handleSignOut}
-                      disabled={isSigningOut}
-                    >
-                      <span>{isSigningOut ? '退出中…' : '退出登录'}</span>
-                    </button>
-                    {signOutError ? (
-                      <p className="px-3 pt-1 text-xs text-red-600">{signOutError}</p>
-                    ) : null}
-                  </div>
+                {signOutError ? (
+                  <p className="text-xs text-red-600">{signOutError}</p>
                 ) : null}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-full border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
+                  className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
                   onClick={onSignIn}
                   disabled={!onSignIn}
                 >
@@ -176,7 +117,7 @@ export function DashboardShell({
                 </button>
                 <button
                   type="button"
-                  className="rounded-full bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                  className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
                   onClick={onSignUp ?? onSignIn}
                   disabled={!onSignUp && !onSignIn}
                 >
@@ -186,12 +127,64 @@ export function DashboardShell({
             )}
           </div>
         </div>
-      </header>
+      </div>
+    </div>
+  ) : null
 
-      <div className="mx-auto flex w-full max-w-7xl gap-6 px-6 py-8">
+  return (
+    <div className="dashboard-shell min-h-screen bg-ivory text-ink">
+      {mobileNav}
+      <button
+        type="button"
+        className="fixed left-4 top-20 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
+        onClick={() => setNavOpen(true)}
+        aria-label="打开导航"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
+
+      <div className="mx-auto flex w-full max-w-[1280px] gap-8 px-4 py-8">
         <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="rounded-xl border border-ink/10 bg-white/80 p-4">
+          <div className="rounded-xl bg-white/70 p-4">
             <NavSections sections={sections} currentPath={currentPath} onNavigate={onNavigate} />
+            <div className="mt-6 border-t border-ink/10 pt-4">
+              {error ? <p className="text-xs text-red-600">{error}</p> : null}
+              {session ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-ink/60">{accountLabel}</p>
+                  <button
+                    type="button"
+                    className="w-full rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? '退出中…' : '退出登录'}
+                  </button>
+                  {signOutError ? (
+                    <p className="text-xs text-red-600">{signOutError}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
+                    onClick={onSignIn}
+                    disabled={!onSignIn}
+                  >
+                    登录
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                    onClick={onSignUp ?? onSignIn}
+                    disabled={!onSignUp && !onSignIn}
+                  >
+                    注册
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </aside>
         <main className="min-w-0 flex-1">

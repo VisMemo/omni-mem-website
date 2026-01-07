@@ -342,7 +342,7 @@ export function MemoryPolicyPage() {
       </header>
 
       <section className="space-y-6">
-        <div className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="rounded-xl bg-white/70 p-6">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-ink">记忆隔离策略</h2>
             <p className="text-sm text-ink/60">
@@ -383,7 +383,7 @@ export function MemoryPolicyPage() {
           </button>
         </div>
 
-        <div className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="rounded-xl bg-white/70 p-6">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-ink">LLM 密钥管理</h2>
             <p className="text-sm text-ink/60">添加并绑定不同的 LLM 密钥。</p>
@@ -474,7 +474,7 @@ export function MemoryPolicyPage() {
           {llmStatus === 'loading' ? (
             <div className="mt-4 text-sm text-ink/60">加载中...</div>
           ) : (
-            <div className="mt-6 overflow-hidden rounded-lg border border-ink/10">
+            <div className="mt-6 overflow-hidden rounded-lg bg-white/60">
               <table className="w-full text-sm">
                 <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
                   <tr>

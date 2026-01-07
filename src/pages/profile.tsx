@@ -138,7 +138,7 @@ export function ProfilePage() {
         <p className="text-sm text-ink/60">管理账户名称、套餐与账单概览。</p>
       </header>
 
-      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="rounded-xl bg-white/70 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-ink">账户资料</h2>
@@ -197,7 +197,7 @@ export function ProfilePage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+      <section className="rounded-xl bg-white/70 p-6">
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-ink">套餐与升级</h2>
           <p className="text-sm text-ink/60">查看当前套餐权益并使用邀请码升级。</p>
@@ -213,7 +213,7 @@ export function ProfilePage() {
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {entitlementItems.map((item) => (
-                <div key={item.label} className="rounded-lg border border-ink/10 bg-white/80 p-3">
+                <div key={item.label} className="rounded-lg bg-white/60 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
                     {item.label}
                   </p>
