@@ -343,7 +343,7 @@ function HeroSection({ content, signUpPath }: { content: HeroContent; signUpPath
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         >
           <span className="font-mono text-xs text-vermillion">TEXT</span>
-          <p className="mt-1 text-ink-muted">User prefers concise responses</p>
+          <p className="mt-1 text-ink-muted">Conversation context loggging</p>
         </motion.div>
         <motion.div
           className="fragment fragment-2"
@@ -351,15 +351,15 @@ function HeroSection({ content, signUpPath }: { content: HeroContent; signUpPath
           transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
         >
           <span className="font-mono text-xs text-gold">AUDIO</span>
-          <p className="mt-1 text-ink-muted">Meeting context captured</p>
+          <p className="mt-1 text-ink-muted">Meeting context capturing</p>
         </motion.div>
         <motion.div
           className="fragment fragment-3"
           animate={{ y: [0, -12, 0] }}
           transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
         >
-          <span className="font-mono text-xs text-petrol">EVENT</span>
-          <p className="mt-1 text-ink-muted">Project milestone reached</p>
+          <span className="font-mono text-xs text-petrol">Video</span>
+          <p className="mt-1 text-ink-muted">Life moments understanding</p>
         </motion.div>
       </div>
     </section>
