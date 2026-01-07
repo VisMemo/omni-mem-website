@@ -1,4 +1,4 @@
-import {
+﻿import {
   Button,
   Card,
   CardBody,
@@ -40,11 +40,17 @@ export function UsagePage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [hasNext, setHasNext] = useState(false)
+  const [refreshToken, setRefreshToken] = useState(0)
   const pageSize = 10
 
   async function getActiveSession() {
     const refreshed = await refreshSession()
     return refreshed ?? session
+  }
+
+  function handleRefresh() {
+    setPage(1)
+    setRefreshToken((prev) => prev + 1)
   }
 
   useEffect(() => {
@@ -99,61 +105,125 @@ export function UsagePage() {
     return () => {
       cancelled = true
     }
-  }, [apiBaseUrl, refreshSession, session?.access_token, session?.user?.id, page])
+  }, [apiBaseUrl, refreshSession, session?.access_token, session?.user?.id, page, refreshToken])
+
+  const totalQuantity = useMemo(
+    () => rows.reduce((sum, row) => sum + (Number.isFinite(row.quantity) ? row.quantity : 0), 0),
+    [rows],
+  )
+  const latestRecord = useMemo(() => {
+    if (rows.length === 0) return '-'
+    const timestamps = rows
+      .map((row) => new Date(row.createdAt).getTime())
+      .filter((value) => Number.isFinite(value))
+    if (timestamps.length === 0) return rows[0].createdAt
+    return new Date(Math.max(...timestamps)).toLocaleString()
+  }, [rows])
+
+  const summaryCards = [
+    {
+      title: '可用积分',
+      value: balance ?? '-',
+      meta: '当前账户余额',
+    },
+    {
+      title: '本页事件量',
+      value: totalQuantity,
+      meta: `共 ${rows.length} 条记录`,
+    },
+    {
+      title: '最近记录时间',
+      value: latestRecord,
+      meta: '最近一次扣费',
+    },
+    {
+      title: '当前页',
+      value: page,
+      meta: `每页 ${pageSize} 条`,
+    },
+  ]
 
   return (
-    <Card className="glass-panel">
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold">用量汇总</h3>
-          <p className="text-sm text-muted">当前账户的积分消耗记录。</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">数据洞察</p>
+          <h1 className="text-2xl font-semibold text-ink">用量</h1>
+          <p className="text-sm text-muted">查看账户与 API 密钥的使用消耗记录。</p>
         </div>
-        <div className="rounded-2xl border border-ink/10 bg-white/70 px-4 py-2 text-sm">
-          <span className="text-muted">可用积分</span>
-          <span className="ml-2 font-semibold text-ink">{balance ?? '-'}</span>
-        </div>
-      </CardHeader>
-      <CardBody>
-        {error ? <p className="mb-4 text-sm text-danger">{error}</p> : null}
-        <Table removeWrapper aria-label="Usage ledger">
-          <TableHeader>
-            <TableColumn>使用方式</TableColumn>
-            <TableColumn>使用量</TableColumn>
-            <TableColumn>时间</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="暂无记录">
-            {rows.map((row, index) => (
-              <TableRow key={`${row.createdAt}-${index}`}>
-                <TableCell>{row.method}</TableCell>
-                <TableCell>{row.quantity}</TableCell>
-                <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="mt-4 flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="bordered"
             className="border-ink/20 text-ink"
-            onPress={() => setPage((prev) => Math.max(1, prev - 1))}
-            isDisabled={page <= 1}
+            onPress={handleRefresh}
           >
-            上一页
-          </Button>
-          <span className="text-sm text-muted">第 {page} 页</span>
-          <Button
-            size="sm"
-            variant="bordered"
-            className="border-ink/20 text-ink"
-            onPress={() => setPage((prev) => prev + 1)}
-            isDisabled={!hasNext}
-          >
-            下一页
+            刷新
           </Button>
         </div>
-      </CardBody>
-    </Card>
+      </header>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((summary) => (
+          <Card key={summary.title} className="glass-panel">
+            <CardHeader className="flex flex-col items-start gap-1">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted">{summary.title}</p>
+              <h3 className="text-2xl font-semibold text-ink">{summary.value}</h3>
+              <p className="text-sm text-muted">{summary.meta}</p>
+            </CardHeader>
+          </Card>
+        ))}
+      </section>
+
+      <Card className="glass-panel">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">用量明细</h3>
+            <p className="text-sm text-muted">按时间展示扣费与使用记录。</p>
+          </div>
+        </CardHeader>
+        <CardBody>
+          {error ? <p className="mb-4 text-sm text-danger">{error}</p> : null}
+          <Table removeWrapper aria-label="用量明细">
+            <TableHeader>
+              <TableColumn>使用方式</TableColumn>
+              <TableColumn>消耗</TableColumn>
+              <TableColumn>时间</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="暂无记录">
+              {rows.map((row, index) => (
+                <TableRow key={`${row.createdAt}-${index}`}>
+                  <TableCell>{row.method}</TableCell>
+                  <TableCell>{row.quantity}</TableCell>
+                  <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="bordered"
+              className="border-ink/20 text-ink"
+              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+              isDisabled={page <= 1}
+            >
+              上一页
+            </Button>
+            <span className="text-sm text-muted">第 {page} 页</span>
+            <Button
+              size="sm"
+              variant="bordered"
+              className="border-ink/20 text-ink"
+              onPress={() => setPage((prev) => prev + 1)}
+              isDisabled={!hasNext}
+            >
+              下一页
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   )
 }
 

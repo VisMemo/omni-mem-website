@@ -41,65 +41,15 @@ type LlmKeyRow = {
   last_used_at?: string | null
 }
 
-const PROVIDER_MODELS: Record<string, string[]> = {
-  openai: [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4-turbo',
-    'gpt-4',
-    'gpt-3.5-turbo',
-    'o1-preview',
-    'o1-mini',
-    'text-embedding-3-small',
-  ],
-  anthropic: [
-    'claude-3-7-sonnet',
-    'claude-3-5-sonnet',
-    'claude-3-5-haiku',
-    'claude-3-opus',
-    'claude-3-sonnet',
-    'claude-3-haiku',
-  ],
-  google: [
-    'gemini/gemini-1.5-pro',
-    'gemini/gemini-1.5-flash',
-    'gemini/gemini-2.0-flash-exp',
-    'vertex_ai/gemini-1.5-pro',
-  ],
-  azure: ['azure/gpt-4o', 'azure/gpt-4-turbo', 'azure/gpt-35-turbo'],
-  aws_bedrock: [
-    'bedrock/anthropic.claude-3-5-sonnet-v2:0',
-    'bedrock/meta.llama3-1-70b-instruct-v1:0',
-    'bedrock/amazon.nova-pro-v1:0',
-    'bedrock/cohere.command-r-plus-v1:0',
-  ],
-  groq: [
-    'groq/llama-3.1-70b-versatile',
-    'groq/llama-3.1-8b-instant',
-    'groq/mixtral-8x7b-32768',
-    'groq/gemma2-9b-it',
-  ],
-  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
-  mistral: [
-    'mistral/mistral-large-latest',
-    'mistral/mistral-small-latest',
-    'mistral/codestral-latest',
-  ],
-  openrouter: [
-    'openrouter/anthropic/claude-3.5-sonnet',
-    'openrouter/google/gemini-pro-1.5',
-    'openrouter/meta-llama/llama-3.1-405b',
-  ],
-  ollama: ['ollama/llama3', 'ollama/mistral', 'ollama/phi3', 'ollama/qwen2'],
-  together_ai: [
-    'together_ai/meta-llama/Llama-3.1-70b-instruct-turbo',
-    'together_ai/Qwen/Qwen2.5-72B-Instruct',
-  ],
-  perplexity: [
-    'perplexity/llama-3.1-sonar-huge-128k-online',
-    'perplexity/llama-3.1-sonar-large-128k-chat',
-  ],
-}
+const PROVIDER_OPTIONS = [
+  'openai',
+  'openrouter',
+  'qwen',
+  'glm',
+  'gemini',
+  'deepseek',
+  'moonshot',
+]
 
 export function MemoryPolicyPage() {
   const { session, refreshSession } = useSupabaseSession()
@@ -117,6 +67,9 @@ export function MemoryPolicyPage() {
   const [formKey, setFormKey] = useState('')
   const [formProvider, setFormProvider] = useState('')
   const [formModelName, setFormModelName] = useState('')
+  const [modelOptions, setModelOptions] = useState<string[]>([])
+  const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [modelMessage, setModelMessage] = useState<string | null>(null)
   const [llmStatus, setLlmStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [llmMessage, setLlmMessage] = useState<string | null>(null)
 
@@ -143,7 +96,7 @@ export function MemoryPolicyPage() {
     })
     const data = (await response.json()) as MemoryPolicyResponse & { message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? '加载通用设置失败')
+      throw new Error(data?.message ?? '加载记忆策略失败')
     }
     setDefaultScope(data.default_scope ?? 'user')
     setAllowApikeyScope(Boolean(data.allow_apikey_scope))
@@ -160,7 +113,7 @@ export function MemoryPolicyPage() {
     })
     const data = (await response.json()) as { data?: LlmKeyRow[]; message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? '加载 LLM Key 失败')
+      throw new Error(data?.message ?? '加载 LLM 密钥失败')
     }
     setLlmKeys(data.data ?? [])
   }
@@ -176,7 +129,7 @@ export function MemoryPolicyPage() {
     })
     const data = (await response.json()) as { data?: ApiKeyRow[]; message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? '加载 API Key 失败')
+      throw new Error(data?.message ?? '加载 API 密钥失败')
     }
     setApiKeys(data.data ?? [])
   }
@@ -193,12 +146,65 @@ export function MemoryPolicyPage() {
       })
   }, [accountId])
 
+  useEffect(() => {
+    if (!formProvider || !formKey.trim()) {
+      setModelOptions([])
+      setFormModelName('')
+      setModelStatus('idle')
+      setModelMessage(null)
+      return
+    }
+
+    let cancelled = false
+    setModelOptions([])
+    setFormModelName('')
+    setModelStatus('loading')
+    setModelMessage(null)
+
+    ;(async () => {
+      const activeSession = await getSession()
+      if (!activeSession || cancelled) return
+      const response = await fetch(
+        `${apiBaseUrl}/llm-models?provider=${encodeURIComponent(formProvider)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${activeSession.access_token}`,
+            'X-Principal-User-Id': activeSession.user.id,
+            'X-LLM-Api-Key': formKey.trim(),
+          },
+        },
+      )
+      const data = (await response.json()) as {
+        models?: string[]
+        message?: string
+      }
+      if (cancelled) return
+      if (!response.ok) {
+        setModelStatus('error')
+        setModelMessage(data?.message ?? '加载模型列表失败')
+        setModelOptions([])
+        return
+      }
+      setModelOptions(Array.isArray(data?.models) ? data.models : [])
+      setModelStatus('idle')
+    })().catch((error) => {
+      if (cancelled) return
+      setModelStatus('error')
+      setModelMessage(String(error))
+      setModelOptions([])
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [apiBaseUrl, formKey, formProvider])
+
   async function updateMemoryPolicy(nextScope: 'user' | 'apikey') {
     const activeSession = await getSession()
     if (!activeSession) return
     if (nextScope === 'apikey' && !allowApikeyScope) {
       setPolicyStatus('error')
-      setPolicyMessage('API key scope is not enabled for the current plan.')
+      setPolicyMessage('当前套餐未启用 API 密钥隔离。')
       return
     }
     setPolicyStatus('saving')
@@ -226,20 +232,18 @@ export function MemoryPolicyPage() {
     const normalizedLabel = formLabel.trim()
     const normalizedKey = formKey.trim()
     if (!normalizedLabel) {
-      setLlmMessage('请填写备注（label）')
+      setLlmMessage('请填写备注（label）。')
       setLlmStatus('error')
       return
     }
     const normalizedLower = normalizedLabel.toLowerCase()
-    if (
-      llmKeys.some((item) => (item.label ?? '').trim().toLowerCase() === normalizedLower)
-    ) {
-      setLlmMessage('备注（label）已存在，请更换')
+    if (llmKeys.some((item) => (item.label ?? '').trim().toLowerCase() === normalizedLower)) {
+      setLlmMessage('备注（label）已存在，请更换。')
       setLlmStatus('error')
       return
     }
     if (!normalizedKey || !formProvider || !formModelName) {
-      setLlmMessage('请填写 LLM Key，并选择平台与模型')
+      setLlmMessage('请填写 LLM 密钥，并选择平台与模型。')
       setLlmStatus('error')
       return
     }
@@ -339,116 +343,111 @@ export function MemoryPolicyPage() {
     }))
     return [
       { key: 'none', label: '未启用' },
-      { key: 'all', label: '所有' },
+      { key: 'all', label: '所有 API 密钥' },
       ...apiOptions,
     ]
   }, [apiKeys])
 
   return (
     <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">记忆</p>
+          <h1 className="text-2xl font-semibold text-ink">记忆策略</h1>
+          <p className="text-sm text-muted">配置记忆隔离策略并管理 LLM 密钥。</p>
+        </div>
+      </header>
+
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">通用设置</h3>
-          <p className="text-sm text-muted">配置记忆隔离策略与 LLM Key。</p>
+          <h3 className="text-lg font-semibold">记忆隔离策略</h3>
+          <p className="text-sm text-muted">默认按用户或 API 密钥隔离记忆。</p>
         </CardHeader>
-        <CardBody className="space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">记忆隔离策略</p>
-                <p className="text-xs text-muted">默认按用户或 API Key 隔离记忆。</p>
-              </div>
-            </div>
-            <Select
-              label="默认隔离范围"
-              selectedKeys={new Set([defaultScope])}
-              disabledKeys={allowApikeyScope ? [] : ['apikey']}
-              onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as 'user' | 'apikey'
-                updateMemoryPolicy(value)
-              }}
-            >
-              <SelectItem key="user">用户级</SelectItem>
-              <SelectItem key="apikey">API Key 级</SelectItem>
-            </Select>
-            {!allowApikeyScope ? (
-              <p className="text-xs text-warning-500">
-                API key scope is disabled for the current plan.
-              </p>
-            ) : null}
-            {policyStatus === 'error' ? (
-              <p className="text-xs text-danger-500">{policyMessage ?? '保存失败'}</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium">LLM Key 设置</p>
-              <p className="text-xs text-muted">添加并绑定不同的 LLM Key。</p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-4">
-              <Input
-                label="备注"
-                placeholder="例如：主用 OpenAI"
-                value={formLabel}
-                onChange={(event) => setFormLabel(event.target.value)}
-              />
-              <Input
-                label="LLM Key"
-                placeholder="sk-..."
-                type="password"
-                value={formKey}
-                onChange={(event) => setFormKey(event.target.value)}
-              />
-              <Select
-                label="平台（provider）"
-                selectedKeys={formProvider ? new Set([formProvider]) : new Set([])}
-                onSelectionChange={(keys) => {
-                  const value = String(Array.from(keys)[0] ?? '')
-                  setFormProvider(value)
-                  setFormModelName('')
-                }}
-              >
-                {Object.keys(PROVIDER_MODELS).map((provider) => (
-                  <SelectItem key={provider}>{provider}</SelectItem>
-                ))}
-              </Select>
-              <Select
-                label="模型名称（model_name）"
-                isDisabled={!formProvider}
-                selectedKeys={formModelName ? new Set([formModelName]) : new Set([])}
-                onSelectionChange={(keys) => {
-                  const value = String(Array.from(keys)[0] ?? '')
-                  setFormModelName(value)
-                }}
-              >
-                {(PROVIDER_MODELS[formProvider] ?? []).map((model) => (
-                  <SelectItem key={model}>{model}</SelectItem>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Button onPress={handleAddLlmKey} className="bg-ink text-white">
-                添加
-              </Button>
-            </div>
-            {llmStatus === 'error' && llmMessage ? (
-              <p className="text-xs text-danger-500">{llmMessage}</p>
-            ) : null}
-          </div>
+        <CardBody className="space-y-4">
+          <Select
+            label="默认隔离范围"
+            selectedKeys={new Set([defaultScope])}
+            disabledKeys={allowApikeyScope ? [] : ['apikey']}
+            onSelectionChange={(keys) => {
+              const value = Array.from(keys)[0] as 'user' | 'apikey'
+              updateMemoryPolicy(value)
+            }}
+          >
+            <SelectItem key="user">用户级</SelectItem>
+            <SelectItem key="apikey">API 密钥级</SelectItem>
+          </Select>
+          {!allowApikeyScope ? (
+            <p className="text-xs text-warning-500">当前套餐未启用 API 密钥隔离。</p>
+          ) : null}
+          {policyStatus === 'error' ? (
+            <p className="text-xs text-danger-500">{policyMessage ?? '保存失败'}</p>
+          ) : null}
         </CardBody>
       </Card>
 
       <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h3 className="text-lg font-semibold">LLM Key 列表</h3>
-          <p className="text-sm text-muted">选择绑定范围，或删除。</p>
+        <CardHeader className="flex flex-col items-start gap-2">
+          <h3 className="text-lg font-semibold">LLM 密钥管理</h3>
+          <p className="text-sm text-muted">添加并绑定不同的 LLM 密钥。</p>
         </CardHeader>
-        <CardBody>
+        <CardBody className="space-y-6">
+          <div className="grid gap-3 md:grid-cols-4">
+            <Input
+              label="备注"
+              placeholder="例如：主用 OpenAI"
+              value={formLabel}
+              onChange={(event) => setFormLabel(event.target.value)}
+            />
+            <Input
+              label="LLM 密钥"
+              placeholder="sk-..."
+              type="password"
+              value={formKey}
+              onChange={(event) => setFormKey(event.target.value)}
+            />
+            <Select
+              label="平台（provider）"
+              selectedKeys={formProvider ? new Set([formProvider]) : new Set([])}
+              onSelectionChange={(keys) => {
+                const value = String(Array.from(keys)[0] ?? '')
+                setFormProvider(value)
+                setFormModelName('')
+              }}
+            >
+              {PROVIDER_OPTIONS.map((provider) => (
+                <SelectItem key={provider}>{provider}</SelectItem>
+              ))}
+            </Select>
+            <Select
+              label="模型名称（model_name）"
+              isDisabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
+              selectedKeys={formModelName ? new Set([formModelName]) : new Set([])}
+              onSelectionChange={(keys) => {
+                const value = String(Array.from(keys)[0] ?? '')
+                setFormModelName(value)
+              }}
+            >
+              {modelOptions.map((model) => (
+                <SelectItem key={model}>{model}</SelectItem>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Button onPress={handleAddLlmKey} className="bg-ink text-white">
+              添加
+            </Button>
+          </div>
+          {modelStatus === 'error' && modelMessage ? (
+            <p className="text-xs text-danger-500">{modelMessage}</p>
+          ) : null}
+          {llmStatus === 'error' && llmMessage ? (
+            <p className="text-xs text-danger-500">{llmMessage}</p>
+          ) : null}
+
           {llmStatus === 'loading' ? (
             <div className="text-sm text-muted">加载中...</div>
           ) : (
-            <Table removeWrapper aria-label="LLM Keys" className="w-full">
+            <Table removeWrapper aria-label="LLM 密钥" className="w-full">
               <TableHeader>
                 <TableColumn>备注</TableColumn>
                 <TableColumn>平台</TableColumn>
@@ -460,7 +459,7 @@ export function MemoryPolicyPage() {
               <TableBody>
                 {llmKeys.length === 0 ? (
                   <TableRow key="empty">
-                    <TableCell>暂无 LLM Key</TableCell>
+                    <TableCell>暂无 LLM 密钥</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
@@ -500,9 +499,7 @@ export function MemoryPolicyPage() {
                             }}
                           >
                             {scopeOptions.map((option) => (
-                              <SelectItem key={option.key}>
-                                {option.label}
-                              </SelectItem>
+                              <SelectItem key={option.key}>{option.label}</SelectItem>
                             ))}
                           </Select>
                         </TableCell>

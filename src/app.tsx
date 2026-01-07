@@ -139,12 +139,12 @@ export function App() {
   }
 
   const dashboardLinks = [
-    { label: '概览', path: dashboardPath },
-    { label: 'API Key', path: apiKeysPath },
-    { label: '上传任务', path: uploadsPath },
-    { label: '用量', path: usagePath },
-    { label: '通用设置', path: memoryPolicyPath },
-    { label: '个人资料', path: profilePath },
+    { label: '概览', path: dashboardPath, group: 'main' },
+    { label: 'API 密钥', path: apiKeysPath, group: 'main' },
+    { label: '上传任务', path: uploadsPath, group: 'main' },
+    { label: '用量', path: usagePath, group: 'main' },
+    { label: '记忆策略', path: memoryPolicyPath, group: 'main' },
+    { label: '个人资料', path: profilePath, group: 'account' },
   ]
 
   const currentDashboardPath = (() => {
@@ -948,10 +948,10 @@ function getBrowserPathname() {
 
 function getDashboardTitle(routeKey: RouteKey) {
   switch (routeKey) {
-    case 'apiKeys': return 'API Key'
+    case 'apiKeys': return 'API 密钥'
     case 'uploads': return '上传任务'
     case 'usage': return '用量'
-    case 'memoryPolicy': return '通用设置'
+    case 'memoryPolicy': return '记忆策略'
     case 'profile': return '个人资料'
     default: return '个人空间概览'
   }

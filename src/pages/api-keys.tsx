@@ -69,7 +69,7 @@ export function ApiKeysPage() {
     )
     const data = (await response.json()) as ApiKeyListResponse & { message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? 'Failed to load API keys')
+      throw new Error(data?.message ?? '加载 API 密钥失败')
     }
     const nextRows = data.data ?? []
     setRows(nextRows)
@@ -86,7 +86,7 @@ export function ApiKeysPage() {
     getActiveSession()
       .then((active) => {
         if (!active) {
-          throw new Error('Session expired. Please sign in again.')
+          throw new Error('会话已过期，请重新登录。')
         }
         return fetchKeys(active.user.id, active.access_token, page)
       })
@@ -108,7 +108,7 @@ export function ApiKeysPage() {
   async function handleCreateKey() {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('Please sign in to create an API key.')
+      setMessage('请先登录以创建 API 密钥。')
       return
     }
 
@@ -118,7 +118,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('Session expired. Please sign in again.')
+        throw new Error('会话已过期，请重新登录。')
       }
 
       const response = await fetch(`${apiBaseUrl}/apikeys`, {
@@ -134,7 +134,7 @@ export function ApiKeysPage() {
 
       const data = (await response.json()) as ApiKeyCreateResponse
       if (!response.ok) {
-        throw new Error(data?.message ?? 'Failed to create API key')
+        throw new Error(data?.message ?? '创建 API 密钥失败')
       }
 
       setLabel('')
@@ -142,8 +142,8 @@ export function ApiKeysPage() {
       setLastPlaintext(data.api_key_plaintext ?? null)
       setMessage(
         data.api_key_plaintext
-          ? `Created. Copy now: ${data.api_key_plaintext}`
-          : 'Created. The key is only shown once.',
+          ? `已创建，请立即复制：${data.api_key_plaintext}`
+          : '创建成功，密钥仅显示一次。',
       )
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -157,7 +157,7 @@ export function ApiKeysPage() {
   async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('Please sign in to manage API keys.')
+      setMessage('请先登录以管理 API 密钥。')
       return
     }
 
@@ -167,7 +167,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('Session expired. Please sign in again.')
+        throw new Error('会话已过期，请重新登录。')
       }
 
       const requestId = crypto.randomUUID()
@@ -189,19 +189,22 @@ export function ApiKeysPage() {
 
       const data = (await response.json()) as ApiKeyCreateResponse & { status?: string; message?: string }
       if (!response.ok) {
-        throw new Error(data?.message ?? `Failed to ${action} API key`)
+        throw new Error(
+          data?.message ??
+            (action === 'revoke' ? '撤销失败' : action === 'rotate' ? '轮换失败' : '删除失败'),
+        )
       }
 
       if (action === 'rotate') {
         setLastPlaintext(data.api_key_plaintext ?? null)
         setMessage(
           data.api_key_plaintext
-            ? `Rotated. Copy now: ${data.api_key_plaintext}`
-            : 'Rotated. The key is only shown once.',
+            ? `已轮换，请立即复制：${data.api_key_plaintext}`
+            : '轮换完成，密钥仅显示一次。',
         )
       } else {
         setLastPlaintext(null)
-        setMessage(`${action} success`)
+        setMessage(action === 'revoke' ? '撤销成功' : '删除成功')
       }
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -214,16 +217,24 @@ export function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">访问控制</p>
+          <h1 className="text-2xl font-semibold text-ink">API 密钥</h1>
+          <p className="text-sm text-muted">创建与管理 API 密钥，用于自动化调用。</p>
+        </div>
+      </header>
+
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">API Keys</h3>
-          <p className="text-sm text-muted">Create and manage API keys for integrations.</p>
+          <h3 className="text-lg font-semibold">创建 API 密钥</h3>
+          <p className="text-sm text-muted">标签用于区分用途，生成后的密钥仅显示一次。</p>
         </CardHeader>
         <CardBody className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <Input
-              label="Label"
-              placeholder="e.g. production-service"
+              label="标签"
+              placeholder="例如：生产环境"
               value={label}
               onValueChange={setLabel}
             />
@@ -233,7 +244,7 @@ export function ApiKeysPage() {
               isLoading={status === 'loading'}
               onPress={handleCreateKey}
             >
-              Create key
+              新建 API 密钥
             </Button>
           </div>
           {message ? (
@@ -249,14 +260,14 @@ export function ApiKeysPage() {
                   onPress={async () => {
                     try {
                       await navigator.clipboard.writeText(lastPlaintext)
-                      setMessage('Copied to clipboard.')
+                      setMessage('已复制到剪贴板。')
                     } catch (error) {
                       setStatus('error')
                       setMessage(String(error))
                     }
                   }}
                 >
-                  Copy key
+                  复制密钥
                 </Button>
               ) : null}
             </div>
@@ -266,22 +277,22 @@ export function ApiKeysPage() {
 
       <Card className="glass-panel">
         <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">已激活APIkey</h3>
-          <p className="text-sm text-muted">Keys are shown once on creation.</p>
+          <h3 className="text-lg font-semibold">当前密钥</h3>
+          <p className="text-sm text-muted">密钥仅在创建或轮换时展示明文。</p>
         </CardHeader>
         <CardBody>
-          <Table removeWrapper aria-label="API keys">
+          <Table removeWrapper aria-label="API 密钥">
             <TableHeader>
-              <TableColumn>Prefix</TableColumn>
-              <TableColumn>Label</TableColumn>
-              <TableColumn>Status</TableColumn>
-              <TableColumn>Created</TableColumn>
-              <TableColumn>Actions</TableColumn>
+              <TableColumn>前缀</TableColumn>
+              <TableColumn>标签</TableColumn>
+              <TableColumn>状态</TableColumn>
+              <TableColumn>创建时间</TableColumn>
+              <TableColumn>操作</TableColumn>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow key="empty">
-                  <TableCell>No API keys yet.</TableCell>
+                  <TableCell>暂无 API 密钥。</TableCell>
                   <TableCell>-</TableCell>
                   <TableCell>-</TableCell>
                   <TableCell>-</TableCell>
@@ -293,7 +304,7 @@ export function ApiKeysPage() {
                     <TableCell>{row.key_prefix ?? '-'}</TableCell>
                     <TableCell>{row.label ?? '-'}</TableCell>
                     <TableCell>
-                      {row.deleted_at ? 'Deleted' : row.revoked_at ? 'Revoked' : 'Active'}
+                      {row.deleted_at ? '已删除' : row.revoked_at ? '已撤销' : '启用'}
                     </TableCell>
                     <TableCell>
                       {row.created_at ? new Date(row.created_at).toLocaleString() : '-'}
@@ -307,7 +318,7 @@ export function ApiKeysPage() {
                           onPress={() => handleAction('revoke', row.id)}
                           isDisabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
                         >
-                          Revoke
+                          撤销
                         </Button>
                         <Button
                           size="sm"
@@ -315,7 +326,7 @@ export function ApiKeysPage() {
                           onPress={() => handleAction('rotate', row.id)}
                           isDisabled={status === 'loading' || Boolean(row.deleted_at)}
                         >
-                          Rotate
+                          轮换
                         </Button>
                         <Button
                           size="sm"
@@ -325,7 +336,7 @@ export function ApiKeysPage() {
                           onPress={() => handleAction('delete', row.id)}
                           isDisabled={status === 'loading' || Boolean(row.deleted_at)}
                         >
-                          Delete
+                          删除
                         </Button>
                       </div>
                     </TableCell>

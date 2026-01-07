@@ -1,4 +1,4 @@
-import {
+﻿import {
   Button,
   Card,
   CardBody,
@@ -76,6 +76,7 @@ export function UploadsPage() {
   const [pollingUploadId, setPollingUploadId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [hasNext, setHasNext] = useState(false)
+  const [refreshToken, setRefreshToken] = useState(0)
   const pageSize = 10
 
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
@@ -85,6 +86,12 @@ export function UploadsPage() {
   async function getActiveSession() {
     const refreshed = await refreshSession()
     return refreshed ?? session
+  }
+
+  function handleRefresh() {
+    setPage(1)
+    setUploads([])
+    setRefreshToken((prev) => prev + 1)
   }
 
   function upsertUpload(row: Partial<UploadRow> & { id: string }) {
@@ -122,9 +129,9 @@ export function UploadsPage() {
           resolve()
           return
         }
-        reject(new Error('Upload to object storage failed.'))
+        reject(new Error('上传到对象存储失败。'))
       }
-      xhr.onerror = () => reject(new Error('Upload to object storage failed.'))
+      xhr.onerror = () => reject(new Error('上传到对象存储失败。'))
       xhr.send(body)
     })
   }
@@ -132,7 +139,7 @@ export function UploadsPage() {
   async function handleUpload() {
     if (!selectedFile || !accountId || !accessToken) {
       setStatus('error')
-      setMessage('Please sign in and choose a file before uploading.')
+      setMessage('请先登录并选择文件。')
       setInlineStatus(null)
       return
     }
@@ -144,7 +151,7 @@ export function UploadsPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('Session expired. Please sign in again.')
+        throw new Error('会话已过期，请重新登录。')
       }
 
       const requestId = crypto.randomUUID()
@@ -165,7 +172,7 @@ export function UploadsPage() {
 
       const initData = (await initResponse.json()) as UploadInitResponse
       if (!initResponse.ok) {
-        throw new Error(initData?.message ?? 'Failed to initialize upload.')
+        throw new Error(initData?.message ?? '初始化上传失败。')
       }
 
       const now = new Date().toISOString()
@@ -271,7 +278,7 @@ export function UploadsPage() {
     return () => {
       cancelled = true
     }
-  }, [accountId, accessToken, apiBaseUrl, refreshSession, page])
+  }, [accountId, accessToken, apiBaseUrl, refreshSession, page, refreshToken])
 
   useEffect(() => {
     if (!pollingUploadId || !accountId || !accessToken) return
@@ -283,7 +290,7 @@ export function UploadsPage() {
       try {
         const active = await getActiveSession()
         if (!active) {
-          throw new Error('Session expired. Please sign in again.')
+          throw new Error('会话已过期，请重新登录。')
         }
 
         const response = await fetch(`${apiBaseUrl}/uploads/${pollingUploadId}`, {
@@ -294,7 +301,7 @@ export function UploadsPage() {
         })
         const data = (await response.json()) as UploadStatusResponse
         if (!response.ok) {
-          throw new Error(data?.message ?? 'Failed to fetch upload status.')
+          throw new Error(data?.message ?? '获取上传状态失败。')
         }
 
         if (cancelled) return
@@ -308,7 +315,7 @@ export function UploadsPage() {
         })
 
         if (data.status === 'done') {
-          setInlineStatus('记忆已同步')
+          setInlineStatus('记忆已同步。')
         }
 
         if (!ACTIVE_STATUSES.has(data.status)) {
@@ -334,78 +341,110 @@ export function UploadsPage() {
   }, [pollingUploadId, accountId, accessToken, apiBaseUrl, refreshSession])
 
   return (
-    <Card className="glass-panel">
-      <CardHeader className="flex flex-col items-start gap-2">
-        <h3 className="text-lg font-semibold">Uploads</h3>
-        <p className="text-sm text-muted">Upload a file to sync it into memory.</p>
-      </CardHeader>
-      <CardBody className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <Input
-            type="file"
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null
-              setSelectedFile(file)
-            }}
-          />
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">存储</p>
+          <h1 className="text-2xl font-semibold text-ink">上传任务</h1>
+          <p className="text-sm text-muted">查看上传任务与处理状态。</p>
+        </div>
+        <div className="flex items-center gap-2">
           <Button
-            className="bg-vermillion text-white"
+            size="sm"
+            variant="bordered"
+            className="border-ink/20 text-ink"
+            onPress={handleRefresh}
+          >
+            刷新
+          </Button>
+          <Button
+            size="sm"
+            className="bg-accent text-white"
             radius="full"
             isDisabled={!selectedFile || status === 'loading'}
             onPress={handleUpload}
           >
-            {status === 'loading' ? 'Uploading...' : 'Upload file'}
+            {status === 'loading' ? '上传中…' : '开始上传'}
           </Button>
-          <div className="text-sm text-muted">
-            {selectedFile ? `Size: ${formatBytes(selectedFile.size)}` : 'No file selected'}
-          </div>
         </div>
-        {inlineStatus ? <p className="text-sm text-accent">{inlineStatus}</p> : null}
-        {message ? <p className="text-sm text-danger">{message}</p> : null}
+      </header>
 
-        <Table removeWrapper aria-label="Uploads">
-          <TableHeader>
-            <TableColumn>文件名</TableColumn>
-            <TableColumn>文件格式</TableColumn>
-            <TableColumn>上传状态</TableColumn>
-            <TableColumn>上传时间</TableColumn>
-            <TableColumn>消耗积分</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="No uploads yet.">
-            {uploads.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.file}</TableCell>
-                <TableCell>{row.fileType}</TableCell>
-                <TableCell>{renderStatusCell(row)}</TableCell>
-                <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
-                <TableCell>{row.balanceUsed}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            variant="bordered"
-            className="border-ink/20 text-ink"
-            onPress={() => setPage((prev) => Math.max(1, prev - 1))}
-            isDisabled={page <= 1}
-          >
-            上一页
-          </Button>
-          <span className="text-sm text-muted">第 {page} 页</span>
-          <Button
-            size="sm"
-            variant="bordered"
-            className="border-ink/20 text-ink"
-            onPress={() => setPage((prev) => prev + 1)}
-            isDisabled={!hasNext}
-          >
-            下一页
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
+      <Card className="glass-panel">
+        <CardHeader className="flex flex-col items-start gap-2">
+          <h3 className="text-lg font-semibold">上传文件</h3>
+          <p className="text-sm text-muted">选择文件并上传到记忆数据管线。</p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null
+                setSelectedFile(file)
+              }}
+            />
+            <div className="text-sm text-muted">
+              {selectedFile ? `文件大小：${formatBytes(selectedFile.size)}` : '尚未选择文件'}
+            </div>
+          </div>
+          {inlineStatus ? <p className="text-sm text-accent">{inlineStatus}</p> : null}
+          {message ? <p className="text-sm text-danger">{message}</p> : null}
+        </CardBody>
+      </Card>
+
+      <Card className="glass-panel">
+        <CardHeader className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">上传记录</h3>
+            <p className="text-sm text-muted">最近的上传任务与处理结果。</p>
+          </div>
+          <p className="text-xs text-muted">当前第 {page} 页</p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Table removeWrapper aria-label="上传记录">
+            <TableHeader>
+              <TableColumn>文件名称</TableColumn>
+              <TableColumn>文件格式</TableColumn>
+              <TableColumn>状态</TableColumn>
+              <TableColumn>上传时间</TableColumn>
+              <TableColumn>消耗积分</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="暂无上传记录。">
+              {uploads.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.file}</TableCell>
+                  <TableCell>{row.fileType}</TableCell>
+                  <TableCell>{renderStatusCell(row)}</TableCell>
+                  <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
+                  <TableCell>{row.balanceUsed}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="bordered"
+              className="border-ink/20 text-ink"
+              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+              isDisabled={page <= 1}
+            >
+              上一页
+            </Button>
+            <span className="text-sm text-muted">第 {page} 页</span>
+            <Button
+              size="sm"
+              variant="bordered"
+              className="border-ink/20 text-ink"
+              onPress={() => setPage((prev) => prev + 1)}
+              isDisabled={!hasNext}
+            >
+              下一页
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   )
 }
 
@@ -422,16 +461,16 @@ function formatStatus(row: UploadRow) {
     return '上传中'
   }
   if (row.status === 'uploaded') {
-    return '上传已完成'
+    return '已上传'
   }
   if (row.status === 'processing') {
     return '处理中'
   }
   if (row.status === 'done') {
-    return '记忆已同步'
+    return '已同步'
   }
   if (row.status === 'failed') {
-    return row.error ? `Failed: ${row.error}` : 'Failed'
+    return row.error ? `失败：${row.error}` : '失败'
   }
   return row.status
 }
