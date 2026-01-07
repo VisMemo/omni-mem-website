@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { AuthControl } from './components/auth-control'
 import { DashboardShell } from './components/dashboard-shell'
+import { ThreeDemoSection } from './components/three-demo'
 import { useSupabaseSession } from './hooks/use-supabase-session'
 import { DashboardPage } from './pages/dashboard'
 import { ApiKeysPage } from './pages/api-keys'
@@ -12,6 +13,7 @@ import { ProfilePage } from './pages/profile'
 import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
 import { PasswordResetPage } from './pages/auth/password-reset'
+import { DocsPage } from './pages/docs'
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale())
@@ -178,9 +180,28 @@ export function App() {
           {isMarketing && (
             <div className="navbar-links">
               {content.navbar.navLinks.map((link) => (
-                <a key={link.label} href={link.href} className="navbar-link">
-                  {link.label}
-                </a>
+                link.dropdown ? (
+                  <div key={link.label} className="navbar-dropdown">
+                    <button className="navbar-link dropdown-trigger">
+                      {link.label}
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="dropdown-chevron">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <div className="dropdown-menu">
+                      {link.dropdown.map((item) => (
+                        <a key={item.label} href={item.href} className="dropdown-item">
+                          {item.icon && <span className="dropdown-icon">{item.icon}</span>}
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <a key={link.label} href={link.href} className="navbar-link">
+                    {link.label}
+                  </a>
+                )
               ))}
             </div>
           )}
@@ -205,11 +226,13 @@ export function App() {
         <main>
           <HeroSection content={content.hero} signUpPath={signUpPath} />
           <MarqueeSection />
+          <ThreeDemoSection />
           <StatsSection content={content.stats} />
-          <FeaturesSection content={content.features} />
           <HowItWorksSection content={content.howItWorks} />
+          <FeaturesSection content={content.features} />
           <DeveloperSection content={content.developers} signUpPath={signUpPath} />
           <TestimonialsSection content={content.testimonials} />
+          <PartnersSection content={content.partners} />
           <PricingSection content={content.pricing} signUpPath={signUpPath} />
           <FaqSection content={content.faq} />
           <CtaSection content={content.cta} signUpPath={signUpPath} />
@@ -247,6 +270,9 @@ export function App() {
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
               <PasswordResetPage signInPath={signInPath} onNavigate={navigateTo} />
             </div>
+          )}
+          {routeKey === 'docs' && (
+            <DocsPage locale={locale} onNavigate={navigateTo} />
           )}
         </main>
       )}
@@ -341,7 +367,7 @@ function HeroSection({ content, signUpPath }: { content: HeroContent; signUpPath
 }
 
 function MarqueeSection() {
-  const items = ['Text', 'Audio', 'Images', 'Events', 'Conversations', 'Documents', 'Memories']
+  const items = ['Text', 'Audio', 'Images', 'Events', 'Conversations', 'Videos', 'Memories']
 
   return (
     <div className="marquee-wrap">
@@ -353,6 +379,24 @@ function MarqueeSection() {
         ))}
       </div>
     </div>
+  )
+}
+
+function PartnersSection({ content }: { content: PartnersContent }) {
+  return (
+    <section className="partners-section">
+      <div className="container">
+        <p className="partners-label">{content.label}</p>
+        <div className="partners-grid">
+          {content.partners.map((partner) => (
+            <div key={partner.name} className="partner-logo">
+              <span className="partner-name">{partner.name}</span>
+              {partner.nameCn && <span className="partner-name-cn">{partner.nameCn}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -392,9 +436,9 @@ function FeaturesSection({ content }: { content: FeaturesSectionContent }) {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="features" className="py-section">
+    <section id="enterprise" className="py-section">
       <div className="container">
-        <div className="section-number">01</div>
+        <div className="section-number">02</div>
 
         <motion.div
           ref={ref}
@@ -436,7 +480,7 @@ function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   return (
     <section id="how-it-works" className="py-section bg-ivory-dark/30">
       <div className="container">
-        <div className="section-number">02</div>
+        <div className="section-number">01</div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           <motion.div
@@ -472,7 +516,48 @@ function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   )
 }
 
+function TypingAnimation({ words }: { words: string[] }) {
+  const [currentWordIndex, setCurrentWordIndex] = useState(0)
+  const [displayText, setDisplayText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  useEffect(() => {
+    const currentWord = words[currentWordIndex]
+    const typingSpeed = isDeleting ? 50 : 100
+    const pauseTime = 2000
+    
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayText.length < currentWord.length) {
+          setDisplayText(currentWord.slice(0, displayText.length + 1))
+        } else {
+          setTimeout(() => setIsDeleting(true), pauseTime)
+        }
+      } else {
+        if (displayText.length > 0) {
+          setDisplayText(displayText.slice(0, -1))
+        } else {
+          setIsDeleting(false)
+          setCurrentWordIndex((prev) => (prev + 1) % words.length)
+        }
+      }
+    }, typingSpeed)
+    
+    return () => clearTimeout(timeout)
+  }, [displayText, isDeleting, currentWordIndex, words])
+  
+  return (
+    <span className="typing-text">
+      {displayText}
+      <span className="typing-cursor">|</span>
+    </span>
+  )
+}
+
 function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; signUpPath: string }) {
+  const [activeTab, setActiveTab] = useState(0)
+  const sdkWords = ['Python', 'JavaScript', 'REST']
+
   return (
     <section id="developers" className="split-section">
       <div className="split-left">
@@ -481,14 +566,16 @@ function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; 
           <span style={{ background: 'rgb(var(--gold))', width: 24, height: 1, display: 'inline-block', marginRight: '1rem' }} />
           {content.eyebrow}
         </span>
-        <h2 className="mt-6 mb-6" style={{ color: 'rgb(var(--ivory))' }}>{content.title}</h2>
+        <h2 className="mt-6 mb-6" style={{ color: 'rgb(var(--ivory))' }}>
+          Deploy with <TypingAnimation words={sdkWords} />
+        </h2>
         <p className="text-lg mb-10" style={{ color: 'rgba(252, 250, 245, 0.6)' }}>{content.description}</p>
         <div className="flex gap-4">
-          <a href={signUpPath} className="btn-primary" style={{ background: 'rgb(var(--vermillion))' }}>
+          <a href="/docs" className="btn-primary" style={{ background: 'rgb(var(--vermillion))' }}>
             {content.primaryCta}
           </a>
           <a
-            href="#"
+            href={signUpPath}
             className="btn-secondary"
             style={{ borderColor: 'rgba(252, 250, 245, 0.2)', color: 'rgb(var(--ivory))' }}
           >
@@ -503,10 +590,21 @@ function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; 
             <div className="code-editor-dot" />
             <div className="code-editor-dot" />
             <div className="code-editor-dot" />
+            <div className="code-tabs">
+              {content.codeTabs.map((tab, i) => (
+                <button
+                  key={tab.label}
+                  className={`code-tab ${i === activeTab ? 'active' : ''}`}
+                  onClick={() => setActiveTab(i)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="code-editor-body">
             <pre>
-              <code dangerouslySetInnerHTML={{ __html: highlightCode(content.code) }} />
+              <code dangerouslySetInnerHTML={{ __html: highlightCode(content.codeTabs[activeTab].code, content.codeTabs[activeTab].label) }} />
             </pre>
           </div>
         </div>
@@ -778,13 +876,31 @@ function LogoMark() {
   )
 }
 
-function highlightCode(code: string): string {
+function highlightCode(code: string, lang: string = 'Python'): string {
+  if (lang === 'REST') {
+    return code
+      .replace(/(curl)/g, '<span class="keyword">$1</span>')
+      .replace(/(-X|-H|-d)/g, '<span class="property">$1</span>')
+      .replace(/(".*?")/g, '<span class="string">$1</span>')
+      .replace(/(POST|GET)/g, '<span class="function">$1</span>')
+      .replace(/(#.*)/g, '<span class="comment">$1</span>')
+      .replace(/(\\)/g, '<span class="comment">$1</span>')
+  }
+  if (lang === 'JavaScript') {
+    return code
+      .replace(/(import|from|const|await|new|async|if)/g, '<span class="keyword">$1</span>')
+      .replace(/('.*?')/g, '<span class="string">$1</span>')
+      .replace(/(Memory|mem|result)/g, '<span class="function">$1</span>')
+      .replace(/(apiKey|role|content):/g, '<span class="property">$1</span>:')
+      .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
+  }
+  // Python (default)
   return code
-    .replace(/(import|from|const|await|new|async)/g, '<span class="keyword">$1</span>')
-    .replace(/('.*?')/g, '<span class="string">$1</span>')
-    .replace(/(OmniMemory|memory)/g, '<span class="function">$1</span>')
-    .replace(/(apiKey|userId|modality|content|metadata|query|limit):/g, '<span class="property">$1</span>:')
-    .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
+    .replace(/(from|import|if|def|class)/g, '<span class="keyword">$1</span>')
+    .replace(/(".*?")/g, '<span class="string">$1</span>')
+    .replace(/(Memory|mem|result)/g, '<span class="function">$1</span>')
+    .replace(/(api_key|role|content)=/g, '<span class="property">$1</span>=')
+    .replace(/(#.*)/g, '<span class="comment">$1</span>')
 }
 
 // ============ UTILITIES ============
@@ -802,6 +918,7 @@ function buildLocalePathname({ pathname }: { pathname: string; locale: Locale })
 
 function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
   const strippedPath = stripLocaleFromPathname({ pathname })
+  if (strippedPath.startsWith(ROUTE_PATHS.docs)) return 'docs'
   if (strippedPath.startsWith(ROUTE_PATHS.apiKeys)) return 'apiKeys'
   if (strippedPath.startsWith(ROUTE_PATHS.uploads)) return 'uploads'
   if (strippedPath.startsWith(ROUTE_PATHS.usage)) return 'usage'
@@ -858,6 +975,7 @@ const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
 
 const ROUTE_PATHS = {
   home: '/',
+  docs: '/docs',
   dashboard: '/dashboard',
   apiKeys: '/dashboard/api-keys',
   uploads: '/dashboard/uploads',
@@ -869,26 +987,47 @@ const ROUTE_PATHS = {
   passwordReset: '/auth/password-reset',
 } as const
 
-const CODE_SAMPLE = `import { OmniMemory } from '@omni/memory'
+const CODE_SAMPLE_PYTHON = `from omem import Memory
 
-const memory = new OmniMemory({
-  apiKey: process.env.OMNI_MEMORY_KEY,
-})
+mem = Memory(api_key="qbk_xxx")  # That's it!
 
-// Write a memory
-await memory.write({
-  userId: 'user_1287',
-  modality: 'audio',
-  content: transcript,
-  metadata: { sentiment: 'positive' },
-})
+# Save a conversation
+mem.add("conv-001", [
+    {"role": "user", "content": "明天和 Caroline 去西湖"},
+    {"role": "assistant", "content": "好的，我记住了"},
+])
+
+# Search memories
+result = mem.search("我什么时候去西湖？")
+if result:
+    print(result.to_prompt())`
+
+const CODE_SAMPLE_JS = `import { Memory } from 'omem'
+
+const mem = new Memory({ apiKey: 'qbk_xxx' })
+
+// Save a conversation
+await mem.add('conv-001', [
+  { role: 'user', content: 'Meeting with Caroline tomorrow' },
+  { role: 'assistant', content: 'Got it, I will remember' },
+])
 
 // Search memories
-const recall = await memory.search({
-  userId: 'user_1287',
-  query: 'recent discussions',
-  limit: 5,
-})`
+const result = await mem.search('When is my meeting?')
+if (result) {
+  console.log(result.toPrompt())
+}`
+
+const CODE_SAMPLE_REST = `# Save a conversation
+curl -X POST "https://api.omnimemory.ai/v1/memory/ingest" \\
+  -H "x-api-key: qbk_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{"session_id": "conv-001", "turns": [...]}'
+
+# Search memories
+curl -X POST "https://api.omnimemory.ai/v1/memory/retrieval" \\
+  -H "x-api-key: qbk_xxx" \\
+  -d '{"query": "When is my meeting?", "topk": 10}'`
 
 // ============ CONTENT ============
 
@@ -897,10 +1036,19 @@ const contentByLocale: Record<Locale, AppContent> = {
     navbar: {
       brandName: 'Omni Memory',
       navLinks: [
-        { label: 'Features', href: '#features' },
-        { label: 'How it Works', href: '#how-it-works' },
-        { label: 'Developers', href: '#developers' },
+        { 
+          label: 'Developers',
+          dropdown: [
+            { label: 'Documentation', href: '/docs', icon: '📚' },
+            { label: 'API Reference', href: '/docs/api', icon: '⚡' },
+            { label: 'Support', href: '/support', icon: '💬' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '🎮' },
+          ]
+        },
         { label: 'Pricing', href: '#pricing' },
+        { label: 'Enterprise', href: '#enterprise' },
+        { label: 'Research', href: '/research' },
+        { label: 'Join Us', href: '/careers' },
       ],
       ctaLabel: 'Get Started',
       toggleLabel: '中文',
@@ -915,20 +1063,20 @@ const contentByLocale: Record<Locale, AppContent> = {
     },
     stats: {
       items: [
-        { value: '15B+', label: 'Memories Stored' },
-        { value: '<500ms', label: 'Recall Latency' },
-        { value: '99.99%', label: 'Uptime SLA' },
+        { value: '#1', label: 'LoCoMo Benchmark' },
+        { value: '77.8%', label: 'J-Score Accuracy' },
+        { value: '<1s', label: 'Retrieval Latency' },
       ],
     },
     features: {
-      eyebrow: 'Capabilities',
-      title: 'Memory infrastructure built for AI',
-      description: 'Everything you need to give your AI persistent, contextual memory that scales.',
+      eyebrow: 'For Enterprise',
+      title: 'Production-ready memory infrastructure',
+      description: 'Deploy with confidence. Full control over your data and infrastructure.',
       items: [
-        { icon: '', tag: 'Recall', title: 'Intelligent Retrieval', description: 'Hybrid vector and symbolic search with decay curves. Get the right context at the right time, every time.' },
-        { icon: '', tag: 'Policy', title: 'Access Control', description: 'Scope memories by tenant, role, and sensitivity.' },
-        { icon: '', tag: 'Graph', title: 'Connected Memory', description: 'Entity graphs link people, projects, and intents.' },
-        { icon: '', tag: 'Analytics', title: 'Memory Insights', description: 'Trace how memories influence outputs.' },
+        { icon: '🔒', tag: 'Privacy', title: 'Self-Hosted Database', description: 'Deploy on your infrastructure with Qdrant + Neo4j. Your data never leaves your servers. Full data sovereignty.' },
+        { icon: '🚀', tag: 'Deploy', title: 'One-Command Setup', description: 'Docker Compose deployment in minutes. Kubernetes-ready. No complex configuration required.' },
+        { icon: '👥', tag: 'Support', title: 'Dedicated Team', description: 'SLA-backed enterprise support. Direct access to engineering team. Custom integration assistance.' },
+        { icon: '📊', tag: 'Console', title: 'API Dashboard', description: 'Monitor usage, manage API keys, configure memory policies. Full observability into your memory layer.' },
       ],
     },
     howItWorks: {
@@ -943,11 +1091,15 @@ const contentByLocale: Record<Locale, AppContent> = {
     },
     developers: {
       eyebrow: 'For Developers',
-      title: 'Memory in minutes, not months',
-      description: 'Drop in the SDK and start writing memories with structured metadata. Query with filters and safety rails in one API call.',
+      title: 'Deploy with Python / JavaScript / REST',
+      description: 'Three lines of code to give your AI persistent memory. Initialize, store conversations, search with graph-enhanced retrieval.',
       primaryCta: 'Read Docs',
       secondaryCta: 'Talk to Us',
-      code: CODE_SAMPLE,
+      codeTabs: [
+        { label: 'Python', code: CODE_SAMPLE_PYTHON },
+        { label: 'JavaScript', code: CODE_SAMPLE_JS },
+        { label: 'REST', code: CODE_SAMPLE_REST },
+      ],
     },
     testimonials: {
       eyebrow: 'Testimonials',
@@ -958,13 +1110,24 @@ const contentByLocale: Record<Locale, AppContent> = {
         { name: 'Elena Rodriguez', title: 'Founder, Signalwave', quote: 'The policy controls let us scope memory by project without building custom infrastructure. Shipped in a week.' },
       ],
     },
+    partners: {
+      label: 'Trusted by leading research institutions and enterprises',
+      partners: [
+        { name: 'Tsinghua University', nameCn: '清华大学' },
+        { name: 'Peking University', nameCn: '北京大学' },
+        { name: 'Zhejiang University', nameCn: '浙江大学' },
+        { name: 'NUS' },
+        { name: 'VU Amsterdam' },
+        { name: 'Meituan', nameCn: '美团' },
+      ],
+    },
     pricing: {
       eyebrow: 'Pricing',
       title: 'Plans that scale with you',
       description: 'Start free, upgrade as you grow. Predictable, usage-based pricing.',
       plans: [
         { badge: 'Starter', name: 'Build', price: 'Free', period: 'forever', cta: 'Start Free', features: ['2M memories', 'Multi-modal API', 'Community support'] },
-        { badge: 'Growth', name: 'Scale', price: '$499', period: '/month', cta: 'Start Trial', features: ['50M memories', 'Policy engine', 'Priority support', 'Advanced analytics'] },
+        { badge: 'Growth', name: 'Scale', price: '$499', period: '/month', cta: 'Contact Sales', features: ['50M memories', 'Policy engine', 'Priority support', 'Advanced analytics'] },
         { badge: 'Enterprise', name: 'Govern', price: 'Custom', period: '', cta: 'Contact Us', features: ['Unlimited memories', 'Dedicated VPC', 'Custom SLAs', 'Dedicated support'] },
       ],
     },
@@ -989,10 +1152,10 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       tagline: 'The memory layer for intelligent AI applications.',
       links: [
-        { label: 'Features', href: '#features' },
+        { label: 'How it Works', href: '#how-it-works' },
+        { label: 'Enterprise', href: '#enterprise' },
+        { label: 'Documentation', href: '/docs' },
         { label: 'Pricing', href: '#pricing' },
-        { label: 'Documentation', href: '#developers' },
-        { label: 'FAQ', href: '#faq' },
       ],
       copyright: '© 2025 Omni Memory. All rights reserved.',
     },
@@ -1001,38 +1164,47 @@ const contentByLocale: Record<Locale, AppContent> = {
     navbar: {
       brandName: 'Omni Memory',
       navLinks: [
-        { label: '功能', href: '#features' },
-        { label: '原理', href: '#how-it-works' },
-        { label: '开发者', href: '#developers' },
+        { 
+          label: '开发者',
+          dropdown: [
+            { label: '文档', href: '/docs', icon: '📚' },
+            { label: 'API 参考', href: '/docs/api', icon: '⚡' },
+            { label: '支持', href: '/support', icon: '💬' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '🎮' },
+          ]
+        },
         { label: '价格', href: '#pricing' },
+        { label: '企业版', href: '#enterprise' },
+        { label: '研究', href: '/research' },
+        { label: '加入我们', href: '/careers' },
       ],
       ctaLabel: '开始使用',
       toggleLabel: 'EN',
     },
     hero: {
       badge: '公测中',
-      titleLine1: '记忆，决定智能上限',
-      titleLine2: '记忆，决定智能上限',
+      titleLine1: '记忆，',
+      titleLine2: '决定智能上限',
       description: 'Omni Memory 构建多模态的人生记忆系统，让 AI 超越指令、理解人，并随着人类真实生活的上下文不断成长。',
       primaryCta: '开始构建',
       secondaryCta: '查看文档',
     },
     stats: {
       items: [
-        { value: '150亿+', label: '记忆存储' },
-        { value: '<500ms', label: '召回延迟' },
-        { value: '99.99%', label: '可用性 SLA' },
+        { value: '#1', label: 'LoCoMo 基准测试' },
+        { value: '77.8%', label: 'J-Score 准确率' },
+        { value: '<1s', label: '检索延迟' },
       ],
     },
     features: {
-      eyebrow: '核心能力',
-      title: '为 AI 构建的记忆基础设施',
-      description: '一切所需，让你的 AI 拥有持久的、可扩展的上下文记忆。',
+      eyebrow: '企业级部署',
+      title: '生产就绪的记忆基础设施',
+      description: '自主部署，完全掌控数据和基础设施。',
       items: [
-        { icon: '', tag: '召回', title: '智能检索', description: '混合向量与符号检索，配合衰减曲线。在正确的时间获取正确的上下文。' },
-        { icon: '', tag: '策略', title: '访问控制', description: '按租户、角色和敏感级别划定记忆范围。' },
-        { icon: '', tag: '图谱', title: '关联记忆', description: '实体图谱连接人、项目和意图。' },
-        { icon: '', tag: '分析', title: '记忆洞察', description: '追踪记忆如何影响输出。' },
+        { icon: '🔒', tag: '隐私', title: '自托管数据库', description: '在你的基础设施上部署 Qdrant + Neo4j。数据永不离开你的服务器，完全的数据主权。' },
+        { icon: '🚀', tag: '部署', title: '一键启动', description: 'Docker Compose 分钟级部署，支持 Kubernetes，无需复杂配置。' },
+        { icon: '👥', tag: '支持', title: '专属团队', description: 'SLA 保障的企业级支持，直接对接工程团队，提供定制集成服务。' },
+        { icon: '📊', tag: '控制台', title: 'API 管理面板', description: '监控用量、管理 API Key、配置记忆策略。全面可观测的记忆层。' },
       ],
     },
     howItWorks: {
@@ -1047,11 +1219,15 @@ const contentByLocale: Record<Locale, AppContent> = {
     },
     developers: {
       eyebrow: '开发者',
-      title: '分钟级接入，而非数月',
-      description: '接入 SDK 即可写入带结构化元数据的记忆。一次 API 调用完成过滤和安全护栏的查询。',
+      title: '支持 Python / JavaScript / REST',
+      description: '三行代码让你的 AI 拥有持久记忆。初始化、存储对话、图增强检索。',
       primaryCta: '阅读文档',
       secondaryCta: '联系我们',
-      code: CODE_SAMPLE,
+      codeTabs: [
+        { label: 'Python', code: CODE_SAMPLE_PYTHON },
+        { label: 'JavaScript', code: CODE_SAMPLE_JS },
+        { label: 'REST', code: CODE_SAMPLE_REST },
+      ],
     },
     testimonials: {
       eyebrow: '用户故事',
@@ -1062,13 +1238,24 @@ const contentByLocale: Record<Locale, AppContent> = {
         { name: 'Elena Rodriguez', title: 'Signalwave 创始人', quote: '策略控制让我们无需自建基础设施就能按项目划定记忆范围。一周内上线。' },
       ],
     },
+    partners: {
+      label: '顶尖研究机构和企业的信赖之选',
+      partners: [
+        { name: 'Tsinghua University', nameCn: '清华大学' },
+        { name: 'Peking University', nameCn: '北京大学' },
+        { name: 'Zhejiang University', nameCn: '浙江大学' },
+        { name: 'NUS' },
+        { name: 'VU Amsterdam' },
+        { name: 'Meituan', nameCn: '美团' },
+      ],
+    },
     pricing: {
       eyebrow: '价格',
       title: '随你扩展的套餐',
       description: '从免费开始，随增长升级。可预测的按量计费。',
       plans: [
         { badge: '入门', name: '构建', price: '免费', period: '永久', cta: '免费开始', features: ['200万条记忆', '多模态 API', '社区支持'] },
-        { badge: '成长', name: '扩展', price: '¥3,499', period: '/月', cta: '开始试用', features: ['5000万条记忆', '策略引擎', '优先支持', '高级分析'] },
+        { badge: '成长', name: '扩展', price: '¥3,499', period: '/月', cta: '联系销售', features: ['5000万条记忆', '策略引擎', '优先支持', '高级分析'] },
         { badge: '企业', name: '治理', price: '定制', period: '', cta: '联系我们', features: ['无限记忆', '专属 VPC', '定制 SLA', '专属支持'] },
       ],
     },
@@ -1093,10 +1280,10 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       tagline: '智能 AI 应用的记忆层。',
       links: [
-        { label: '功能', href: '#features' },
+        { label: '工作原理', href: '#how-it-works' },
+        { label: '企业版', href: '#enterprise' },
+        { label: '文档', href: '/docs' },
         { label: '价格', href: '#pricing' },
-        { label: '文档', href: '#developers' },
-        { label: '常见问题', href: '#faq' },
       ],
       copyright: '© 2025 Omni Memory. 保留所有权利。',
     },
@@ -1106,7 +1293,7 @@ const contentByLocale: Record<Locale, AppContent> = {
 // ============ TYPES ============
 
 type Locale = 'en' | 'zh'
-type RouteKey = 'marketing' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
+type RouteKey = 'marketing' | 'docs' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
 
 interface AppContent {
   navbar: NavbarContent
@@ -1116,20 +1303,27 @@ interface AppContent {
   howItWorks: HowItWorksContent
   developers: DeveloperContent
   testimonials: TestimonialsContent
+  partners: PartnersContent
   pricing: PricingContent
   faq: FaqContent
   cta: CtaContent
   footer: FooterContent
 }
 
-interface NavbarContent { brandName: string; navLinks: { label: string; href: string }[]; ctaLabel: string; toggleLabel: string }
+interface NavLink { 
+  label: string
+  href?: string
+  dropdown?: { label: string; href: string; icon?: string }[]
+}
+interface NavbarContent { brandName: string; navLinks: NavLink[]; ctaLabel: string; toggleLabel: string }
 interface HeroContent { badge: string; titleLine1: string; titleLine2: string; description: string; primaryCta: string; secondaryCta: string }
 interface StatsContent { items: { value: string; label: string }[] }
 interface FeaturesSectionContent { eyebrow: string; title: string; description: string; items: { icon: string; tag: string; title: string; description: string }[] }
 interface HowItWorksContent { eyebrow: string; title: string; description: string; steps: { title: string; description: string }[] }
-interface DeveloperContent { eyebrow: string; title: string; description: string; primaryCta: string; secondaryCta: string; code: string }
+interface DeveloperContent { eyebrow: string; title: string; description: string; primaryCta: string; secondaryCta: string; codeTabs: { label: string; code: string }[] }
 interface TestimonialsContent { eyebrow: string; title: string; items: { name: string; title: string; quote: string }[] }
 interface PricingContent { eyebrow: string; title: string; description: string; plans: { badge: string; name: string; price: string; period: string; cta: string; features: string[] }[] }
 interface FaqContent { eyebrow: string; title: string; description: string; items: { question: string; answer: string }[] }
 interface CtaContent { title: string; description: string; primaryCta: string; secondaryCta: string }
+interface PartnersContent { label: string; partners: { name: string; nameCn?: string }[] }
 interface FooterContent { brandName: string; tagline: string; links: { label: string; href: string }[]; copyright: string }
