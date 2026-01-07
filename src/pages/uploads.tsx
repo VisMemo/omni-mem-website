@@ -349,7 +349,7 @@ export function UploadsPage() {
             }}
           />
           <Button
-            className="bg-accent text-white"
+            className="bg-vermillion text-white"
             radius="full"
             isDisabled={!selectedFile || status === 'loading'}
             onPress={handleUpload}
@@ -447,7 +447,7 @@ function renderStatusCell(row: UploadRow) {
     <div className="flex flex-col gap-1">
       <span>{`${label} ${progress}%`}</span>
       <div className="h-1.5 w-24 overflow-hidden rounded bg-white/10">
-        <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
+        <div className="h-full bg-vermillion" style={{ width: `${progress}%` }} />
       </div>
     </div>
   )

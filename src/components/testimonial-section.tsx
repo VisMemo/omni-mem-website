@@ -27,7 +27,7 @@ function TestimonialCard({ testimonial }: TestimonialCardProps) {
       <CardBody className="flex h-full flex-col gap-6">
         <p className="text-base leading-relaxed text-ink">"{testimonial.quote}"</p>
         <div className="mt-auto flex items-center gap-3">
-          <Avatar name={testimonial.name} className="bg-accent text-white" />
+          <Avatar name={testimonial.name} className="bg-vermillion text-white" />
           <div>
             <p className="text-sm font-semibold text-ink">{testimonial.name}</p>
             <p className="text-xs text-muted">{testimonial.title}</p>

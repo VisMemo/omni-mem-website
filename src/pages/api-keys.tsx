@@ -228,7 +228,7 @@ export function ApiKeysPage() {
               onValueChange={setLabel}
             />
             <Button
-              className="bg-accent text-white"
+              className="bg-vermillion text-white"
               radius="full"
               isLoading={status === 'loading'}
               onPress={handleCreateKey}

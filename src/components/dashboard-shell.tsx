@@ -36,7 +36,7 @@ export function DashboardShell({
               fullWidth
               radius="lg"
               variant={currentPath === link.path ? 'solid' : 'light'}
-              className={currentPath === link.path ? 'bg-accent text-white' : 'justify-start'}
+              className={currentPath === link.path ? 'bg-vermillion text-white' : 'justify-start'}
               onPress={() => onNavigate(link.path)}
             >
               {link.label}

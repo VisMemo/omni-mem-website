@@ -54,7 +54,7 @@ export function AuthControl({ className, onSignIn, onSignUp }: AuthControlProps)
           Sign in
         </Button>
         <Button
-          className="bg-accent text-white"
+          className="bg-vermillion text-white"
           radius="full"
           size="sm"
           isDisabled={!onSignUp}

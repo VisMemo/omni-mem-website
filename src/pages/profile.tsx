@@ -109,7 +109,7 @@ export function ProfilePage() {
           <Input label="Display name" placeholder="Jane Doe" />
           <Input label="Email" placeholder="jane@example.com" type="email" />
           <Input label="Company" placeholder="Omni Memory" />
-          <Button className="bg-accent text-white" radius="full">
+          <Button className="bg-vermillion text-white" radius="full">
             Save changes
           </Button>
         </CardBody>

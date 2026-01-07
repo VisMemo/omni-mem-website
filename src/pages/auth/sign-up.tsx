@@ -46,7 +46,7 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
         </CardHeader>
         <CardBody className="space-y-4">
           <p className="text-sm text-muted">You already have an active session.</p>
-          <Button className="bg-accent text-white" radius="full" onPress={() => onNavigate(dashboardPath)}>
+          <Button className="bg-vermillion text-white" radius="full" onPress={() => onNavigate(dashboardPath)}>
             进入个人空间
           </Button>
         </CardBody>
@@ -78,7 +78,7 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
         {error ? <p className="text-sm text-danger-500">{error}</p> : null}
         {errorMessage ? <p className="text-sm text-danger-500">{errorMessage}</p> : null}
         {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
-        <Button className="bg-accent text-white" radius="full" isLoading={isBusy} onPress={handleSignUp}>
+        <Button className="bg-vermillion text-white" radius="full" isLoading={isBusy} onPress={handleSignUp}>
           Create account
         </Button>
         <button
