@@ -24,6 +24,8 @@ type LlmKeyRow = {
   api_key_id?: string | null
   masked_key?: string | null
   last_used_at?: string | null
+  is_managed?: boolean | null
+  status?: string | null
 }
 
 const PROVIDER_OPTIONS = [
@@ -321,6 +323,28 @@ export function MemoryPolicyPage() {
     setLlmStatus('idle')
   }
 
+  async function handleManagedKeyToggle(keyId: string, action: 'disable' | 'enable') {
+    const activeSession = await getSession()
+    if (!activeSession) return
+    setLlmStatus('loading')
+    setLlmMessage(null)
+    const response = await fetch(`${apiBaseUrl}/llm-keys/${keyId}/${action}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${activeSession.access_token}`,
+        'X-Principal-User-Id': activeSession.user.id,
+      },
+    })
+    const data = (await response.json()) as { message?: string }
+    if (!response.ok) {
+      setLlmStatus('error')
+      setLlmMessage(data?.message ?? '鎿嶄綔澶辫触')
+      return
+    }
+    await loadLlmKeys()
+    setLlmStatus('idle')
+  }
+
   const scopeOptions = useMemo(() => {
     const apiOptions = apiKeys.map((item) => ({
       key: item.id,
@@ -495,6 +519,7 @@ export function MemoryPolicyPage() {
                     </tr>
                   ) : (
                     llmKeys.map((row) => {
+                      const isManaged = Boolean(row.is_managed)
                       let selectedKey = 'none'
                       const isDefault = Boolean(row.is_default) || row.scope_type === 'all'
                       if (isDefault) {
@@ -502,38 +527,66 @@ export function MemoryPolicyPage() {
                       } else if (row.api_key_id) {
                         selectedKey = row.api_key_id
                       }
+                      if (isManaged) {
+                        selectedKey = 'all'
+                      }
+                      const providerLabel = isManaged ? 'Omni' : row.provider || '-'
+                      const modelLabel = isManaged ? '自动' : row.model_name || '-'
+                      const managedAction =
+                        row.status && row.status !== 'active' ? 'enable' : 'disable'
+                      const managedLabel =
+                        row.status && row.status !== 'active' ? '恢复' : '停用'
                       return (
                         <tr key={row.id} className="border-t border-ink/5">
                           <td className="px-4 py-3 font-medium">
                             {row.label || row.masked_key || '未命名'}
                           </td>
-                          <td className="px-4 py-3 text-ink/60">{row.provider || '-'}</td>
-                          <td className="px-4 py-3 text-ink/60">{row.model_name || '-'}</td>
+                          <td className="px-4 py-3 text-ink/60">{providerLabel}</td>
+                          <td className="px-4 py-3 text-ink/60">{modelLabel}</td>
                           <td className="px-4 py-3">
-                            <select
-                              className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-                              value={selectedKey}
-                              onChange={(event) => {
-                                const value = event.target.value
-                                handleBindingChange(row.id, value === 'none' ? '' : value)
-                              }}
-                            >
-                              {scopeOptions.map((option) => (
-                                <option key={option.key} value={option.key}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
+                            {isManaged ? (
+                              <div className="text-sm text-ink/60">所有 API 密钥</div>
+                            ) : (
+                              <select
+                                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                                value={selectedKey}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  handleBindingChange(row.id, value === 'none' ? '' : value)
+                                }}
+                              >
+                                {scopeOptions.map((option) => (
+                                  <option key={option.key} value={option.key}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-ink/60">{formatDate(row.last_used_at)}</td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeleteKey(row.id)}
-                            >
-                              删除
-                            </button>
+                            {isManaged ? (
+                              <button
+                                type="button"
+                                className={
+                                  managedAction === 'disable'
+                                    ? 'rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50'
+                                    : 'rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-600 hover:bg-emerald-50'
+                                }
+                                onClick={() => handleManagedKeyToggle(row.id, managedAction)}
+                                disabled={llmStatus === 'loading'}
+                              >
+                                {managedLabel}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteKey(row.id)}
+                              >
+                                删除
+                              </button>
+                            )}
                           </td>
                         </tr>
                       )
