@@ -137,7 +137,8 @@ export function App() {
     if (typeof window === 'undefined') return
     window.history.pushState({}, '', pathname)
     setRouteKey(getRouteFromPathname({ pathname }))
-  }  const dashboardLinks: DashboardLink[] = [
+  }
+  const dashboardLinks: DashboardLink[] = [
     { label: '概览', path: dashboardPath, group: 'main', icon: Home },
     { label: 'API 密钥', path: apiKeysPath, group: 'main', icon: KeyRound },
     { label: '上传任务', path: uploadsPath, group: 'main', icon: UploadCloud },
