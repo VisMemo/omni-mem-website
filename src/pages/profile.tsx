@@ -1,4 +1,3 @@
-import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
@@ -72,6 +71,19 @@ export function ProfilePage() {
     })
   }, [accountId])
 
+  useEffect(() => {
+    if (!session?.user) return
+    if (displayName !== 'Qbrain') return
+    const metadataName = session.user.user_metadata?.name
+    if (metadataName) {
+      setDisplayName(String(metadataName))
+      return
+    }
+    if (session.user.email) {
+      setDisplayName(session.user.email.split('@')[0])
+    }
+  }, [session, displayName])
+
   async function handleUpgrade() {
     const trimmed = upgradeCode.trim()
     if (!trimmed) {
@@ -104,96 +116,145 @@ export function ProfilePage() {
     loadScope().catch(() => null)
   }
 
-  const entitlements = scopeInfo?.entitlements
+  const entitlements = scopeInfo?.entitlements ?? null
   const emailValue = session?.user?.email ?? '-'
   const accountIdValue = formatAccountId(session?.user?.id ?? null)
   const scopeValue = scopeInfo?.scope ?? '-'
+  const entitlementItems = [
+    { label: '默认额度', value: entitlements?.credit_default ?? '-' },
+    { label: '记忆节点上限', value: entitlements?.memory_node_limit ?? '-' },
+    { label: '速率限制（3 秒）', value: entitlements?.rate_limit_3s ?? '-' },
+    {
+      label: 'API 密钥隔离',
+      value: entitlements ? (entitlements.allow_apikey_scope ? '已启用' : '未启用') : '-',
+    },
+  ]
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">账户</p>
-          <h1 className="text-2xl font-semibold text-ink">个人资料</h1>
-          <p className="text-sm text-muted">管理账户名称、套餐与账单概览。</p>
-        </div>
-        <Button className="bg-accent text-white" radius="full">
-          保存修改
-        </Button>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">账户</p>
+        <h1 className="text-2xl font-semibold text-ink">个人资料</h1>
+        <p className="text-sm text-ink/60">管理账户名称、套餐与账单概览。</p>
       </header>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">账户资料</h3>
-          <p className="text-sm text-muted">仅账户名称可编辑，其余信息为只读。</p>
-        </CardHeader>
-        <CardBody className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="账户名称"
-            placeholder="请输入账户名称"
-            value={displayName}
-            onValueChange={setDisplayName}
-          />
-          <Input label="管理员邮箱" value={emailValue} isReadOnly onValueChange={() => {}} />
-          <Input label="账户 ID" value={accountIdValue} isReadOnly onValueChange={() => {}} />
-          <Input label="套餐级别" value={scopeValue} isReadOnly onValueChange={() => {}} />
-        </CardBody>
-      </Card>
-
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">套餐与升级</h3>
-          <p className="text-sm text-muted">查看当前套餐权益并使用邀请码升级。</p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          {scopeStatus === 'loading' ? (
-            <p className="text-sm text-muted">套餐信息加载中...</p>
-          ) : scopeStatus === 'error' ? (
-            <p className="text-sm text-danger-500">{scopeMessage ?? '套餐信息加载失败。'}</p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm">
-                当前套餐：<span className="font-semibold">{scopeInfo?.scope ?? '-'}</span>
-              </p>
-              {entitlements ? (
-                <div className="text-xs text-muted">
-                  <p>默认额度：{entitlements.credit_default}</p>
-                  <p>记忆节点上限：{entitlements.memory_node_limit}</p>
-                  <p>速率限制（3 秒）：{entitlements.rate_limit_3s}</p>
-                  <p>API 密钥隔离：{entitlements.allow_apikey_scope ? '已启用' : '未启用'}</p>
-                </div>
-              ) : null}
-            </div>
-          )}
-
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">账户资料</h2>
+            <p className="text-sm text-ink/60">仅账户名称可编辑，其余信息为只读。</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory disabled:cursor-not-allowed disabled:opacity-60"
+            disabled
+          >
+            保存修改
+          </button>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Input
-              label="邀请码"
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              账户名称
+            </label>
+            <input
+              className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+              placeholder="请输入账户名称"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              管理员邮箱
+            </label>
+            <input
+              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
+              value={emailValue}
+              readOnly
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              账户 ID
+            </label>
+            <input
+              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
+              value={accountIdValue}
+              readOnly
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              套餐级别
+            </label>
+            <input
+              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
+              value={scopeValue}
+              readOnly
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-ink">套餐与升级</h2>
+          <p className="text-sm text-ink/60">查看当前套餐权益并使用邀请码升级。</p>
+        </div>
+        {scopeStatus === 'loading' ? (
+          <p className="mt-4 text-sm text-ink/60">套餐信息加载中...</p>
+        ) : scopeStatus === 'error' ? (
+          <p className="mt-4 text-sm text-red-600">{scopeMessage ?? '套餐信息加载失败。'}</p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            <p className="text-sm">
+              当前套餐：<span className="font-semibold">{scopeInfo?.scope ?? '-'}</span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {entitlementItems.map((item) => (
+                <div key={item.label} className="rounded-lg border border-ink/10 bg-white/80 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-ink">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              邀请码
+            </label>
+            <input
+              className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
               placeholder="输入邀请码"
               value={upgradeCode}
               onChange={(event) => setUpgradeCode(event.target.value)}
             />
-            <Button
-              className="bg-ink text-white"
-              onPress={handleUpgrade}
-              isDisabled={upgradeStatus === 'loading'}
-            >
-              {upgradeStatus === 'loading' ? '升级中...' : '应用'}
-            </Button>
-            {upgradeMessage ? (
-              <p
-                className={
-                  upgradeStatus === 'error'
-                    ? 'text-xs text-danger-500'
-                    : 'text-xs text-success-600'
-                }
-              >
-                {upgradeMessage}
-              </p>
-            ) : null}
           </div>
-        </CardBody>
-      </Card>
+          <button
+            type="button"
+            className="h-9 rounded-md bg-ink px-4 text-xs font-semibold text-ivory disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={handleUpgrade}
+            disabled={upgradeStatus === 'loading'}
+          >
+            {upgradeStatus === 'loading' ? '升级中...' : '应用'}
+          </button>
+        </div>
+        {upgradeMessage ? (
+          <p
+            className={`mt-2 text-xs ${
+              upgradeStatus === 'error' ? 'text-red-600' : 'text-emerald-600'
+            }`}
+          >
+            {upgradeMessage}
+          </p>
+        ) : null}
+      </section>
     </div>
   )
 }

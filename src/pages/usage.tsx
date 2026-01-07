@@ -1,15 +1,3 @@
-﻿import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@nextui-org/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
@@ -117,7 +105,7 @@ export function UsagePage() {
       .map((row) => new Date(row.createdAt).getTime())
       .filter((value) => Number.isFinite(value))
     if (timestamps.length === 0) return rows[0].createdAt
-    return new Date(Math.max(...timestamps)).toLocaleString()
+    return new Date(Math.max(...timestamps)).toLocaleString('zh-CN')
   }, [rows])
 
   const summaryCards = [
@@ -147,82 +135,87 @@ export function UsagePage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">数据洞察</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">数据洞察</p>
           <h1 className="text-2xl font-semibold text-ink">用量</h1>
-          <p className="text-sm text-muted">查看账户与 API 密钥的使用消耗记录。</p>
+          <p className="text-sm text-ink/60">查看账户与 API 密钥的使用消耗记录。</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="bordered"
-            className="border-ink/20 text-ink"
-            onPress={handleRefresh}
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-2 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={handleRefresh}
           >
-            刷新
-          </Button>
+            最近 7 天
+          </button>
         </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((summary) => (
-          <Card key={summary.title} className="glass-panel">
-            <CardHeader className="flex flex-col items-start gap-1">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">{summary.title}</p>
-              <h3 className="text-2xl font-semibold text-ink">{summary.value}</h3>
-              <p className="text-sm text-muted">{summary.meta}</p>
-            </CardHeader>
-          </Card>
+          <div key={summary.title} className="rounded-xl border border-ink/10 bg-white/80 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              {summary.title}
+            </p>
+            <div className="mt-3 text-2xl font-semibold text-ink">{summary.value}</div>
+            <p className="mt-1 text-sm text-ink/60">{summary.meta}</p>
+          </div>
         ))}
       </section>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">用量明细</h3>
-            <p className="text-sm text-muted">按时间展示扣费与使用记录。</p>
-          </div>
-        </CardHeader>
-        <CardBody>
-          {error ? <p className="mb-4 text-sm text-danger">{error}</p> : null}
-          <Table removeWrapper aria-label="用量明细">
-            <TableHeader>
-              <TableColumn>使用方式</TableColumn>
-              <TableColumn>消耗</TableColumn>
-              <TableColumn>时间</TableColumn>
-            </TableHeader>
-            <TableBody emptyContent="暂无记录">
-              {rows.map((row, index) => (
-                <TableRow key={`${row.createdAt}-${index}`}>
-                  <TableCell>{row.method}</TableCell>
-                  <TableCell>{row.quantity}</TableCell>
-                  <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
-              isDisabled={page <= 1}
-            >
-              上一页
-            </Button>
-            <span className="text-sm text-muted">第 {page} 页</span>
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => prev + 1)}
-              isDisabled={!hasNext}
-            >
-              下一页
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-ink">用量明细</h2>
+          <p className="text-xs text-ink/50">按时间</p>
+        </div>
+        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        <div className="mt-4 overflow-hidden rounded-lg border border-ink/10">
+          <table className="w-full text-sm">
+            <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+              <tr>
+                <th className="px-4 py-3 text-left">使用方式</th>
+                <th className="px-4 py-3 text-left">消耗</th>
+                <th className="px-4 py-3 text-left">时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-3 text-ink/60" colSpan={3}>
+                    暂无记录
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, index) => (
+                  <tr key={`${row.createdAt}-${index}`} className="border-t border-ink/5">
+                    <td className="px-4 py-3 font-medium">{row.method}</td>
+                    <td className="px-4 py-3">{row.quantity}</td>
+                    <td className="px-4 py-3">{formatTimestamp(row.createdAt)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page <= 1}
+          >
+            上一页
+          </button>
+          <span className="text-xs text-ink/50">第 {page} 页</span>
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={!hasNext}
+          >
+            下一页
+          </button>
+        </div>
+      </section>
     </div>
   )
 }
@@ -240,5 +233,5 @@ function formatUsageMethod(eventName: string) {
 function formatTimestamp(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  return date.toLocaleString('zh-CN')
 }

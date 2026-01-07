@@ -1,18 +1,3 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Select,
-  SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@nextui-org/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
@@ -349,181 +334,217 @@ export function MemoryPolicyPage() {
   }, [apiKeys])
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">记忆</p>
-          <h1 className="text-2xl font-semibold text-ink">记忆策略</h1>
-          <p className="text-sm text-muted">配置记忆隔离策略并管理 LLM 密钥。</p>
-        </div>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">记忆</p>
+        <h1 className="text-2xl font-semibold text-ink">记忆策略</h1>
+        <p className="text-sm text-ink/60">配置记忆隔离策略并管理 LLM 密钥。</p>
       </header>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">记忆隔离策略</h3>
-          <p className="text-sm text-muted">默认按用户或 API 密钥隔离记忆。</p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          <Select
-            label="默认隔离范围"
-            selectedKeys={new Set([defaultScope])}
-            disabledKeys={allowApikeyScope ? [] : ['apikey']}
-            onSelectionChange={(keys) => {
-              const value = Array.from(keys)[0] as 'user' | 'apikey'
-              updateMemoryPolicy(value)
-            }}
+      <section className="space-y-6">
+        <div className="rounded-xl border border-ink/10 bg-white/80 p-6">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-ink">记忆隔离策略</h2>
+            <p className="text-sm text-ink/60">
+              设置默认隔离范围，决定按用户还是 API 密钥隔离记忆。
+            </p>
+          </div>
+          <div className="mt-4 space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              默认隔离范围
+            </label>
+            <select
+              className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+              value={defaultScope}
+              onChange={(event) => {
+                const value = event.target.value as 'user' | 'apikey'
+                setDefaultScope(value)
+                updateMemoryPolicy(value)
+              }}
+            >
+              <option value="user">用户级</option>
+              <option value="apikey" disabled={!allowApikeyScope}>
+                API 密钥级
+              </option>
+            </select>
+            {!allowApikeyScope ? (
+              <p className="text-xs text-amber-600">当前套餐未启用 API 密钥隔离。</p>
+            ) : null}
+            {policyStatus === 'error' ? (
+              <p className="text-xs text-red-600">{policyMessage ?? '保存失败'}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="mt-4 rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
+            onClick={() => updateMemoryPolicy(defaultScope)}
           >
-            <SelectItem key="user">用户级</SelectItem>
-            <SelectItem key="apikey">API 密钥级</SelectItem>
-          </Select>
-          {!allowApikeyScope ? (
-            <p className="text-xs text-warning-500">当前套餐未启用 API 密钥隔离。</p>
-          ) : null}
-          {policyStatus === 'error' ? (
-            <p className="text-xs text-danger-500">{policyMessage ?? '保存失败'}</p>
-          ) : null}
-        </CardBody>
-      </Card>
+            保存策略
+          </button>
+        </div>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">LLM 密钥管理</h3>
-          <p className="text-sm text-muted">添加并绑定不同的 LLM 密钥。</p>
-        </CardHeader>
-        <CardBody className="space-y-6">
-          <div className="grid gap-3 md:grid-cols-4">
-            <Input
-              label="备注"
-              placeholder="例如：主用 OpenAI"
-              value={formLabel}
-              onChange={(event) => setFormLabel(event.target.value)}
-            />
-            <Input
-              label="LLM 密钥"
-              placeholder="sk-..."
-              type="password"
-              value={formKey}
-              onChange={(event) => setFormKey(event.target.value)}
-            />
-            <Select
-              label="平台（provider）"
-              selectedKeys={formProvider ? new Set([formProvider]) : new Set([])}
-              onSelectionChange={(keys) => {
-                const value = String(Array.from(keys)[0] ?? '')
-                setFormProvider(value)
-                setFormModelName('')
-              }}
-            >
-              {PROVIDER_OPTIONS.map((provider) => (
-                <SelectItem key={provider}>{provider}</SelectItem>
-              ))}
-            </Select>
-            <Select
-              label="模型名称（model_name）"
-              isDisabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
-              selectedKeys={formModelName ? new Set([formModelName]) : new Set([])}
-              onSelectionChange={(keys) => {
-                const value = String(Array.from(keys)[0] ?? '')
-                setFormModelName(value)
-              }}
-            >
-              {modelOptions.map((model) => (
-                <SelectItem key={model}>{model}</SelectItem>
-              ))}
-            </Select>
+        <div className="rounded-xl border border-ink/10 bg-white/80 p-6">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-ink">LLM 密钥管理</h2>
+            <p className="text-sm text-ink/60">添加并绑定不同的 LLM 密钥。</p>
           </div>
-          <div>
-            <Button onPress={handleAddLlmKey} className="bg-ink text-white">
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                备注
+              </label>
+              <input
+                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                placeholder="例如：主用 OpenAI"
+                value={formLabel}
+                onChange={(event) => setFormLabel(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                LLM 密钥
+              </label>
+              <input
+                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                placeholder="sk-..."
+                type="password"
+                value={formKey}
+                onChange={(event) => setFormKey(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                平台
+              </label>
+              <select
+                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                value={formProvider}
+                onChange={(event) => {
+                  setFormProvider(event.target.value)
+                  setFormModelName('')
+                }}
+              >
+                <option value="">请选择</option>
+                {PROVIDER_OPTIONS.map((provider) => (
+                  <option key={provider} value={provider}>
+                    {provider}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                模型名称
+              </label>
+              <select
+                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                value={formModelName}
+                onChange={(event) => setFormModelName(event.target.value)}
+                disabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
+              >
+                <option value="">请选择</option>
+                {modelOptions.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              className="rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
+              onClick={handleAddLlmKey}
+              disabled={llmStatus === 'loading'}
+            >
               添加
-            </Button>
+            </button>
           </div>
+
           {modelStatus === 'error' && modelMessage ? (
-            <p className="text-xs text-danger-500">{modelMessage}</p>
+            <p className="mt-2 text-xs text-red-600">{modelMessage}</p>
           ) : null}
           {llmStatus === 'error' && llmMessage ? (
-            <p className="text-xs text-danger-500">{llmMessage}</p>
+            <p className="mt-2 text-xs text-red-600">{llmMessage}</p>
           ) : null}
 
           {llmStatus === 'loading' ? (
-            <div className="text-sm text-muted">加载中...</div>
+            <div className="mt-4 text-sm text-ink/60">加载中...</div>
           ) : (
-            <Table removeWrapper aria-label="LLM 密钥" className="w-full">
-              <TableHeader>
-                <TableColumn>备注</TableColumn>
-                <TableColumn>平台</TableColumn>
-                <TableColumn>模型</TableColumn>
-                <TableColumn className="min-w-[220px]">绑定范围</TableColumn>
-                <TableColumn className="w-40">最后使用时间</TableColumn>
-                <TableColumn className="w-24">操作</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {llmKeys.length === 0 ? (
-                  <TableRow key="empty">
-                    <TableCell>暂无 LLM 密钥</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                  </TableRow>
-                ) : (
-                  llmKeys.map((row) => {
-                    let selectedKey = 'none'
-                    const isDefault = Boolean(row.is_default) || row.scope_type === 'all'
-                    if (isDefault) {
-                      selectedKey = 'all'
-                    } else if (row.api_key_id) {
-                      selectedKey = row.api_key_id
-                    }
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{row.label || row.masked_key || '未命名'}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{row.provider || '-'}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{row.model_name || '-'}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            aria-label="绑定范围"
-                            className="min-w-[200px]"
-                            selectedKeys={new Set([selectedKey])}
-                            onSelectionChange={(keys) => {
-                              const value = String(Array.from(keys)[0] ?? '')
-                              handleBindingChange(row.id, value === 'none' ? '' : value)
-                            }}
-                          >
-                            {scopeOptions.map((option) => (
-                              <SelectItem key={option.key}>{option.label}</SelectItem>
-                            ))}
-                          </Select>
-                        </TableCell>
-                        <TableCell>{formatDate(row.last_used_at)}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="bordered"
-                            className="border-danger-300 text-danger-600"
-                            color="danger"
-                            onPress={() => handleDeleteKey(row.id)}
-                          >
-                            删除
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
+            <div className="mt-6 overflow-hidden rounded-lg border border-ink/10">
+              <table className="w-full text-sm">
+                <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left">备注</th>
+                    <th className="px-4 py-3 text-left">平台</th>
+                    <th className="px-4 py-3 text-left">模型</th>
+                    <th className="px-4 py-3 text-left">绑定范围</th>
+                    <th className="px-4 py-3 text-left">最后使用时间</th>
+                    <th className="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {llmKeys.length === 0 ? (
+                    <tr>
+                      <td className="px-4 py-3 text-ink/60" colSpan={6}>
+                        暂无 LLM 密钥
+                      </td>
+                    </tr>
+                  ) : (
+                    llmKeys.map((row) => {
+                      let selectedKey = 'none'
+                      const isDefault = Boolean(row.is_default) || row.scope_type === 'all'
+                      if (isDefault) {
+                        selectedKey = 'all'
+                      } else if (row.api_key_id) {
+                        selectedKey = row.api_key_id
+                      }
+                      return (
+                        <tr key={row.id} className="border-t border-ink/5">
+                          <td className="px-4 py-3 font-medium">
+                            {row.label || row.masked_key || '未命名'}
+                          </td>
+                          <td className="px-4 py-3 text-ink/60">{row.provider || '-'}</td>
+                          <td className="px-4 py-3 text-ink/60">{row.model_name || '-'}</td>
+                          <td className="px-4 py-3">
+                            <select
+                              className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                              value={selectedKey}
+                              onChange={(event) => {
+                                const value = event.target.value
+                                handleBindingChange(row.id, value === 'none' ? '' : value)
+                              }}
+                            >
+                              {scopeOptions.map((option) => (
+                                <option key={option.key} value={option.key}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-ink/60">{formatDate(row.last_used_at)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteKey(row.id)}
+                            >
+                              删除
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
-        </CardBody>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,17 +1,5 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@nextui-org/react'
 import { useEffect, useMemo, useState } from 'react'
+import { Copy, KeyRound, RotateCw, Trash2, XCircle } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -142,7 +130,7 @@ export function ApiKeysPage() {
       setLastPlaintext(data.api_key_plaintext ?? null)
       setMessage(
         data.api_key_plaintext
-          ? `已创建，请立即复制：${data.api_key_plaintext}`
+          ? `已创建，请立刻复制：${data.api_key_plaintext}`
           : '创建成功，密钥仅显示一次。',
       )
 
@@ -199,7 +187,7 @@ export function ApiKeysPage() {
         setLastPlaintext(data.api_key_plaintext ?? null)
         setMessage(
           data.api_key_plaintext
-            ? `已轮换，请立即复制：${data.api_key_plaintext}`
+            ? `已轮换，请立刻复制：${data.api_key_plaintext}`
             : '轮换完成，密钥仅显示一次。',
         )
       } else {
@@ -215,159 +203,196 @@ export function ApiKeysPage() {
     }
   }
 
+  async function handleCopyPrefix(prefix: string | null) {
+    if (!prefix) {
+      setStatus('error')
+      setMessage('没有可复制的前缀。')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(prefix)
+      setStatus('success')
+      setMessage(`已复制前缀：${prefix}`)
+    } catch (error) {
+      setStatus('error')
+      setMessage(String(error))
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">访问控制</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">访问控制</p>
           <h1 className="text-2xl font-semibold text-ink">API 密钥</h1>
-          <p className="text-sm text-muted">创建与管理 API 密钥，用于自动化调用。</p>
+          <p className="text-sm text-ink/60">创建与管理 API 密钥，用于自动化调用。</p>
         </div>
       </header>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">创建 API 密钥</h3>
-          <p className="text-sm text-muted">标签用于区分用途，生成后的密钥仅显示一次。</p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-            <Input
-              label="标签"
-              placeholder="例如：生产环境"
-              value={label}
-              onValueChange={setLabel}
-            />
-            <Button
-              className="bg-vermillion text-white"
-              radius="full"
-              isLoading={status === 'loading'}
-              onPress={handleCreateKey}
-            >
-              新建 API 密钥
-            </Button>
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <h2 className="text-lg font-semibold text-ink">创建 API 密钥</h2>
+        <p className="text-sm text-ink/60">
+          标签用于区分用途，生成后的密钥仅显示一次。
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <input
+            className="h-9 w-full max-w-xs rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+            placeholder="标签（例如：生产环境）"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+          />
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-ivory"
+            onClick={handleCreateKey}
+            disabled={status === 'loading'}
+          >
+            <KeyRound className="mr-2 h-4 w-4" />
+            新建 API 密钥
+          </button>
+        </div>
+        {message ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <span className={status === 'error' ? 'text-red-600' : 'text-emerald-600'}>
+              {message}
+            </span>
+            {lastPlaintext ? (
+              <button
+                type="button"
+                className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(lastPlaintext)
+                    setStatus('success')
+                    setMessage('已复制到剪贴板。')
+                  } catch (error) {
+                    setStatus('error')
+                    setMessage(String(error))
+                  }
+                }}
+              >
+                复制密钥
+              </button>
+            ) : null}
           </div>
-          {message ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className={status === 'error' ? 'text-sm text-danger-500' : 'text-sm text-emerald-500'}>
-                {message}
-              </div>
-              {lastPlaintext ? (
-                <Button
-                  size="sm"
-                  variant="bordered"
-                  className="border-ink/20 text-ink"
-                  onPress={async () => {
-                    try {
-                      await navigator.clipboard.writeText(lastPlaintext)
-                      setMessage('已复制到剪贴板。')
-                    } catch (error) {
-                      setStatus('error')
-                      setMessage(String(error))
-                    }
-                  }}
-                >
-                  复制密钥
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
-        </CardBody>
-      </Card>
+        ) : null}
+      </section>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">当前密钥</h3>
-          <p className="text-sm text-muted">密钥仅在创建或轮换时展示明文。</p>
-        </CardHeader>
-        <CardBody>
-          <Table removeWrapper aria-label="API 密钥">
-            <TableHeader>
-              <TableColumn>前缀</TableColumn>
-              <TableColumn>标签</TableColumn>
-              <TableColumn>状态</TableColumn>
-              <TableColumn>创建时间</TableColumn>
-              <TableColumn>操作</TableColumn>
-            </TableHeader>
-            <TableBody>
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-ink">当前密钥</h2>
+          <p className="text-xs text-ink/50">共 {rows.length} 个</p>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-lg border border-ink/10">
+          <table className="w-full text-sm">
+            <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+              <tr>
+                <th className="px-4 py-3 text-left">标签</th>
+                <th className="px-4 py-3 text-left">前缀</th>
+                <th className="px-4 py-3 text-left">创建时间</th>
+                <th className="px-4 py-3 text-left">最近使用</th>
+                <th className="px-4 py-3 text-left">状态</th>
+                <th className="px-4 py-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
               {rows.length === 0 ? (
-                <TableRow key="empty">
-                  <TableCell>暂无 API 密钥。</TableCell>
-                  <TableCell>-</TableCell>
-                  <TableCell>-</TableCell>
-                  <TableCell>-</TableCell>
-                  <TableCell>-</TableCell>
-                </TableRow>
+                <tr>
+                  <td className="px-4 py-3 text-ink/60" colSpan={6}>
+                    暂无 API 密钥。
+                  </td>
+                </tr>
               ) : (
-                rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.key_prefix ?? '-'}</TableCell>
-                    <TableCell>{row.label ?? '-'}</TableCell>
-                    <TableCell>
-                      {row.deleted_at ? '已删除' : row.revoked_at ? '已撤销' : '启用'}
-                    </TableCell>
-                    <TableCell>
-                      {row.created_at ? new Date(row.created_at).toLocaleString() : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="bordered"
-                          className="border-ink/20 text-ink"
-                          onPress={() => handleAction('revoke', row.id)}
-                          isDisabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
-                        >
-                          撤销
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="bordered"
-                          onPress={() => handleAction('rotate', row.id)}
-                          isDisabled={status === 'loading' || Boolean(row.deleted_at)}
-                        >
-                          轮换
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="danger"
-                          variant="bordered"
-                          className="border-danger-300 text-danger-600"
-                          onPress={() => handleAction('delete', row.id)}
-                          isDisabled={status === 'loading' || Boolean(row.deleted_at)}
-                        >
-                          删除
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                rows.map((row) => {
+                  const statusLabel = row.deleted_at
+                    ? '已删除'
+                    : row.revoked_at
+                      ? '已撤销'
+                      : '启用'
+                  const statusClass = row.deleted_at
+                    ? 'bg-red-500/10 text-red-600'
+                    : row.revoked_at
+                      ? 'bg-ink/5 text-ink/60'
+                      : 'bg-emerald-500/10 text-emerald-600'
+                  return (
+                    <tr key={row.id} className="border-t border-ink/5">
+                      <td className="px-4 py-3 font-medium">{row.label ?? '-'}</td>
+                      <td className="px-4 py-3 text-ink/60">{row.key_prefix ?? '-'}</td>
+                      <td className="px-4 py-3">
+                        {row.created_at ? new Date(row.created_at).toLocaleString('zh-CN') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-ink/60">-</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
+                            onClick={() => handleCopyPrefix(row.key_prefix)}
+                            aria-label="复制前缀"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
+                            onClick={() => handleAction('rotate', row.id)}
+                            disabled={status === 'loading' || Boolean(row.deleted_at)}
+                            aria-label="轮换"
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
+                            onClick={() => handleAction('revoke', row.id)}
+                            disabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
+                            aria-label="撤销"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-500/10"
+                            onClick={() => handleAction('delete', row.id)}
+                            disabled={status === 'loading' || Boolean(row.deleted_at)}
+                            aria-label="删除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
-            </TableBody>
-          </Table>
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
-              isDisabled={page <= 1}
-            >
-              上一页
-            </Button>
-            <span className="text-sm text-muted">第 {page} 页</span>
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => prev + 1)}
-              isDisabled={!hasNext}
-            >
-              下一页
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page <= 1}
+          >
+            上一页
+          </button>
+          <span className="text-xs text-ink/50">第 {page} 页</span>
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={!hasNext}
+          >
+            下一页
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+﻿import { useEffect, useState, useRef } from 'react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
+import { BarChart3, Home, KeyRound, Settings, UploadCloud, UserCircle } from 'lucide-react'
 import { AuthControl } from './components/auth-control'
-import { DashboardShell } from './components/dashboard-shell'
+import { DashboardShell, type DashboardLink } from './components/dashboard-shell'
 import { ThreeDemoSection } from './components/three-demo'
 import { useSupabaseSession } from './hooks/use-supabase-session'
 import { DashboardPage } from './pages/dashboard'
@@ -136,15 +137,13 @@ export function App() {
     if (typeof window === 'undefined') return
     window.history.pushState({}, '', pathname)
     setRouteKey(getRouteFromPathname({ pathname }))
-  }
-
-  const dashboardLinks: Array<{ label: string; path: string; group: 'main' | 'account' }> = [
-    { label: '概览', path: dashboardPath, group: 'main' },
-    { label: 'API 密钥', path: apiKeysPath, group: 'main' },
-    { label: '上传任务', path: uploadsPath, group: 'main' },
-    { label: '用量', path: usagePath, group: 'main' },
-    { label: '记忆策略', path: memoryPolicyPath, group: 'main' },
-    { label: '个人资料', path: profilePath, group: 'account' },
+  }  const dashboardLinks: DashboardLink[] = [
+    { label: '概览', path: dashboardPath, group: 'main', icon: Home },
+    { label: 'API 密钥', path: apiKeysPath, group: 'main', icon: KeyRound },
+    { label: '上传任务', path: uploadsPath, group: 'main', icon: UploadCloud },
+    { label: '用量', path: usagePath, group: 'main', icon: BarChart3 },
+    { label: '记忆策略', path: memoryPolicyPath, group: 'main', icon: Settings },
+    { label: '个人资料', path: profilePath, group: 'account', icon: UserCircle },
   ]
 
   const currentDashboardPath = (() => {
@@ -157,6 +156,10 @@ export function App() {
       default: return dashboardPath
     }
   })()
+
+  const mainClassName = isProtectedRoute
+    ? 'min-h-[70vh]'
+    : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
 
   return (
     <div className="relative min-h-screen">
@@ -239,7 +242,7 @@ export function App() {
           <Footer content={content.footer} />
         </main>
       ) : (
-        <main className="min-h-[70vh] px-6 pb-24 pt-28 sm:px-8">
+        <main className={mainClassName}>
           {isProtectedRoute && (
             <DashboardShell
               title={getDashboardTitle(routeKey)}
@@ -247,6 +250,7 @@ export function App() {
               links={dashboardLinks}
               onNavigate={navigateTo}
               onSignIn={handleSignInClick}
+              onSignUp={handleSignUpClick}
             >
               {routeKey === 'dashboard' && <DashboardPage />}
               {routeKey === 'apiKeys' && <ApiKeysPage />}
@@ -993,12 +997,12 @@ mem = Memory(api_key="qbk_xxx")  # That's it!
 
 # Save a conversation
 mem.add("conv-001", [
-    {"role": "user", "content": "明天和 Caroline 去西湖"},
-    {"role": "assistant", "content": "好的，我记住了"},
+    {"role": "user", "content": "鏄庡ぉ鍜?Caroline 鍘昏タ婀?},
+    {"role": "assistant", "content": "濂界殑锛屾垜璁颁綇浜?},
 ])
 
 # Search memories
-result = mem.search("我什么时候去西湖？")
+result = mem.search("鎴戜粈涔堟椂鍊欏幓瑗挎箹锛?)
 if result:
     print(result.to_prompt())`
 
@@ -1039,10 +1043,10 @@ const contentByLocale: Record<Locale, AppContent> = {
         { 
           label: 'Developers',
           dropdown: [
-            { label: 'Documentation', href: '/docs', icon: '📚' },
-            { label: 'API Reference', href: '/docs/api', icon: '⚡' },
-            { label: 'Support', href: '/support', icon: '💬' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '🎮' },
+            { label: 'Documentation', href: '/docs', icon: '馃摎' },
+            { label: 'API Reference', href: '/docs/api', icon: '鈿? },
+            { label: 'Support', href: '/support', icon: '馃挰' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '馃幃' },
           ]
         },
         { label: 'Pricing', href: '#pricing' },
@@ -1051,7 +1055,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { label: 'Join Us', href: '/careers' },
       ],
       ctaLabel: 'Get Started',
-      toggleLabel: '中文',
+      toggleLabel: '涓枃',
     },
     hero: {
       badge: 'Now in Beta',
@@ -1073,10 +1077,10 @@ const contentByLocale: Record<Locale, AppContent> = {
       title: 'Production-ready memory infrastructure',
       description: 'Deploy with confidence. Full control over your data and infrastructure.',
       items: [
-        { icon: '🔒', tag: 'Privacy', title: 'Self-Hosted Database', description: 'Deploy on your infrastructure with Qdrant + Neo4j. Your data never leaves your servers. Full data sovereignty.' },
-        { icon: '🚀', tag: 'Deploy', title: 'One-Command Setup', description: 'Docker Compose deployment in minutes. Kubernetes-ready. No complex configuration required.' },
-        { icon: '👥', tag: 'Support', title: 'Dedicated Team', description: 'SLA-backed enterprise support. Direct access to engineering team. Custom integration assistance.' },
-        { icon: '📊', tag: 'Console', title: 'API Dashboard', description: 'Monitor usage, manage API keys, configure memory policies. Full observability into your memory layer.' },
+        { icon: '馃敀', tag: 'Privacy', title: 'Self-Hosted Database', description: 'Deploy on your infrastructure with Qdrant + Neo4j. Your data never leaves your servers. Full data sovereignty.' },
+        { icon: '馃殌', tag: 'Deploy', title: 'One-Command Setup', description: 'Docker Compose deployment in minutes. Kubernetes-ready. No complex configuration required.' },
+        { icon: '馃懃', tag: 'Support', title: 'Dedicated Team', description: 'SLA-backed enterprise support. Direct access to engineering team. Custom integration assistance.' },
+        { icon: '馃搳', tag: 'Console', title: 'API Dashboard', description: 'Monitor usage, manage API keys, configure memory policies. Full observability into your memory layer.' },
       ],
     },
     howItWorks: {
@@ -1105,7 +1109,7 @@ const contentByLocale: Record<Locale, AppContent> = {
       eyebrow: 'Testimonials',
       title: 'Teams building with Omni Memory',
       items: [
-        { name: 'Sarah Chen', title: 'Head of AI, Aurora Labs', quote: 'We replaced three internal services with Omni Memory. Agent latency dropped 40% immediately—it just works.' },
+        { name: 'Sarah Chen', title: 'Head of AI, Aurora Labs', quote: 'We replaced three internal services with Omni Memory. Agent latency dropped 40% immediately鈥攊t just works.' },
         { name: 'Marcus Williams', title: 'VP Product, Northwind', quote: 'Our clinical assistants finally remember patient context across sessions. Game changer for healthcare AI.' },
         { name: 'Elena Rodriguez', title: 'Founder, Signalwave', quote: 'The policy controls let us scope memory by project without building custom infrastructure. Shipped in a week.' },
       ],
@@ -1113,12 +1117,12 @@ const contentByLocale: Record<Locale, AppContent> = {
     partners: {
       label: 'Trusted by leading research institutions and enterprises',
       partners: [
-        { name: 'Tsinghua University', nameCn: '清华大学' },
-        { name: 'Peking University', nameCn: '北京大学' },
-        { name: 'Zhejiang University', nameCn: '浙江大学' },
+        { name: 'Tsinghua University', nameCn: '娓呭崕澶у' },
+        { name: 'Peking University', nameCn: '鍖椾含澶у' },
+        { name: 'Zhejiang University', nameCn: '娴欐睙澶у' },
         { name: 'NUS' },
         { name: 'VU Amsterdam' },
-        { name: 'Meituan', nameCn: '美团' },
+        { name: 'Meituan', nameCn: '缇庡洟' },
       ],
     },
     pricing: {
@@ -1157,7 +1161,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { label: 'Documentation', href: '/docs' },
         { label: 'Pricing', href: '#pricing' },
       ],
-      copyright: '© 2025 Omni Memory. All rights reserved.',
+      copyright: '漏 2025 Omni Memory. All rights reserved.',
     },
   },
   zh: {
@@ -1165,64 +1169,64 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       navLinks: [
         { 
-          label: '开发者',
+          label: '寮€鍙戣€?,
           dropdown: [
-            { label: '文档', href: '/docs', icon: '📚' },
-            { label: 'API 参考', href: '/docs/api', icon: '⚡' },
-            { label: '支持', href: '/support', icon: '💬' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '🎮' },
+            { label: '鏂囨。', href: '/docs', icon: '馃摎' },
+            { label: 'API 鍙傝€?, href: '/docs/api', icon: '鈿? },
+            { label: '鏀寔', href: '/support', icon: '馃挰' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '馃幃' },
           ]
         },
-        { label: '价格', href: '#pricing' },
-        { label: '企业版', href: '#enterprise' },
-        { label: '研究', href: '/research' },
-        { label: '加入我们', href: '/careers' },
+        { label: '浠锋牸', href: '#pricing' },
+        { label: '浼佷笟鐗?, href: '#enterprise' },
+        { label: '鐮旂┒', href: '/research' },
+        { label: '鍔犲叆鎴戜滑', href: '/careers' },
       ],
-      ctaLabel: '开始使用',
+      ctaLabel: '寮€濮嬩娇鐢?,
       toggleLabel: 'EN',
     },
     hero: {
-      badge: '公测中',
-      titleLine1: '记忆，',
-      titleLine2: '决定智能上限',
-      description: 'Omni Memory 构建多模态的人生记忆系统，让 AI 超越指令、理解人，并随着人类真实生活的上下文不断成长。',
-      primaryCta: '开始构建',
-      secondaryCta: '查看文档',
+      badge: '鍏祴涓?,
+      titleLine1: '璁板繂锛?,
+      titleLine2: '鍐冲畾鏅鸿兘涓婇檺',
+      description: 'Omni Memory 鏋勫缓澶氭ā鎬佺殑浜虹敓璁板繂绯荤粺锛岃 AI 瓒呰秺鎸囦护銆佺悊瑙ｄ汉锛屽苟闅忕潃浜虹被鐪熷疄鐢熸椿鐨勪笂涓嬫枃涓嶆柇鎴愰暱銆?,
+      primaryCta: '寮€濮嬫瀯寤?,
+      secondaryCta: '鏌ョ湅鏂囨。',
     },
     stats: {
       items: [
-        { value: '#1', label: 'LoCoMo 基准测试' },
-        { value: '77.8%', label: 'J-Score 准确率' },
-        { value: '<1s', label: '检索延迟' },
+        { value: '#1', label: 'LoCoMo 鍩哄噯娴嬭瘯' },
+        { value: '77.8%', label: 'J-Score 鍑嗙‘鐜? },
+        { value: '<1s', label: '妫€绱㈠欢杩? },
       ],
     },
     features: {
-      eyebrow: '企业级部署',
-      title: '生产就绪的记忆基础设施',
-      description: '自主部署，完全掌控数据和基础设施。',
+      eyebrow: '浼佷笟绾ч儴缃?,
+      title: '鐢熶骇灏辩华鐨勮蹇嗗熀纭€璁炬柦',
+      description: '鑷富閮ㄧ讲锛屽畬鍏ㄦ帉鎺ф暟鎹拰鍩虹璁炬柦銆?,
       items: [
-        { icon: '🔒', tag: '隐私', title: '自托管数据库', description: '在你的基础设施上部署 Qdrant + Neo4j。数据永不离开你的服务器，完全的数据主权。' },
-        { icon: '🚀', tag: '部署', title: '一键启动', description: 'Docker Compose 分钟级部署，支持 Kubernetes，无需复杂配置。' },
-        { icon: '👥', tag: '支持', title: '专属团队', description: 'SLA 保障的企业级支持，直接对接工程团队，提供定制集成服务。' },
-        { icon: '📊', tag: '控制台', title: 'API 管理面板', description: '监控用量、管理 API Key、配置记忆策略。全面可观测的记忆层。' },
+        { icon: '馃敀', tag: '闅愮', title: '鑷墭绠℃暟鎹簱', description: '鍦ㄤ綘鐨勫熀纭€璁炬柦涓婇儴缃?Qdrant + Neo4j銆傛暟鎹案涓嶇寮€浣犵殑鏈嶅姟鍣紝瀹屽叏鐨勬暟鎹富鏉冦€? },
+        { icon: '馃殌', tag: '閮ㄧ讲', title: '涓€閿惎鍔?, description: 'Docker Compose 鍒嗛挓绾ч儴缃诧紝鏀寔 Kubernetes锛屾棤闇€澶嶆潅閰嶇疆銆? },
+        { icon: '馃懃', tag: '鏀寔', title: '涓撳睘鍥㈤槦', description: 'SLA 淇濋殰鐨勪紒涓氱骇鏀寔锛岀洿鎺ュ鎺ュ伐绋嬪洟闃燂紝鎻愪緵瀹氬埗闆嗘垚鏈嶅姟銆? },
+        { icon: '馃搳', tag: '鎺у埗鍙?, title: 'API 绠＄悊闈㈡澘', description: '鐩戞帶鐢ㄩ噺銆佺鐞?API Key銆侀厤缃蹇嗙瓥鐣ャ€傚叏闈㈠彲瑙傛祴鐨勮蹇嗗眰銆? },
       ],
     },
     howItWorks: {
-      eyebrow: '工作原理',
-      title: '从摄取到召回',
-      description: '简单三步，让你的 AI 拥有持久记忆。',
+      eyebrow: '宸ヤ綔鍘熺悊',
+      title: '浠庢憚鍙栧埌鍙洖',
+      description: '绠€鍗曚笁姝ワ紝璁╀綘鐨?AI 鎷ユ湁鎸佷箙璁板繂銆?,
       steps: [
-        { title: '摄取', description: '通过简单 API 将对话、文件和事件流入 Omni Memory。' },
-        { title: '增强', description: '我们对记忆分类、去重和评分，应用衰减曲线保持召回新鲜。' },
-        { title: '检索', description: '按用户、意图和时间范围查询。毫秒级获取策略过滤的上下文。' },
+        { title: '鎽勫彇', description: '閫氳繃绠€鍗?API 灏嗗璇濄€佹枃浠跺拰浜嬩欢娴佸叆 Omni Memory銆? },
+        { title: '澧炲己', description: '鎴戜滑瀵硅蹇嗗垎绫汇€佸幓閲嶅拰璇勫垎锛屽簲鐢ㄨ“鍑忔洸绾夸繚鎸佸彫鍥炴柊椴溿€? },
+        { title: '妫€绱?, description: '鎸夌敤鎴枫€佹剰鍥惧拰鏃堕棿鑼冨洿鏌ヨ銆傛绉掔骇鑾峰彇绛栫暐杩囨护鐨勪笂涓嬫枃銆? },
       ],
     },
     developers: {
-      eyebrow: '开发者',
-      title: '支持 Python / JavaScript / REST',
-      description: '三行代码让你的 AI 拥有持久记忆。初始化、存储对话、图增强检索。',
-      primaryCta: '阅读文档',
-      secondaryCta: '联系我们',
+      eyebrow: '寮€鍙戣€?,
+      title: '鏀寔 Python / JavaScript / REST',
+      description: '涓夎浠ｇ爜璁╀綘鐨?AI 鎷ユ湁鎸佷箙璁板繂銆傚垵濮嬪寲銆佸瓨鍌ㄥ璇濄€佸浘澧炲己妫€绱€?,
+      primaryCta: '闃呰鏂囨。',
+      secondaryCta: '鑱旂郴鎴戜滑',
       codeTabs: [
         { label: 'Python', code: CODE_SAMPLE_PYTHON },
         { label: 'JavaScript', code: CODE_SAMPLE_JS },
@@ -1230,62 +1234,62 @@ const contentByLocale: Record<Locale, AppContent> = {
       ],
     },
     testimonials: {
-      eyebrow: '用户故事',
-      title: '使用 Omni Memory 的团队',
+      eyebrow: '鐢ㄦ埛鏁呬簨',
+      title: '浣跨敤 Omni Memory 鐨勫洟闃?,
       items: [
-        { name: 'Sarah Chen', title: 'Aurora Labs AI 负责人', quote: '我们用 Omni Memory 替换了三个内部服务。智能体延迟立即降低 40%——开箱即用。' },
-        { name: 'Marcus Williams', title: 'Northwind 产品副总裁', quote: '我们的临床助手终于能跨会话记住患者上下文了。医疗 AI 的游戏规则改变者。' },
-        { name: 'Elena Rodriguez', title: 'Signalwave 创始人', quote: '策略控制让我们无需自建基础设施就能按项目划定记忆范围。一周内上线。' },
+        { name: 'Sarah Chen', title: 'Aurora Labs AI 璐熻矗浜?, quote: '鎴戜滑鐢?Omni Memory 鏇挎崲浜嗕笁涓唴閮ㄦ湇鍔°€傛櫤鑳戒綋寤惰繜绔嬪嵆闄嶄綆 40%鈥斺€斿紑绠卞嵆鐢ㄣ€? },
+        { name: 'Marcus Williams', title: 'Northwind 浜у搧鍓€昏', quote: '鎴戜滑鐨勪复搴婂姪鎵嬬粓浜庤兘璺ㄤ細璇濊浣忔偅鑰呬笂涓嬫枃浜嗐€傚尰鐤?AI 鐨勬父鎴忚鍒欐敼鍙樿€呫€? },
+        { name: 'Elena Rodriguez', title: 'Signalwave 鍒涘浜?, quote: '绛栫暐鎺у埗璁╂垜浠棤闇€鑷缓鍩虹璁炬柦灏辫兘鎸夐」鐩垝瀹氳蹇嗚寖鍥淬€備竴鍛ㄥ唴涓婄嚎銆? },
       ],
     },
     partners: {
-      label: '顶尖研究机构和企业的信赖之选',
+      label: '椤跺皷鐮旂┒鏈烘瀯鍜屼紒涓氱殑淇¤禆涔嬮€?,
       partners: [
-        { name: 'Tsinghua University', nameCn: '清华大学' },
-        { name: 'Peking University', nameCn: '北京大学' },
-        { name: 'Zhejiang University', nameCn: '浙江大学' },
+        { name: 'Tsinghua University', nameCn: '娓呭崕澶у' },
+        { name: 'Peking University', nameCn: '鍖椾含澶у' },
+        { name: 'Zhejiang University', nameCn: '娴欐睙澶у' },
         { name: 'NUS' },
         { name: 'VU Amsterdam' },
-        { name: 'Meituan', nameCn: '美团' },
+        { name: 'Meituan', nameCn: '缇庡洟' },
       ],
     },
     pricing: {
-      eyebrow: '价格',
-      title: '随你扩展的套餐',
-      description: '从免费开始，随增长升级。可预测的按量计费。',
+      eyebrow: '浠锋牸',
+      title: '闅忎綘鎵╁睍鐨勫椁?,
+      description: '浠庡厤璐瑰紑濮嬶紝闅忓闀垮崌绾с€傚彲棰勬祴鐨勬寜閲忚璐广€?,
       plans: [
-        { badge: '入门', name: '构建', price: '免费', period: '永久', cta: '免费开始', features: ['200万条记忆', '多模态 API', '社区支持'] },
-        { badge: '成长', name: '扩展', price: '¥3,499', period: '/月', cta: '联系销售', features: ['5000万条记忆', '策略引擎', '优先支持', '高级分析'] },
-        { badge: '企业', name: '治理', price: '定制', period: '', cta: '联系我们', features: ['无限记忆', '专属 VPC', '定制 SLA', '专属支持'] },
+        { badge: '鍏ラ棬', name: '鏋勫缓', price: '鍏嶈垂', period: '姘镐箙', cta: '鍏嶈垂寮€濮?, features: ['200涓囨潯璁板繂', '澶氭ā鎬?API', '绀惧尯鏀寔'] },
+        { badge: '鎴愰暱', name: '鎵╁睍', price: '楼3,499', period: '/鏈?, cta: '鑱旂郴閿€鍞?, features: ['5000涓囨潯璁板繂', '绛栫暐寮曟搸', '浼樺厛鏀寔', '楂樼骇鍒嗘瀽'] },
+        { badge: '浼佷笟', name: '娌荤悊', price: '瀹氬埗', period: '', cta: '鑱旂郴鎴戜滑', features: ['鏃犻檺璁板繂', '涓撳睘 VPC', '瀹氬埗 SLA', '涓撳睘鏀寔'] },
       ],
     },
     faq: {
-      eyebrow: '常见问题',
-      title: '常见问题',
-      description: '关于 Omni Memory 的一切。',
+      eyebrow: '甯歌闂',
+      title: '甯歌闂',
+      description: '鍏充簬 Omni Memory 鐨勪竴鍒囥€?,
       items: [
-        { question: '支持哪些 AI 模型？', answer: '我们在不同提供商间统一。一次写入，可跨 GPT、Claude、Gemini 或自定义模型检索。' },
-        { question: '可以存储哪些数据类型？', answer: '文本、音频转录、带上下文的图像，以及结构化事件。都增强了实体和意图信号。' },
-        { question: '如何处理隐私？', answer: '自动 PII 检测、可配置保留期、同意追踪和遗忘权工作流。已通过 SOC 2 Type II 认证。' },
-        { question: '检索延迟是多少？', answer: 'P95 召回全球低于 500ms，使用多区域缓存和混合检索。' },
+        { question: '鏀寔鍝簺 AI 妯″瀷锛?, answer: '鎴戜滑鍦ㄤ笉鍚屾彁渚涘晢闂寸粺涓€銆備竴娆″啓鍏ワ紝鍙法 GPT銆丆laude銆丟emini 鎴栬嚜瀹氫箟妯″瀷妫€绱€? },
+        { question: '鍙互瀛樺偍鍝簺鏁版嵁绫诲瀷锛?, answer: '鏂囨湰銆侀煶棰戣浆褰曘€佸甫涓婁笅鏂囩殑鍥惧儚锛屼互鍙婄粨鏋勫寲浜嬩欢銆傞兘澧炲己浜嗗疄浣撳拰鎰忓浘淇″彿銆? },
+        { question: '濡備綍澶勭悊闅愮锛?, answer: '鑷姩 PII 妫€娴嬨€佸彲閰嶇疆淇濈暀鏈熴€佸悓鎰忚拷韪拰閬楀繕鏉冨伐浣滄祦銆傚凡閫氳繃 SOC 2 Type II 璁よ瘉銆? },
+        { question: '妫€绱㈠欢杩熸槸澶氬皯锛?, answer: 'P95 鍙洖鍏ㄧ悆浣庝簬 500ms锛屼娇鐢ㄥ鍖哄煙缂撳瓨鍜屾贩鍚堟绱€? },
       ],
     },
     cta: {
-      title: '让你的 AI 拥有应得的记忆',
-      description: '立即开始使用持久的上下文记忆。免费套餐可用。',
-      primaryCta: '开始构建',
-      secondaryCta: '查看文档',
+      title: '璁╀綘鐨?AI 鎷ユ湁搴斿緱鐨勮蹇?,
+      description: '绔嬪嵆寮€濮嬩娇鐢ㄦ寔涔呯殑涓婁笅鏂囪蹇嗐€傚厤璐瑰椁愬彲鐢ㄣ€?,
+      primaryCta: '寮€濮嬫瀯寤?,
+      secondaryCta: '鏌ョ湅鏂囨。',
     },
     footer: {
       brandName: 'Omni Memory',
-      tagline: '智能 AI 应用的记忆层。',
+      tagline: '鏅鸿兘 AI 搴旂敤鐨勮蹇嗗眰銆?,
       links: [
-        { label: '工作原理', href: '#how-it-works' },
-        { label: '企业版', href: '#enterprise' },
-        { label: '文档', href: '/docs' },
-        { label: '价格', href: '#pricing' },
+        { label: '宸ヤ綔鍘熺悊', href: '#how-it-works' },
+        { label: '浼佷笟鐗?, href: '#enterprise' },
+        { label: '鏂囨。', href: '/docs' },
+        { label: '浠锋牸', href: '#pricing' },
       ],
-      copyright: '© 2025 Omni Memory. 保留所有权利。',
+      copyright: '漏 2025 Omni Memory. 淇濈暀鎵€鏈夋潈鍒┿€?,
     },
   },
 }
@@ -1327,3 +1331,5 @@ interface FaqContent { eyebrow: string; title: string; description: string; item
 interface CtaContent { title: string; description: string; primaryCta: string; secondaryCta: string }
 interface PartnersContent { label: string; partners: { name: string; nameCn?: string }[] }
 interface FooterContent { brandName: string; tagline: string; links: { label: string; href: string }[]; copyright: string }
+
+

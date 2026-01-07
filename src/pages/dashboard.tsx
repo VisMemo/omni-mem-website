@@ -1,17 +1,3 @@
-﻿import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@nextui-org/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
@@ -60,6 +46,16 @@ function formatNumber(value?: number | null) {
 function formatSwitch(value?: boolean | null) {
   if (value === null || value === undefined) return '-'
   return value ? '已开启' : '未开启'
+}
+
+function formatDateInput(value: Date) {
+  return value.toISOString().slice(0, 10)
+}
+
+function getDefaultRange() {
+  const now = new Date()
+  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  return { from: formatDateInput(from), to: formatDateInput(now) }
 }
 
 export function DashboardPage() {
@@ -208,143 +204,139 @@ export function DashboardPage() {
       })
   }, [accountId, accessToken, apiBaseUrl, fromDate, toDate, groupBy, refreshSession, session])
 
-  const totalUsage = useMemo(() => usage.reduce((sum, item) => sum + (item.total ?? 0), 0), [usage])
-
   return (
     <div className="space-y-8">
-      <header className="glass-panel rounded-3xl p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">控制台</p>
+      <header className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">控制台</p>
         <h1 className="text-2xl font-semibold text-ink">概览</h1>
-        <p className="text-sm text-muted">用量、配额与权益的整体视图。</p>
+        <p className="text-sm text-ink/60">用量、配额与权益的整体视图。</p>
       </header>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">账户概览</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {overviewItems.map((item) => (
-            <Card key={item.title} className="glass-panel">
-              <CardHeader className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted">{item.title}</p>
-                  <p className="text-2xl font-semibold text-ink">{item.value}</p>
-                  <p className="text-sm text-muted">{item.meta}</p>
-                </div>
-                <Chip size="sm" variant="flat" className="bg-ink/5 text-ink/70">
-                  {item.status}
-                </Chip>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-        {overviewStatus === 'loading' ? (
-          <p className="text-sm text-muted">概览加载中…</p>
-        ) : overviewStatus === 'error' ? (
-          <p className="text-sm text-danger-500">{overviewMessage ?? '概览加载失败'}</p>
-        ) : null}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {overviewItems.map((item) => (
+          <div key={item.title} className="rounded-xl border border-ink/10 bg-white/80 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                {item.title}
+              </p>
+              <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/60">
+                {item.status}
+              </span>
+            </div>
+            <div className="mt-3 text-2xl font-semibold text-ink">{item.value}</div>
+            <p className="mt-1 text-sm text-ink/60">{item.meta}</p>
+          </div>
+        ))}
       </section>
 
-      <section className="space-y-4">
+      {overviewStatus === 'loading' ? (
+        <p className="text-sm text-ink/60">概览加载中…</p>
+      ) : overviewStatus === 'error' ? (
+        <p className="text-sm text-red-600">{overviewMessage ?? '概览加载失败'}</p>
+      ) : null}
+
+      <section className="space-y-4 rounded-xl border border-ink/10 bg-white/80 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-ink">用量概览</h2>
-            <p className="text-sm text-muted">当前按 {groupByLabel} 统计。</p>
+            <p className="text-sm text-ink/60">当前按 {groupByLabel} 统计。</p>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-ink/10 bg-white/70 px-2 py-1">
-            <Button
-              size="sm"
-              variant={groupBy === 'account' ? 'solid' : 'light'}
-              className={groupBy === 'account' ? 'bg-accent text-white' : 'text-ink'}
-              onPress={() => setGroupBy('account')}
+          <div className="flex items-center gap-2 rounded-lg border border-ink/10 bg-white/80 px-2 py-1">
+            <button
+              type="button"
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                groupBy === 'account'
+                  ? 'bg-ink text-ivory'
+                  : 'text-ink/70 hover:bg-ink/5 hover:text-ink'
+              }`}
+              onClick={() => setGroupBy('account')}
             >
               账户
-            </Button>
-            <Button
-              size="sm"
-              variant={groupBy === 'apikey' ? 'solid' : 'light'}
-              className={groupBy === 'apikey' ? 'bg-accent text-white' : 'text-ink'}
-              onPress={() => setGroupBy('apikey')}
+            </button>
+            <button
+              type="button"
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                groupBy === 'apikey'
+                  ? 'bg-ink text-ivory'
+                  : 'text-ink/70 hover:bg-ink/5 hover:text-ink'
+              }`}
+              onClick={() => setGroupBy('apikey')}
             >
               API 密钥
-            </Button>
+            </button>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="glass-panel">
-            <CardHeader className="flex flex-col items-start gap-1">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">总用量</p>
-              <h3 className="text-2xl font-semibold text-ink">{totalUsage}</h3>
-              <p className="text-sm text-muted">时间范围：{fromDate || '-'} → {toDate || '-'}</p>
-            </CardHeader>
-          </Card>
-          <Card className="glass-panel">
-            <CardHeader className="flex flex-col items-start gap-1">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">统计维度</p>
-              <h3 className="text-2xl font-semibold text-ink">{groupByLabel}</h3>
-              <p className="text-sm text-muted">按账户或 API 密钥汇总</p>
-            </CardHeader>
-          </Card>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="date"
+            className="h-9 rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+            value={fromDate}
+            onChange={(event) => setFromDate(event.target.value)}
+          />
+          <input
+            type="date"
+            className="h-9 rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+            value={toDate}
+            onChange={(event) => setToDate(event.target.value)}
+          />
+          <button
+            type="button"
+            className="h-9 rounded-md border border-ink/20 px-3 text-sm text-ink/70 hover:bg-ink/5"
+            onClick={() => {
+              const range = getDefaultRange()
+              setFromDate(range.from)
+              setToDate(range.to)
+            }}
+          >
+            最近 30 天
+          </button>
         </div>
 
-        <Card className="glass-panel">
-          <CardHeader className="flex flex-col items-start gap-2">
-            <h3 className="text-lg font-semibold">用量筛选</h3>
-            <div className="flex flex-wrap gap-3">
-              <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-              <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-              <Button
-                variant="bordered"
-                className="border-ink/20 text-ink"
-                onPress={() => {
-                  const now = new Date()
-                  const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-                  setFromDate(from.toISOString().slice(0, 10))
-                  setToDate(now.toISOString().slice(0, 10))
-                }}
-              >
-                最近 30 天
-              </Button>
-            </div>
-          </CardHeader>
-          <CardBody>
-            {status === 'loading' ? (
-              <div className="text-sm text-muted">用量加载中…</div>
-            ) : status === 'error' ? (
-              <div className="text-sm text-danger-500">{message ?? '用量加载失败'}</div>
-            ) : (
-              <Table removeWrapper aria-label="用量汇总">
-                <TableHeader>
-                  <TableColumn>标识</TableColumn>
-                  <TableColumn>总量</TableColumn>
-                  <TableColumn>事件</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {usage.length === 0 ? (
-                    <TableRow key="empty">
-                      <TableCell>暂无用量数据。</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
-                    </TableRow>
-                  ) : (
-                    usage.map((row) => (
-                      <TableRow key={row.key}>
-                        <TableCell>{row.key}</TableCell>
-                        <TableCell>{row.total}</TableCell>
-                        <TableCell>
-                          {Object.entries(row.events ?? {})
-                            .map(([event, count]) => `${event}:${count}`)
-                            .join(', ')}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </CardBody>
-        </Card>
+        <div className="overflow-hidden rounded-lg border border-ink/10">
+          <table className="w-full text-sm">
+            <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+              <tr>
+                <th className="px-4 py-3 text-left">标识</th>
+                <th className="px-4 py-3 text-left">总量</th>
+                <th className="px-4 py-3 text-left">事件</th>
+              </tr>
+            </thead>
+            <tbody>
+              {status === 'loading' ? (
+                <tr>
+                  <td className="px-4 py-3 text-ink/60" colSpan={3}>
+                    用量加载中…
+                  </td>
+                </tr>
+              ) : status === 'error' ? (
+                <tr>
+                  <td className="px-4 py-3 text-red-600" colSpan={3}>
+                    {message ?? '用量加载失败'}
+                  </td>
+                </tr>
+              ) : usage.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-3 text-ink/60" colSpan={3}>
+                    暂无用量数据。
+                  </td>
+                </tr>
+              ) : (
+                usage.map((row) => (
+                  <tr key={row.key} className="border-t border-ink/5">
+                    <td className="px-4 py-3 font-medium">{row.key}</td>
+                    <td className="px-4 py-3">{row.total}</td>
+                    <td className="px-4 py-3 text-ink/60">
+                      {Object.entries(row.events ?? {})
+                        .map(([event, count]) => `${event}:${count}`)
+                        .join(', ')}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   )

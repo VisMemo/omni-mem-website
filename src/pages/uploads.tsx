@@ -1,17 +1,5 @@
-﻿import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@nextui-org/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CloudUpload, RefreshCcw } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -26,6 +14,7 @@ type UploadRow = {
   balanceUsed: number
   error?: string | null
   progress?: number | null
+  sizeBytes?: number | null
 }
 
 type UploadInitResponse = {
@@ -68,6 +57,7 @@ const ACTIVE_STATUSES = new Set(['init', 'uploaded', 'processing'])
 
 export function UploadsPage() {
   const { session, refreshSession } = useSupabaseSession()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploads, setUploads] = useState<UploadRow[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
@@ -92,6 +82,12 @@ export function UploadsPage() {
     setPage(1)
     setUploads([])
     setRefreshToken((prev) => prev + 1)
+  }
+
+  function handlePickFile() {
+    if (!fileInputRef.current) return
+    fileInputRef.current.value = ''
+    fileInputRef.current.click()
   }
 
   function upsertUpload(row: Partial<UploadRow> & { id: string }) {
@@ -188,6 +184,7 @@ export function UploadsPage() {
         balanceUsed: 0,
         error: null,
         progress: 0,
+        sizeBytes: selectedFile.size,
       })
       setPollingUploadId(initData.upload_id)
 
@@ -218,6 +215,7 @@ export function UploadsPage() {
         balanceUsed: 0,
         error: null,
         progress: 100,
+        sizeBytes: selectedFile.size,
       })
       setStatus('success')
       setMessage(null)
@@ -265,6 +263,7 @@ export function UploadsPage() {
           balanceUsed: Number(row.balance_used ?? 0),
           error: null,
           progress: null,
+          sizeBytes: row.size_bytes ?? null,
         }))
 
         setUploads((prev) => mergeUploadRows(prev, rows))
@@ -341,109 +340,123 @@ export function UploadsPage() {
   }, [pollingUploadId, accountId, accessToken, apiBaseUrl, refreshSession])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">存储</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">存储</p>
           <h1 className="text-2xl font-semibold text-ink">上传任务</h1>
-          <p className="text-sm text-muted">查看上传任务与处理状态。</p>
+          <p className="text-sm text-ink/60">查看上传任务与处理状态。</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="bordered"
-            className="border-ink/20 text-ink"
-            onPress={handleRefresh}
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md border border-ink/20 px-3 py-2 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={handleRefresh}
           >
+            <RefreshCcw className="mr-2 h-4 w-4" />
             刷新
-          </Button>
-          <Button
-            size="sm"
-            className="bg-accent text-white"
-            radius="full"
-            isDisabled={!selectedFile || status === 'loading'}
-            onPress={handleUpload}
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
+            onClick={() => (selectedFile ? handleUpload() : handlePickFile())}
+            disabled={status === 'loading'}
           >
-            {status === 'loading' ? '上传中…' : '开始上传'}
-          </Button>
+            <CloudUpload className="mr-2 h-4 w-4" />
+            {status === 'loading' ? '上传中…' : selectedFile ? '开始上传' : '上传文件'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null
+              setSelectedFile(file)
+            }}
+          />
         </div>
       </header>
 
-      <Card className="glass-panel">
-        <CardHeader className="flex flex-col items-start gap-2">
-          <h3 className="text-lg font-semibold">上传文件</h3>
-          <p className="text-sm text-muted">选择文件并上传到记忆数据管线。</p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              type="file"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null
-                setSelectedFile(file)
-              }}
-            />
-            <div className="text-sm text-muted">
-              {selectedFile ? `文件大小：${formatBytes(selectedFile.size)}` : '尚未选择文件'}
-            </div>
-          </div>
-          {inlineStatus ? <p className="text-sm text-accent">{inlineStatus}</p> : null}
-          {message ? <p className="text-sm text-danger">{message}</p> : null}
-        </CardBody>
-      </Card>
-
-      <Card className="glass-panel">
-        <CardHeader className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">上传记录</h3>
-            <p className="text-sm text-muted">最近的上传任务与处理结果。</p>
-          </div>
-          <p className="text-xs text-muted">当前第 {page} 页</p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          <Table removeWrapper aria-label="上传记录">
-            <TableHeader>
-              <TableColumn>文件名称</TableColumn>
-              <TableColumn>文件格式</TableColumn>
-              <TableColumn>状态</TableColumn>
-              <TableColumn>上传时间</TableColumn>
-              <TableColumn>消耗积分</TableColumn>
-            </TableHeader>
-            <TableBody emptyContent="暂无上传记录。">
-              {uploads.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.file}</TableCell>
-                  <TableCell>{row.fileType}</TableCell>
-                  <TableCell>{renderStatusCell(row)}</TableCell>
-                  <TableCell>{formatTimestamp(row.createdAt)}</TableCell>
-                  <TableCell>{row.balanceUsed}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => Math.max(1, prev - 1))}
-              isDisabled={page <= 1}
-            >
-              上一页
-            </Button>
-            <span className="text-sm text-muted">第 {page} 页</span>
-            <Button
-              size="sm"
-              variant="bordered"
-              className="border-ink/20 text-ink"
-              onPress={() => setPage((prev) => prev + 1)}
-              isDisabled={!hasNext}
-            >
-              下一页
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+      <section className="rounded-xl border border-ink/10 bg-white/80 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-ink">最近上传</h2>
+          <p className="text-xs text-ink/50">共 {uploads.length} 个任务</p>
+        </div>
+        {selectedFile ? (
+          <p className="mt-3 text-sm text-ink/60">
+            已选择：{selectedFile.name}（{formatBytes(selectedFile.size)}）
+          </p>
+        ) : null}
+        {inlineStatus ? <p className="mt-2 text-sm text-emerald-600">{inlineStatus}</p> : null}
+        {message ? (
+          <p className={`mt-2 text-sm ${status === 'error' ? 'text-red-600' : 'text-ink/70'}`}>
+            {message}
+          </p>
+        ) : null}
+        <div className="mt-4 overflow-hidden rounded-lg border border-ink/10">
+          <table className="w-full text-sm">
+            <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+              <tr>
+                <th className="px-4 py-3 text-left">文件</th>
+                <th className="px-4 py-3 text-left">格式</th>
+                <th className="px-4 py-3 text-left">大小</th>
+                <th className="px-4 py-3 text-left">状态</th>
+                <th className="px-4 py-3 text-left">更新时间</th>
+                <th className="px-4 py-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {uploads.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-3 text-ink/60" colSpan={6}>
+                    暂无上传记录。
+                  </td>
+                </tr>
+              ) : (
+                uploads.map((row) => (
+                  <tr key={row.id} className="border-t border-ink/5">
+                    <td className="px-4 py-3 font-medium">{row.file}</td>
+                    <td className="px-4 py-3 text-ink/60">{row.fileType}</td>
+                    <td className="px-4 py-3 text-ink/60">
+                      {row.sizeBytes ? formatBytes(row.sizeBytes) : '-'}
+                    </td>
+                    <td className="px-4 py-3">{renderStatusCell(row)}</td>
+                    <td className="px-4 py-3">{formatTimestamp(row.updatedAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+                        disabled
+                      >
+                        {row.status === 'failed' ? '重试' : '查看'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page <= 1}
+          >
+            上一页
+          </button>
+          <span className="text-xs text-ink/50">第 {page} 页</span>
+          <button
+            type="button"
+            className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={!hasNext}
+          >
+            下一页
+          </button>
+        </div>
+      </section>
     </div>
   )
 }
@@ -477,19 +490,26 @@ function formatStatus(row: UploadRow) {
 
 function renderStatusCell(row: UploadRow) {
   const label = formatStatus(row)
-  if (row.status !== 'uploading') {
-    return label
+  if (row.status === 'uploading') {
+    const progress = row.progress ?? 0
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-ink/70">{`${label} ${progress}%`}</span>
+        <div className="h-1.5 w-24 overflow-hidden rounded bg-ink/10">
+          <div className="h-full bg-vermillion" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+    )
   }
 
-  const progress = row.progress ?? 0
-  return (
-    <div className="flex flex-col gap-1">
-      <span>{`${label} ${progress}%`}</span>
-      <div className="h-1.5 w-24 overflow-hidden rounded bg-white/10">
-        <div className="h-full bg-vermillion" style={{ width: `${progress}%` }} />
-      </div>
-    </div>
-  )
+  const badgeClass =
+    row.status === 'done'
+      ? 'bg-emerald-500/10 text-emerald-600'
+      : row.status === 'failed'
+        ? 'bg-red-500/10 text-red-600'
+        : 'bg-amber-500/10 text-amber-600'
+
+  return <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass}`}>{label}</span>
 }
 
 function getFileTypeLabel(filename: string, mime: string) {
@@ -504,7 +524,7 @@ function formatTimestamp(value: string) {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  return date.toLocaleString('zh-CN')
 }
 
 function mergeUploadRows(existing: UploadRow[], incoming: UploadRow[]) {
