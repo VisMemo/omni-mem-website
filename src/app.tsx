@@ -138,7 +138,7 @@ export function App() {
     setRouteKey(getRouteFromPathname({ pathname }))
   }
 
-  const dashboardLinks = [
+  const dashboardLinks: Array<{ label: string; path: string; group: 'main' | 'account' }> = [
     { label: '概览', path: dashboardPath, group: 'main' },
     { label: 'API 密钥', path: apiKeysPath, group: 'main' },
     { label: '上传任务', path: uploadsPath, group: 'main' },
