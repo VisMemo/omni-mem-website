@@ -79,7 +79,7 @@ const PROVIDER_MODELS: Record<string, string[]> = {
     'groq/mixtral-8x7b-32768',
     'groq/gemma2-9b-it',
   ],
-  deepseek: ['deepseek/deepseek-chat', 'deepseek/deepseek-reasoner'],
+  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
   mistral: [
     'mistral/mistral-large-latest',
     'mistral/mistral-small-latest',
