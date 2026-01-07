@@ -123,7 +123,7 @@ export function ProfilePage() {
   const entitlementItems = [
     { label: '默认额度', value: entitlements?.credit_default ?? '-' },
     { label: '记忆节点上限', value: entitlements?.memory_node_limit ?? '-' },
-    { label: '速率限制（3 秒）', value: entitlements?.rate_limit_3s ?? '-' },
+    { label: '请求限制（3 秒）', value: entitlements?.rate_limit_3s ?? '-' },
     {
       label: 'API 密钥隔离',
       value: entitlements ? (entitlements.allow_apikey_scope ? '已启用' : '未启用') : '-',

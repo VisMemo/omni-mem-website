@@ -132,18 +132,18 @@ export function DashboardShell({
   ) : null
 
   return (
-    <div className="dashboard-shell min-h-screen bg-ivory text-ink">
+    <div className="dashboard-shell min-h-screen bg-ivory pt-28 text-ink">
       {mobileNav}
       <button
         type="button"
-        className="fixed left-4 top-20 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
+        className="fixed left-4 top-28 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
         onClick={() => setNavOpen(true)}
         aria-label="打开导航"
       >
         <Menu className="h-4 w-4" />
       </button>
 
-      <div className="mx-auto flex w-full max-w-[1280px] gap-8 px-4 py-8">
+      <div className="mx-auto flex w-full max-w-[1360px] gap-8 px-3 py-8">
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="rounded-xl bg-white/70 p-4">
             <NavSections sections={sections} currentPath={currentPath} onNavigate={onNavigate} />
