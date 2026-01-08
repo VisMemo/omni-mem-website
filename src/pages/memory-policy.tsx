@@ -357,6 +357,8 @@ export function MemoryPolicyPage() {
     ]
   }, [apiKeys])
 
+  const isLlmLoading = llmStatus === 'loading'
+
   return (
     <div className="space-y-8">
             <header className="space-y-2">
@@ -403,7 +405,7 @@ export function MemoryPolicyPage() {
               type="button"
               className="rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
               onClick={handleAddLlmKey}
-              disabled={llmStatus === 'loading'}
+              disabled={isLlmLoading}
             >
               添加
             </button>
@@ -493,7 +495,7 @@ export function MemoryPolicyPage() {
                                     : 'rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-600 hover:bg-emerald-50'
                                 }
                                 onClick={() => handleManagedKeyToggle(row.id, managedAction)}
-                                disabled={llmStatus === 'loading'}
+                                disabled={isLlmLoading}
                               >
                                 {managedLabel}
                               </button>
