@@ -400,6 +400,70 @@ export function MemoryPolicyPage() {
               <p className="text-xs text-red-600">{policyMessage ?? '保存失败'}</p>
             ) : null}
           </div>
+          <div className="mt-6 space-y-4">
+            <h3 className="text-sm font-semibold text-ink">添加 LLM 密钥</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  备注
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formLabel}
+                  onChange={(event) => setFormLabel(event.target.value)}
+                  placeholder="例如：主用 OpenAI"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  LLM 密钥
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formKey}
+                  onChange={(event) => setFormKey(event.target.value)}
+                  placeholder="sk-..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  平台
+                </label>
+                <select
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formProvider}
+                  onChange={(event) => setFormProvider(event.target.value)}
+                >
+                  <option value="">请选择</option>
+                  {PROVIDER_OPTIONS.map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  模型名称
+                </label>
+                <select
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formModelName}
+                  onChange={(event) => setFormModelName(event.target.value)}
+                  disabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
+                >
+                  <option value="">
+                    {modelStatus === 'loading' ? '加载中...' : '请选择'}
+                  </option>
+                  {modelOptions.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
           <div className="mt-4">
             <button
               type="button"
