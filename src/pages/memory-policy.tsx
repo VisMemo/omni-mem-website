@@ -55,7 +55,7 @@ export function MemoryPolicyPage() {
   const [formProvider, setFormProvider] = useState('')
   const [formModelName, setFormModelName] = useState('')
   const [modelOptions, setModelOptions] = useState<string[]>([])
-  const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'error' | (string & {})>('idle')
   const [modelMessage, setModelMessage] = useState<string | null>(null)
   const [llmStatus, setLlmStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [llmMessage, setLlmMessage] = useState<string | null>(null)
