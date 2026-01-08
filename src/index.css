@@ -654,7 +654,9 @@ code, .font-mono {
 .hero-description {
   max-width: 520px;
   margin-top: 2.5rem;
+  font-family: var(--font-sans);
   font-size: 1.125rem;
+  font-weight: 400;
   line-height: 1.75;
   color: rgb(var(--ink));
   opacity: 0;
@@ -664,7 +666,7 @@ code, .font-mono {
 
 .hero-description-light {
   color: rgba(255, 255, 255, 0.85);
-  font-weight: 350;
+  font-weight: 400;
 }
 
 @keyframes fadeUp {
@@ -1692,15 +1694,15 @@ section {
 
 .code-editor {
   position: relative;
-  background: rgb(var(--deep-blue));
+  background: rgb(var(--purple));
   border-radius: var(--radius-lg);
   overflow: hidden;
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.8;
   box-shadow:
-    0 10px 30px rgba(var(--ink), 0.1),
-    0 30px 60px rgba(var(--ink), 0.15);
+    0 10px 30px rgba(var(--ink), 0.2),
+    0 30px 60px rgba(var(--purple), 0.3);
 }
 
 .code-editor-header {
@@ -1708,8 +1710,8 @@ section {
   align-items: center;
   gap: 8px;
   padding: 16px 20px;
-  background: rgba(var(--deep-blue), 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .code-editor-dot {
@@ -2201,6 +2203,8 @@ section {
 
 .faq-content {
   padding-bottom: 1.75rem;
+  font-family: var(--font-sans);
+  font-weight: 400;
   color: rgb(var(--ink) / 0.75);
   line-height: 1.75;
   max-width: 600px;
@@ -2294,7 +2298,9 @@ section {
 
 .cta-description {
   margin-top: 1.5rem;
+  font-family: var(--font-sans);
   font-size: clamp(1rem, 2vw, 1.125rem);
+  font-weight: 400;
   color: rgba(var(--ivory), 0.65);
   max-width: 450px;
   line-height: 1.65;
@@ -2350,6 +2356,8 @@ section {
 
 .footer-tagline {
   margin-top: 1rem;
+  font-family: var(--font-sans);
+  font-weight: 400;
   color: rgba(var(--ivory), 0.45);
   max-width: 280px;
   line-height: 1.7;
@@ -2673,6 +2681,8 @@ section {
 }
 
 .placeholder-description {
+  font-family: var(--font-sans);
+  font-weight: 400;
   color: rgba(var(--ivory), 0.5);
   font-size: 1rem;
   max-width: 400px;
@@ -2899,13 +2909,17 @@ section {
   right: 0;
   z-index: 1000;
   padding: 1rem 0;
-  background: rgb(var(--deep-blue));
+  background: rgb(var(--ivory));
   transition: all 0.4s var(--ease-out-expo);
 }
 
 .navbar-v2.scrolled {
   padding: 0.75rem 0;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  background: rgba(var(--ivory), 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 20px rgba(var(--ink), 0.06);
+  border-bottom: 1px solid rgba(var(--ink), 0.06);
 }
 
 .navbar-v2-inner {
@@ -2922,7 +2936,7 @@ section {
   align-items: center;
   gap: 0.75rem;
   text-decoration: none;
-  color: rgb(var(--ivory));
+  color: rgb(var(--deep-blue));
   font-family: var(--font-serif);
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -2934,7 +2948,7 @@ section {
 }
 
 .nav-link-v2 {
-  color: rgba(var(--ivory), 0.7);
+  color: rgb(var(--ink));
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 500;
@@ -2955,8 +2969,8 @@ section {
 
 .lang-toggle-v2 {
   background: transparent;
-  border: 1px solid rgba(var(--ivory), 0.2);
-  color: rgba(var(--ivory), 0.7);
+  border: 1px solid rgba(var(--ink), 0.15);
+  color: rgb(var(--ink));
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
@@ -3226,7 +3240,9 @@ section {
   gap: 1rem;
   padding: 1rem 0;
   border-bottom: 1px solid rgba(var(--ink), 0.08);
+  font-family: var(--font-sans);
   font-size: 1rem;
+  font-weight: 400;
   color: rgb(var(--ink));
 }
 
@@ -3317,7 +3333,9 @@ section {
 }
 
 .module-subtitle {
+  font-family: var(--font-sans);
   font-size: 1.125rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   text-align: center;
   max-width: 600px;
@@ -3399,7 +3417,9 @@ section {
 }
 
 .feature-card-desc {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   line-height: 1.6;
 }
@@ -3411,7 +3431,9 @@ section {
 }
 
 .section-subtitle-v2 {
+  font-family: var(--font-sans);
   font-size: 1rem;
+  font-weight: 400;
   color: rgba(var(--ivory), 0.6);
   text-align: center;
   max-width: 600px;
@@ -3512,7 +3534,9 @@ section {
 }
 
 .image-card-desc {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   padding: 0 1.5rem 1.5rem;
   line-height: 1.6;
@@ -3551,7 +3575,9 @@ section {
 }
 
 .stat-desc-v2 {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgba(var(--ivory), 0.7);
   margin-top: 0.5rem;
   line-height: 1.6;
@@ -3760,7 +3786,9 @@ section {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0;
+  font-family: var(--font-sans);
   font-size: 0.875rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.8);
 }
 
@@ -3831,7 +3859,9 @@ section {
 }
 
 .faq-answer p {
+  font-family: var(--font-sans);
   font-size: 1rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   line-height: 1.7;
 }
@@ -3882,7 +3912,9 @@ section {
 }
 
 .cta-description {
+  font-family: var(--font-sans);
   font-size: 1.125rem;
+  font-weight: 400;
   color: rgba(var(--ivory), 0.7);
   max-width: 500px;
   margin: 0 auto 2rem;
@@ -3980,7 +4012,9 @@ section {
 }
 
 .footer-tagline-v2 {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgba(var(--ivory), 0.6);
   line-height: 1.7;
   margin-bottom: 1.5rem;
@@ -4158,7 +4192,9 @@ section {
 }
 
 .step-desc {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   line-height: 1.6;
 }
@@ -4222,7 +4258,9 @@ section {
 }
 
 .developers-desc {
+  font-family: var(--font-sans);
   font-size: 1.125rem;
+  font-weight: 400;
   color: rgba(var(--ivory), 0.7);
   line-height: 1.7;
   max-width: 400px;
@@ -4300,14 +4338,14 @@ section {
   left: 50%;
   transform: translateX(-50%) translateY(12px);
   min-width: 200px;
-  background: rgb(var(--deep-blue));
-  border: 1px solid rgba(var(--ivory), 0.1);
+  background: rgb(var(--ivory));
+  border: 1px solid rgba(var(--ink), 0.08);
   border-radius: var(--radius-lg);
   padding: 0.5rem;
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s var(--ease-out-expo);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(var(--ink), 0.12);
   z-index: 100;
 }
 
@@ -4324,7 +4362,7 @@ section {
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(var(--ivory), 0.8);
+  color: rgb(var(--ink));
   border-radius: var(--radius-md);
   transition: all 0.2s var(--ease-out-expo);
   text-decoration: none;
@@ -4504,6 +4542,55 @@ section {
   position: relative;
 }
 
+/* ============================================
+   FAQ PAGE STYLES
+   ============================================ */
+
+.faq-page {
+  padding-top: 80px;
+  min-height: 100vh;
+  background: rgb(var(--ivory));
+}
+
+.faq-page-header {
+  padding: clamp(4rem, 8vw, 6rem) 0 clamp(2rem, 4vw, 3rem);
+  background: rgb(var(--deep-blue));
+  color: rgb(var(--ivory));
+  text-align: center;
+}
+
+.faq-page-header .module-eyebrow {
+  color: rgb(var(--teal));
+}
+
+.faq-page-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 400;
+  color: rgb(var(--ivory));
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.faq-page-description {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: rgba(var(--ivory), 0.7);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.faq-page-content {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+}
+
+.faq-page-content .faq-grid {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 .enterprise-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -4599,7 +4686,9 @@ section {
 }
 
 .enterprise-card-desc {
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
+  font-weight: 400;
   color: rgb(var(--ink) / 0.7);
   line-height: 1.65;
   margin: 0;

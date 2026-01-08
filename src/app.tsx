@@ -13,6 +13,7 @@ import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
 import { PasswordResetPage } from './pages/auth/password-reset'
 import { DocsPage } from './pages/docs'
+import { FaqPage } from './pages/faq'
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale())
@@ -122,7 +123,7 @@ export function App() {
       <nav className={`navbar-v2 ${isScrolled ? 'scrolled' : ''}`}>
         <div className="navbar-v2-inner">
           <a href={homePath} className="logo-v2">
-            <img src="/Logo/SVG/Logo-Graphic-OmniMemory_White.svg" alt="" width={28} height={28} />
+            <img src="/Logo/SVG/Logo-Graphic-OmniMemory.svg" alt="" width={28} height={28} />
             <span>OmniMemory</span>
           </a>
 
@@ -177,7 +178,6 @@ export function App() {
           <TestimonialsSection content={content.testimonials} />
           <PartnersMarquee content={content.partners} />
           <PricingSection content={content.pricing} />
-          <FaqSection content={content.faq} />
           <CtaSection content={content.cta} />
           <FooterSection content={content.footer} />
         </main>
@@ -217,6 +217,9 @@ export function App() {
           )}
           {routeKey === 'docs' && (
             <DocsPage locale={locale} onNavigate={navigateTo} />
+          )}
+          {routeKey === 'faq' && (
+            <FaqPage locale={locale} />
           )}
         </main>
       )}
@@ -697,6 +700,7 @@ function buildLocalePathname({ pathname }: { pathname: string; locale: Locale })
 function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
   const strippedPath = stripLocaleFromPathname({ pathname })
   if (strippedPath.startsWith(ROUTE_PATHS.docs)) return 'docs'
+  if (strippedPath.startsWith(ROUTE_PATHS.faq)) return 'faq'
   if (strippedPath.startsWith(ROUTE_PATHS.apiKeys)) return 'apiKeys'
   if (strippedPath.startsWith(ROUTE_PATHS.uploads)) return 'uploads'
   if (strippedPath.startsWith(ROUTE_PATHS.usage)) return 'usage'
@@ -749,6 +753,7 @@ const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
 const ROUTE_PATHS = {
   home: '/',
   docs: '/docs',
+  faq: '/faq',
   dashboard: '/dashboard',
   apiKeys: '/dashboard/api-keys',
   uploads: '/dashboard/uploads',
@@ -904,6 +909,8 @@ const contentByLocale: Record<Locale, AppContent> = {
         { name: 'Zhejiang University', nameCn: '浙江大学', logo: '/partner/zhejiang.png' },
         { name: 'NUS', logo: '/partner/nus.png' },
         { name: 'VU Amsterdam', logo: '/partner/vu-amsterdam.png' },
+        { name: 'USC', nameCn: '南加州大学', logo: '/partner/usc.png' },
+        { name: 'Virginia Tech', nameCn: '弗吉尼亚理工', logo: '/partner/virginia-tech.png' },
       ],
     },
     pricing: {
@@ -940,6 +947,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { label: 'Enterprise', href: '#enterprise' },
         { label: 'Documentation', href: '/docs' },
         { label: 'Pricing', href: '#pricing' },
+        { label: 'FAQ', href: '/faq' },
       ],
       copyright: '© 2025 Omni Memory. All rights reserved.',
     },
@@ -1043,6 +1051,8 @@ const contentByLocale: Record<Locale, AppContent> = {
         { name: 'Zhejiang University', nameCn: '浙江大学', logo: '/partner/zhejiang.png' },
         { name: 'NUS', logo: '/partner/nus.png' },
         { name: 'VU Amsterdam', logo: '/partner/vu-amsterdam.png' },
+        { name: 'USC', nameCn: '南加州大学', logo: '/partner/usc.png' },
+        { name: 'Virginia Tech', nameCn: '弗吉尼亚理工', logo: '/partner/virginia-tech.png' },
       ],
     },
     pricing: {
@@ -1079,6 +1089,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { label: '企业', href: '#enterprise' },
         { label: '文档', href: '/docs' },
         { label: '价格', href: '#pricing' },
+        { label: '常见问题', href: '/faq' },
       ],
       copyright: '© 2025 Omni Memory. 保留所有权利。',
     },
@@ -1087,7 +1098,7 @@ const contentByLocale: Record<Locale, AppContent> = {
 
 // ============ TYPES ============
 type Locale = 'en' | 'zh'
-type RouteKey = 'marketing' | 'docs' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
+type RouteKey = 'marketing' | 'docs' | 'faq' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
 
 interface AppContent {
   navbar: NavbarContent

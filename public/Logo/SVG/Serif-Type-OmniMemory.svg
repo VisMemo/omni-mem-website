@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 489.45 147.42">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-2 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-3 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-4 {
+        letter-spacing: -.06em;
+      }
+
+      .cls-5 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-6 {
+        letter-spacing: .06em;
+      }
+
+      .cls-7 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-8 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-9 {
+        letter-spacing: 0em;
+      }
+
+      .cls-10 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-11 {
+        fill: #424243;
+        font-family: BigCaslon-Medium, 'Big Caslon';
+        font-size: 85px;
+        font-weight: 500;
+      }
+    </style>
+  </defs>
+  <text class="cls-11" transform="translate(4.39 104.76)"><tspan class="cls-10" x="0" y="0">O</tspan><tspan class="cls-7" x="65.94" y="0">m</tspan><tspan class="cls-3" x="131.26" y="0">n</tspan><tspan class="cls-1" x="174.04" y="0">i</tspan><tspan class="cls-4" x="193.64" y="0">M</tspan><tspan class="cls-8" x="272.78" y="0">e</tspan><tspan class="cls-2" x="306.9" y="0">m</tspan><tspan class="cls-5" x="370.89" y="0">o</tspan><tspan class="cls-6" x="410.63" y="0">r</tspan><tspan class="cls-9" x="446.08" y="0">y</tspan></text>
+</svg>
