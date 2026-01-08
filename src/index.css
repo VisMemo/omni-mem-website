@@ -3974,6 +3974,24 @@ section {
   background: rgba(61, 166, 166, 0.1);
 }
 
+/* ============ DASHBOARD SHELL ============ */
+.dashboard-shell {
+  min-height: 100vh;
+  background: rgb(var(--ivory));
+}
+
+.dashboard-sidebar {
+  display: block;
+  width: 16rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    display: none;
+  }
+}
+
 /* ============ FOOTER V2 ============ */
 .footer-v2 {
   background: rgb(var(--deep-blue));

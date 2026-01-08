@@ -172,7 +172,7 @@ export function DashboardShell({
       </button>
 
       <div className="mx-auto flex w-full max-w-[1360px] gap-8 px-3 py-8">
-        <aside className="hidden w-64 shrink-0 lg:block">
+        <aside className="dashboard-sidebar w-64 shrink-0">
           <div className="rounded-xl bg-white/70 p-4">
             <NavSections sections={sections} currentPath={currentPath} onNavigate={onNavigate} />
             <div className="mt-6 border-t border-ink/10 pt-4">
