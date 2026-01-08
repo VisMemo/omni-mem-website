@@ -42,6 +42,26 @@ export function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // IP-based locale detection on first visit
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Check if we've already detected locale from IP
+    const ipLocaleChecked = window.localStorage.getItem(IP_LOCALE_CHECKED_KEY)
+    const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
+
+    // Only run IP detection if:
+    // 1. Never checked before
+    // 2. No stored locale preference
+    if (ipLocaleChecked || storedLocale) return
+
+    detectLocaleFromIP().then((detectedLocale) => {
+      window.localStorage.setItem(IP_LOCALE_CHECKED_KEY, 'true')
+      if (detectedLocale && detectedLocale !== locale) {
+        setLocale(detectedLocale)
+      }
+    })
+  }, []) // Only run on mount
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
@@ -88,13 +108,20 @@ export function App() {
     setRouteKey(getRouteFromPathname({ pathname }))
   }
 
-  const dashboardLinks: DashboardLink[] = [
+  const dashboardLinks: DashboardLink[] = locale === 'zh' ? [
     { label: '概览', path: dashboardPath, group: 'main', icon: Home },
     { label: 'API 密钥', path: apiKeysPath, group: 'main', icon: KeyRound },
     { label: '上传任务', path: uploadsPath, group: 'main', icon: UploadCloud },
     { label: '用量', path: usagePath, group: 'main', icon: BarChart3 },
     { label: '记忆策略', path: memoryPolicyPath, group: 'main', icon: Settings },
     { label: '个人资料', path: profilePath, group: 'account', icon: UserCircle },
+  ] : [
+    { label: 'Overview', path: dashboardPath, group: 'main', icon: Home },
+    { label: 'API Keys', path: apiKeysPath, group: 'main', icon: KeyRound },
+    { label: 'Uploads', path: uploadsPath, group: 'main', icon: UploadCloud },
+    { label: 'Usage', path: usagePath, group: 'main', icon: BarChart3 },
+    { label: 'Memory Policy', path: memoryPolicyPath, group: 'main', icon: Settings },
+    { label: 'Profile', path: profilePath, group: 'account', icon: UserCircle },
   ]
 
   const currentDashboardPath = (() => {
@@ -159,7 +186,7 @@ export function App() {
               {locale === 'en' ? '中文' : 'EN'}
             </button>
             {isMarketing && (
-              <a href="/docs" className="btn-primary btn-nav">
+              <a href="/dashboard" className="btn-primary btn-nav">
                 {content.navbar.ctaLabel}
               </a>
             )}
@@ -185,7 +212,7 @@ export function App() {
         <main className={mainClassName}>
           {isProtectedRoute && (
             <DashboardShell
-              title={getDashboardTitle(routeKey)}
+              title={getDashboardTitle(routeKey, locale)}
               currentPath={currentDashboardPath}
               links={dashboardLinks}
               onNavigate={navigateTo}
@@ -243,7 +270,7 @@ function HeroSection({ content }: { content: HeroContent }) {
         </h1>
         <p className="hero-v2-subtitle">{content.description}</p>
         <div className="hero-v2-ctas">
-          <a href="/docs" className="btn-primary">{content.primaryCta}</a>
+          <a href="/dashboard" className="btn-primary">{content.primaryCta}</a>
           <a href="/docs" className="btn-secondary">{content.secondaryCta}</a>
         </div>
       </div>
@@ -445,7 +472,7 @@ function DevelopersSection({ content }: { content: DevelopersContent }) {
           <p className="developers-desc">{content.description}</p>
           <div className="developers-ctas">
             <a href="/docs" className="btn-primary">{content.primaryCta}</a>
-            <a href="#" className="btn-secondary">{content.secondaryCta}</a>
+            <a href="mailto:alice@omnimemory.ai" className="btn-secondary">{content.secondaryCta}</a>
           </div>
         </div>
         <div className="developers-right">
@@ -616,7 +643,7 @@ function CtaSection({ content }: { content: CtaContent }) {
         <h2 className="cta-title">{content.title}</h2>
         <p className="cta-description">{content.description}</p>
         <div className="cta-buttons">
-          <a href="/docs" className="btn-cta-primary">{content.primaryCta}</a>
+          <a href="/dashboard" className="btn-cta-primary">{content.primaryCta}</a>
           <a href="/docs" className="btn-cta-secondary">{content.secondaryCta}</a>
         </div>
       </div>
@@ -645,6 +672,22 @@ function FooterSection({ content }: { content: FooterContent }) {
                   <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                 </svg>
               </a>
+              <div className="wechat-wrapper">
+                <a href="#" className="social-icon wechat-trigger">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446C13.285 8.602 16.312 8.02 18 8.02l.075-.001V7.91c0-3.998-4.016-7.271-9.309-7.271l-.075-.001zm-2.82 4.328a1.192 1.192 0 1 1 0 2.384 1.192 1.192 0 0 1 0-2.384zm5.636 0a1.192 1.192 0 1 1 0 2.384 1.192 1.192 0 0 1 0-2.384zM16.94 9.208c-4.058 0-7.358 2.804-7.358 6.261 0 3.461 3.3 6.26 7.358 6.26.834 0 1.64-.102 2.399-.335a.637.637 0 0 1 .53.072l1.591.932a.292.292 0 0 0 .146.049c.138 0 .25-.114.25-.254 0-.062-.024-.122-.04-.182l-.333-1.242a.478.478 0 0 1 .177-.543c1.537-1.123 2.537-2.794 2.537-4.664 0-3.457-3.3-6.354-7.257-6.354zm-2.68 3.636a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953zm5.36 0a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953z"/>
+                  </svg>
+                </a>
+                <div className="wechat-qr-popup">
+                  <div className="wechat-qr-content">
+                    <p className="wechat-qr-title">WeChat</p>
+                    <div className="wechat-qr-placeholder">
+                      <span>QR Code</span>
+                    </div>
+                    <p className="wechat-qr-text">Scan to follow</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -728,26 +771,63 @@ function getBrowserPathname() {
   return window.location.pathname
 }
 
-function getDashboardTitle(routeKey: RouteKey) {
+function getDashboardTitle(routeKey: RouteKey, locale: Locale) {
+  if (locale === 'zh') {
+    switch (routeKey) {
+      case 'apiKeys': return 'API 密钥'
+      case 'uploads': return '上传任务'
+      case 'usage': return '用量'
+      case 'memoryPolicy': return '记忆策略'
+      case 'profile': return '个人资料'
+      default: return '个人空间概览'
+    }
+  }
   switch (routeKey) {
-    case 'apiKeys': return 'API 密钥'
-    case 'uploads': return '上传任务'
-    case 'usage': return '用量'
-    case 'memoryPolicy': return '记忆策略'
-    case 'profile': return '个人资料'
-    default: return '个人空间概览'
+    case 'apiKeys': return 'API Keys'
+    case 'uploads': return 'Uploads'
+    case 'usage': return 'Usage'
+    case 'memoryPolicy': return 'Memory Policy'
+    case 'profile': return 'Profile'
+    default: return 'Dashboard Overview'
   }
 }
 
 function getPreferredLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
+  // Check path locale first
   const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
   if (pathLocale) return pathLocale
+  // Check stored preference
+  const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
+  if (storedLocale && SUPPORTED_LOCALES.includes(storedLocale as Locale)) {
+    return storedLocale as Locale
+  }
   return 'en'
+}
+
+// IP-based locale detection for automatic language routing
+async function detectLocaleFromIP(): Promise<Locale | null> {
+  try {
+    // Use a free IP geolocation API
+    const response = await fetch('https://ipapi.co/json/', {
+      signal: AbortSignal.timeout(3000) // 3 second timeout
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    // Check if user is in China (country_code: CN)
+    if (data.country_code === 'CN' || data.country === 'China') {
+      return 'zh'
+    }
+    return 'en'
+  } catch {
+    // Fallback on any error (timeout, network, etc.)
+    return null
+  }
 }
 
 // ============ CONSTANTS ============
 const LOCALE_STORAGE_KEY = 'omni-memory-locale'
+const IP_LOCALE_CHECKED_KEY = 'omni-memory-ip-locale-checked'
 const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
 
 const ROUTE_PATHS = {

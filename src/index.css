@@ -3123,6 +3123,7 @@ section {
 
 .btn-primary:hover {
   background: rgb(var(--seafoam));
+  color: rgb(var(--ivory));
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(61, 166, 166, 0.4);
 }
@@ -3816,6 +3817,7 @@ section {
 
 .btn-pricing:hover {
   background: rgb(var(--seafoam));
+  color: rgb(var(--ivory));
   transform: translateY(-2px);
 }
 
@@ -3946,6 +3948,7 @@ section {
 
 .btn-cta-primary:hover {
   background: rgb(var(--seafoam));
+  color: rgb(var(--ivory));
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(61, 166, 166, 0.4);
 }
@@ -4093,6 +4096,100 @@ section {
 
 .footer-bottom-links a:hover {
   color: rgb(var(--teal));
+}
+
+/* ============================================
+   WECHAT QR CODE POPUP
+   ============================================ */
+
+.wechat-wrapper {
+  position: relative;
+}
+
+.wechat-trigger {
+  cursor: pointer;
+}
+
+.wechat-qr-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s var(--ease-out-expo);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.wechat-wrapper:hover .wechat-qr-popup {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-12px);
+  pointer-events: auto;
+}
+
+.wechat-qr-content {
+  background: rgb(var(--ivory));
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  min-width: 140px;
+}
+
+.wechat-qr-content::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgb(var(--ivory));
+}
+
+.wechat-qr-title {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(var(--deep-blue));
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wechat-qr-placeholder {
+  width: 100px;
+  height: 100px;
+  background: rgba(var(--ink), 0.08);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.wechat-qr-placeholder span {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: rgb(var(--ink) / 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wechat-qr-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wechat-qr-text {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  color: rgb(var(--ink) / 0.6);
+  margin-top: 0.5rem;
 }
 
 /* ============================================
