@@ -15,6 +15,7 @@ interface DashboardShellProps {
   children: ReactNode
   currentPath: string
   links: DashboardLink[]
+  locale?: 'en' | 'zh'
   onNavigate: (path: string) => void
   onSignIn: () => void
   onSignUp?: () => void
@@ -30,6 +31,7 @@ export function DashboardShell({
   children,
   currentPath,
   links,
+  locale = 'en',
   onNavigate,
   onSignIn,
   onSignUp,
@@ -39,14 +41,40 @@ export function DashboardShell({
   const [signOutError, setSignOutError] = useState<string | null>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
+  const labels = locale === 'zh' ? {
+    featureNav: '功能导航',
+    account: '账户',
+    nav: '导航',
+    closeNav: '关闭导航',
+    openNav: '打开导航',
+    loggedIn: '已登录',
+    signingOut: '退出中…',
+    signOut: '退出登录',
+    signOutFailed: '退出登录失败。',
+    signIn: '登录',
+    signUp: '注册',
+  } : {
+    featureNav: 'Navigation',
+    account: 'Account',
+    nav: 'Navigation',
+    closeNav: 'Close navigation',
+    openNav: 'Open navigation',
+    loggedIn: 'Logged in',
+    signingOut: 'Signing out…',
+    signOut: 'Sign out',
+    signOutFailed: 'Sign out failed.',
+    signIn: 'Sign in',
+    signUp: 'Sign up',
+  }
+
   const sections = useMemo<NavSection[]>(() => {
     const mainLinks = links.filter((link) => link.group !== 'account')
     const accountLinks = links.filter((link) => link.group === 'account')
     return [
-      { title: '功能导航', items: mainLinks },
-      { title: '账户', items: accountLinks },
+      { title: labels.featureNav, items: mainLinks },
+      { title: labels.account, items: accountLinks },
     ].filter((section) => section.items.length > 0)
-  }, [links])
+  }, [links, labels.featureNav, labels.account])
 
   async function handleSignOut() {
     if (!client || isSigningOut) return
@@ -54,12 +82,12 @@ export function DashboardShell({
     setSignOutError(null)
     const result = await signOut({ client })
     if (!result.ok) {
-      setSignOutError(result.error ?? '退出登录失败。')
+      setSignOutError(result.error ?? labels.signOutFailed)
     }
     setIsSigningOut(false)
   }
 
-  const accountLabel = session?.user?.email ?? '已登录'
+  const accountLabel = session?.user?.email ?? labels.loggedIn
 
   const mobileNav = navOpen ? (
     <div className="fixed inset-0 z-40 lg:hidden">
@@ -69,11 +97,11 @@ export function DashboardShell({
       />
       <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-ivory p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">导航</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">{labels.nav}</div>
           <button
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/60"
-            aria-label="关闭导航"
+            aria-label={labels.closeNav}
             onClick={() => setNavOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -99,7 +127,7 @@ export function DashboardShell({
                   onClick={handleSignOut}
                   disabled={isSigningOut}
                 >
-                  {isSigningOut ? '退出中…' : '退出登录'}
+                  {isSigningOut ? labels.signingOut : labels.signOut}
                 </button>
                 {signOutError ? (
                   <p className="text-xs text-red-600">{signOutError}</p>
@@ -113,7 +141,7 @@ export function DashboardShell({
                   onClick={onSignIn}
                   disabled={!onSignIn}
                 >
-                  登录
+                  {labels.signIn}
                 </button>
                 <button
                   type="button"
@@ -121,7 +149,7 @@ export function DashboardShell({
                   onClick={onSignUp ?? onSignIn}
                   disabled={!onSignUp && !onSignIn}
                 >
-                  注册
+                  {labels.signUp}
                 </button>
               </div>
             )}
@@ -138,7 +166,7 @@ export function DashboardShell({
         type="button"
         className="fixed left-4 top-28 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
         onClick={() => setNavOpen(true)}
-        aria-label="打开导航"
+        aria-label={labels.openNav}
       >
         <Menu className="h-4 w-4" />
       </button>
@@ -158,7 +186,7 @@ export function DashboardShell({
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >
-                    {isSigningOut ? '退出中…' : '退出登录'}
+                    {isSigningOut ? labels.signingOut : labels.signOut}
                   </button>
                   {signOutError ? (
                     <p className="text-xs text-red-600">{signOutError}</p>
@@ -172,7 +200,7 @@ export function DashboardShell({
                     onClick={onSignIn}
                     disabled={!onSignIn}
                   >
-                    登录
+                    {labels.signIn}
                   </button>
                   <button
                     type="button"
@@ -180,7 +208,7 @@ export function DashboardShell({
                     onClick={onSignUp ?? onSignIn}
                     disabled={!onSignUp && !onSignIn}
                   >
-                    注册
+                    {labels.signUp}
                   </button>
                 </div>
               )}

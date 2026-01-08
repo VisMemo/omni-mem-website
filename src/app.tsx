@@ -215,6 +215,7 @@ export function App() {
               title={getDashboardTitle(routeKey, locale)}
               currentPath={currentDashboardPath}
               links={dashboardLinks}
+              locale={locale}
               onNavigate={navigateTo}
               onSignIn={handleSignInClick}
               onSignUp={handleSignUpClick}
