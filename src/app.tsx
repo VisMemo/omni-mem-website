@@ -900,6 +900,7 @@ const contentByLocale: Record<Locale, AppContent> = {
             { label: 'How It Works', href: '#how-it-works' },
             { label: 'Enterprise', href: '#enterprise' },
             { label: 'Pricing', href: '#pricing' },
+            { label: 'Console', href: '/dashboard' },
           ]
         },
         {
@@ -1042,6 +1043,7 @@ const contentByLocale: Record<Locale, AppContent> = {
             { label: '工作原理', href: '#how-it-works' },
             { label: '企业版', href: '#enterprise' },
             { label: '价格', href: '#pricing' },
+            { label: '控制台', href: '/dashboard' },
           ]
         },
         {
@@ -1203,7 +1205,7 @@ interface NavbarContent {
 interface NavLink {
   label: string
   href?: string
-  dropdown?: { label: string; href: string; icon: string }[]
+  dropdown?: { label: string; href: string; icon?: string }[]
 }
 interface HeroContent { badge: string; titleLine1: string; titleLine2: string; description: string; primaryCta: string; secondaryCta: string }
 interface StatsContent { items: { value: string; label: string }[] }
