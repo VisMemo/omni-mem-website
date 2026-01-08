@@ -1,4 +1,33 @@
-/node_modules
-/node_modules
-/node_modules
-/node_modules
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# IDE and editor files
+.cursor/
+.claude/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+nul
+
+# Test files
+test.png
+*.test.png
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*

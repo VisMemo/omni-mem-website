@@ -1,9 +1,7 @@
-﻿import { useEffect, useState, useRef } from 'react'
-import { motion, useScroll, useTransform, useInView } from 'framer-motion'
-import { BarChart3, Home, KeyRound, Settings, UploadCloud, UserCircle } from 'lucide-react'
-import { AuthControl } from './components/auth-control'
+import { useEffect, useState, useRef } from 'react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { BarChart3, Home, KeyRound, Settings, UploadCloud, UserCircle, Play, Check, X, Linkedin, Github } from 'lucide-react'
 import { DashboardShell, type DashboardLink } from './components/dashboard-shell'
-import { ThreeDemoSection } from './components/three-demo'
 import { useSupabaseSession } from './hooks/use-supabase-session'
 import { DashboardPage } from './pages/dashboard'
 import { ApiKeysPage } from './pages/api-keys'
@@ -21,8 +19,6 @@ export function App() {
   const [routeKey, setRouteKey] = useState<RouteKey>(() =>
     getRouteFromPathname({ pathname: getBrowserPathname() })
   )
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 })
-  const [isHovering, setIsHovering] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const content = contentByLocale[locale]
   const { session, isLoading: isSessionLoading } = useSupabaseSession()
@@ -39,42 +35,8 @@ export function App() {
   const isMarketing = routeKey === 'marketing'
   const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 
-  // Custom cursor
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setCursorPos({ x: e.clientX - 10, y: e.clientY - 10 })
-    }
-
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (target.matches('a, button, [data-hover]')) {
-        setIsHovering(true)
-      }
-    }
-
-    const handleMouseOut = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (target.matches('a, button, [data-hover]')) {
-        setIsHovering(false)
-      }
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseover', handleMouseOver)
-    document.addEventListener('mouseout', handleMouseOut)
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseover', handleMouseOver)
-      document.removeEventListener('mouseout', handleMouseOut)
-    }
-  }, [])
-
-  // Scroll detection
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
-    }
+    const handleScroll = () => setIsScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -113,31 +75,18 @@ export function App() {
   }, [isProtectedRoute, isSessionLoading, routeKey, session, signInPath])
 
   function handleLocaleToggle() {
-    const nextLocale = getNextLocale({ currentLocale: locale })
-    setLocale(nextLocale)
+    setLocale(locale === 'en' ? 'zh' : 'en')
   }
 
-  function handleDashboardClick() {
-    if (!session) {
-      navigateTo(signInPath)
-      return
-    }
-    navigateTo(dashboardPath)
-  }
-
-  function handleSignInClick() {
-    navigateTo(signInPath)
-  }
-
-  function handleSignUpClick() {
-    navigateTo(signUpPath)
-  }
+  function handleSignInClick() { navigateTo(signInPath) }
+  function handleSignUpClick() { navigateTo(signUpPath) }
 
   function navigateTo(pathname: string) {
     if (typeof window === 'undefined') return
     window.history.pushState({}, '', pathname)
     setRouteKey(getRouteFromPathname({ pathname }))
   }
+
   const dashboardLinks: DashboardLink[] = [
     { label: '概览', path: dashboardPath, group: 'main', icon: Home },
     { label: 'API 密钥', path: apiKeysPath, group: 'main', icon: KeyRound },
@@ -158,51 +107,45 @@ export function App() {
     }
   })()
 
-  const mainClassName = isProtectedRoute
-    ? 'min-h-[70vh]'
-    : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
+  const mainClassName = isProtectedRoute ? 'min-h-[70vh]' : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
 
   return (
-    <div className="relative min-h-screen">
-      {/* Custom Cursor */}
-      <div
-        className={`cursor ${isHovering ? 'hovering' : ''}`}
-        style={{ left: cursorPos.x, top: cursorPos.y }}
-      />
-
-      {/* Noise Texture */}
-      <div className="noise" />
+    <div className="min-h-screen bg-white">
+      {/* Announcement Bar */}
+      {isMarketing && (
+        <div className="announcement-bar">
+          <span>UPCOMING UPDATE: OmniMemory 1.1</span>
+        </div>
+      )}
 
       {/* Navbar */}
-      <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
-        <div className="container navbar-inner">
-          <a href={homePath} className="logo">
-            <LogoMark />
-            <span>{content.navbar.brandName}</span>
+      <nav className={`navbar-v2 ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="navbar-v2-inner">
+          <a href={homePath} className="logo-v2">
+            <img src="/Logo/SVG/Logo-Graphic-OmniMemory_White.svg" alt="" width={28} height={28} />
+            <span>OmniMemory</span>
           </a>
 
           {isMarketing && (
-            <div className="navbar-links">
+            <div className="nav-links-v2">
               {content.navbar.navLinks.map((link) => (
                 link.dropdown ? (
                   <div key={link.label} className="navbar-dropdown">
-                    <button className="navbar-link dropdown-trigger">
+                    <button className="nav-link-v2 dropdown-trigger">
                       {link.label}
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="dropdown-chevron">
-                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      <span className="dropdown-chevron">▾</span>
                     </button>
                     <div className="dropdown-menu">
                       {link.dropdown.map((item) => (
                         <a key={item.label} href={item.href} className="dropdown-item">
-                          {item.icon && <span className="dropdown-icon">{item.icon}</span>}
+                          <span className="dropdown-icon">{item.icon}</span>
                           {item.label}
                         </a>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <a key={link.label} href={link.href} className="navbar-link">
+                  <a key={link.label} href={link.href} className="nav-link-v2">
                     {link.label}
                   </a>
                 )
@@ -210,37 +153,33 @@ export function App() {
             </div>
           )}
 
-          <div className="navbar-actions">
-            <button
-              onClick={handleLocaleToggle}
-              className="btn-ghost"
-              style={{ fontSize: '0.875rem' }}
-            >
-              {content.navbar.toggleLabel}
+          <div className="nav-actions-v2">
+            <button onClick={handleLocaleToggle} className="lang-toggle-v2">
+              {locale === 'en' ? '中文' : 'EN'}
             </button>
-            <AuthControl onSignIn={handleSignInClick} onSignUp={handleSignUpClick} />
-            <a href={signUpPath} className="btn-primary" style={{ padding: '0.75rem 1.5rem' }}>
-              {content.navbar.ctaLabel}
-            </a>
+            {isMarketing && (
+              <a href="/docs" className="btn-primary btn-nav">
+                {content.navbar.ctaLabel}
+              </a>
+            )}
           </div>
         </div>
       </nav>
 
       {isMarketing ? (
         <main>
-          <HeroSection content={content.hero} signUpPath={signUpPath} />
-          <MarqueeSection />
-          <ThreeDemoSection />
-          <StatsSection content={content.stats} />
+          <HeroSection content={content.hero} />
+          <DemoSection />
           <HowItWorksSection content={content.howItWorks} />
-          <FeaturesSection content={content.features} />
-          <DeveloperSection content={content.developers} signUpPath={signUpPath} />
+          <BenchmarkSection content={content.stats} />
+          <DevelopersSection content={content.developers} />
+          <EnterpriseSection content={content.features} />
           <TestimonialsSection content={content.testimonials} />
-          <PartnersSection content={content.partners} />
-          <PricingSection content={content.pricing} signUpPath={signUpPath} />
+          <PartnersMarquee content={content.partners} />
+          <PricingSection content={content.pricing} />
           <FaqSection content={content.faq} />
-          <CtaSection content={content.cta} signUpPath={signUpPath} />
-          <Footer content={content.footer} />
+          <CtaSection content={content.cta} />
+          <FooterSection content={content.footer} />
         </main>
       ) : (
         <main className={mainClassName}>
@@ -285,234 +224,108 @@ export function App() {
   )
 }
 
-// ============ SECTIONS ============
-
-function HeroSection({ content, signUpPath }: { content: HeroContent; signUpPath: string }) {
-  const containerRef = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start']
-  })
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-
+// ============ HERO SECTION ============
+function HeroSection({ content }: { content: HeroContent }) {
   return (
-    <section ref={containerRef} className="hero">
-      <motion.div style={{ y, opacity }}>
-        <div className="hero-eyebrow">{content.badge}</div>
-
-        <h1 className="hero-title">
-          <span className="line">
-            <span className="word">{content.titleLine1}</span>
-          </span>
-          <span className="line">
-            <span className="word">
-              {content.titleLine2.split(' ').map((word, i) => (
-                <span key={i}>
-                  {i === content.titleLine2.split(' ').length - 1 ? (
-                    <span className="hero-accent">{word}</span>
-                  ) : (
-                    word + ' '
-                  )}
-                </span>
-              ))}
-            </span>
-          </span>
+    <section className="hero-v2">
+      <div className="hero-v2-bg">
+        <img src="/Hero image.jpg" alt="" className="hero-bg-image" />
+        <div className="hero-bg-overlay" />
+        <div className="hero-particles" />
+      </div>
+      <div className="hero-v2-content">
+        <h1 className="hero-v2-title">
+          <span className="hero-v2-line">{content.titleLine1}</span>
+          <span className="hero-v2-line hero-accent">{content.titleLine2}</span>
         </h1>
-
-        <p className="hero-description">{content.description}</p>
-
-        <motion.div
-          className="flex gap-4 mt-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-        >
-          <a href={signUpPath} className="btn-primary">
-            {content.primaryCta}
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
-          <a href="#developers" className="btn-secondary">
-            {content.secondaryCta}
-          </a>
-        </motion.div>
-      </motion.div>
-
-      {/* Floating Memory Fragments */}
-      <div className="memory-fragments">
-        <motion.div
-          className="fragment fragment-1"
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <span className="font-mono text-xs text-vermillion">TEXT</span>
-          <p className="mt-1 text-ink-muted">Conversation context loggging</p>
-        </motion.div>
-        <motion.div
-          className="fragment fragment-2"
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-        >
-          <span className="font-mono text-xs text-gold">AUDIO</span>
-          <p className="mt-1 text-ink-muted">Meeting context capturing</p>
-        </motion.div>
-        <motion.div
-          className="fragment fragment-3"
-          animate={{ y: [0, -12, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        >
-          <span className="font-mono text-xs text-petrol">Video</span>
-          <p className="mt-1 text-ink-muted">Life moments understanding</p>
-        </motion.div>
+        <p className="hero-v2-subtitle">{content.description}</p>
+        <div className="hero-v2-ctas">
+          <a href="/docs" className="btn-primary">{content.primaryCta}</a>
+          <a href="/docs" className="btn-secondary">{content.secondaryCta}</a>
+        </div>
       </div>
     </section>
   )
 }
 
-function MarqueeSection() {
-  const items = ['Text', 'Audio', 'Images', 'Events', 'Conversations', 'Videos', 'Memories']
-
+// ============ DEMO SECTION (PLACEHOLDER) ============
+function DemoSection() {
   return (
-    <div className="marquee-wrap">
-      <div className="marquee">
-        {[...items, ...items].map((item, i) => (
-          <span key={i} className="marquee-item">
-            {item}<span className="dot" />
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function PartnersSection({ content }: { content: PartnersContent }) {
-  return (
-    <section className="partners-section">
-      <div className="container">
-        <p className="partners-label">{content.label}</p>
-        <div className="partners-grid">
-          {content.partners.map((partner) => (
-            <div key={partner.name} className="partner-logo">
-              <span className="partner-name">{partner.name}</span>
-              {partner.nameCn && <span className="partner-name-cn">{partner.nameCn}</span>}
+    <section className="demo-section-placeholder">
+      <div className="container-v2">
+        <div className="placeholder-inner">
+          <div className="placeholder-content">
+            <div className="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
             </div>
-          ))}
+            <h3 className="placeholder-title">Interactive Demo</h3>
+            <p className="placeholder-description">Experience Omni Memory in action. Interactive demo coming soon.</p>
+          </div>
+          <div className="placeholder-particles">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function StatsSection({ content }: { content: StatsContent }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
-
+// ============ BENCHMARK SECTION ============
+function BenchmarkSection({ content }: { content: StatsContent }) {
   return (
-    <section className="py-section">
-      <div className="container">
-        <motion.div
-          ref={ref}
-          className="stats-grid"
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-        >
-          {content.items.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.1, duration: 0.6 }}
-            >
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  )
-}
+    <section className="benchmark-section">
+      <div className="container-v2">
+        <p className="module-eyebrow">Benchmark Results</p>
+        <h2 className="module-title">Leading Performance on LoCoMo</h2>
+        <p className="module-subtitle">Omni Memory achieves state-of-the-art results on long-context memory benchmarks.</p>
 
-function FeaturesSection({ content }: { content: FeaturesSectionContent }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
+        <div className="benchmark-placeholder">
+          <div className="benchmark-chart">
+            <div className="chart-title">J-Score Accuracy (%)</div>
+            <div className="chart-bars">
+              <div className="chart-bar-group">
+                <div className="chart-bar-label">Omni Memory</div>
+                <div className="chart-bar-container">
+                  <div className="chart-bar chart-bar-primary" style={{ width: '77.8%' }}>
+                    <span className="chart-bar-value">77.8%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="chart-bar-group">
+                <div className="chart-bar-label">GPT-4 + RAG</div>
+                <div className="chart-bar-container">
+                  <div className="chart-bar chart-bar-secondary" style={{ width: '62%' }}>
+                    <span className="chart-bar-value">62%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="chart-bar-group">
+                <div className="chart-bar-label">Claude + RAG</div>
+                <div className="chart-bar-container">
+                  <div className="chart-bar chart-bar-secondary" style={{ width: '58%' }}>
+                    <span className="chart-bar-value">58%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="chart-bar-group">
+                <div className="chart-bar-label">MemGPT</div>
+                <div className="chart-bar-container">
+                  <div className="chart-bar chart-bar-secondary" style={{ width: '45%' }}>
+                    <span className="chart-bar-value">45%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-  return (
-    <section id="enterprise" className="py-section">
-      <div className="container">
-        <div className="section-number">02</div>
-
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-        >
-          <span className="section-label">{content.eyebrow}</span>
-          <h2 className="mt-6 mb-4 max-w-2xl">{content.title}</h2>
-          <p className="text-ink-muted text-lg max-w-xl mb-16">{content.description}</p>
-        </motion.div>
-
-        <div className="bento-grid">
-          {content.items.map((feature, i) => (
-            <motion.div
-              key={feature.title}
-              className={`bento-card ${i === 0 ? 'bento-large' : 'bento-small'}`}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-            >
-              <div className="bento-icon">{feature.icon}</div>
-              <div className="font-mono text-xs text-vermillion mb-2">{feature.tag}</div>
-              <h3 className="bento-title">{feature.title}</h3>
-              <p className="bento-description">{feature.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function HowItWorksSection({ content }: { content: HowItWorksContent }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
-
-  return (
-    <section id="how-it-works" className="py-section bg-ivory-dark/30">
-      <div className="container">
-        <div className="section-number">01</div>
-
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          <motion.div
-            ref={ref}
-            initial={{ opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8 }}
-          >
-            <span className="section-label">{content.eyebrow}</span>
-            <h2 className="mt-6 mb-4">{content.title}</h2>
-            <p className="text-ink-muted text-lg max-w-md">{content.description}</p>
-          </motion.div>
-
-          <div className="process-timeline">
-            {content.steps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                className="process-step"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.15 }}
-              >
-                <div className="process-number">0{i + 1}</div>
-                <h3 className="process-title">{step.title}</h3>
-                <p className="process-description">{step.description}</p>
-              </motion.div>
+          <div className="benchmark-stats">
+            {content.items.map((stat, i) => (
+              <div key={i} className="benchmark-stat">
+                <span className="benchmark-stat-value">{stat.value}</span>
+                <span className="benchmark-stat-label">{stat.label}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -521,96 +334,138 @@ function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   )
 }
 
-function TypingAnimation({ words }: { words: string[] }) {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0)
-  const [displayText, setDisplayText] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
-  
-  useEffect(() => {
-    const currentWord = words[currentWordIndex]
-    const typingSpeed = isDeleting ? 50 : 100
-    const pauseTime = 2000
-    
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        if (displayText.length < currentWord.length) {
-          setDisplayText(currentWord.slice(0, displayText.length + 1))
-        } else {
-          setTimeout(() => setIsDeleting(true), pauseTime)
-        }
-      } else {
-        if (displayText.length > 0) {
-          setDisplayText(displayText.slice(0, -1))
-        } else {
-          setIsDeleting(false)
-          setCurrentWordIndex((prev) => (prev + 1) % words.length)
-        }
-      }
-    }, typingSpeed)
-    
-    return () => clearTimeout(timeout)
-  }, [displayText, isDeleting, currentWordIndex, words])
-  
+// ============ ENTERPRISE SECTION ============
+function EnterpriseSection({ content }: { content: FeaturesContent }) {
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'shield':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        )
+      case 'deploy':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+            <polyline points="7.5 19.79 7.5 14.6 3 12"/>
+            <polyline points="21 12 16.5 14.6 16.5 19.79"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        )
+      case 'support':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        )
+      case 'dashboard':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
-    <span className="typing-text">
-      {displayText}
-      <span className="typing-cursor">|</span>
-    </span>
+    <section className="enterprise-section" id="enterprise">
+      <div className="container-v2">
+        <p className="module-eyebrow">{content.eyebrow}</p>
+        <h2 className="module-title">{content.title}</h2>
+        <p className="module-subtitle">{content.description}</p>
+
+        <div className="enterprise-grid">
+          {content.items.map((item, i) => (
+            <div key={i} className="enterprise-card">
+              <div className="enterprise-card-header">
+                <div className="enterprise-icon">
+                  {getIcon(item.icon)}
+                </div>
+                <span className="enterprise-tag">{item.tag}</span>
+              </div>
+              <h4 className="enterprise-card-title">{item.title}</h4>
+              <p className="enterprise-card-desc">{item.description}</p>
+              <div className="enterprise-card-border" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
-function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; signUpPath: string }) {
-  const [activeTab, setActiveTab] = useState(0)
-  const sdkWords = ['Python', 'JavaScript', 'REST']
-
+// ============ HOW IT WORKS SECTION ============
+function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   return (
-    <section id="developers" className="split-section">
-      <div className="split-left">
-        <div className="section-number" style={{ color: 'rgba(252, 250, 245, 0.05)' }}>03</div>
-        <span className="section-label" style={{ color: 'rgba(252, 250, 245, 0.5)' }}>
-          <span style={{ background: 'rgb(var(--gold))', width: 24, height: 1, display: 'inline-block', marginRight: '1rem' }} />
-          {content.eyebrow}
-        </span>
-        <h2 className="mt-6 mb-6" style={{ color: 'rgb(var(--ivory))' }}>
-          Deploy with <TypingAnimation words={sdkWords} />
-        </h2>
-        <p className="text-lg mb-10" style={{ color: 'rgba(252, 250, 245, 0.6)' }}>{content.description}</p>
-        <div className="flex gap-4">
-          <a href="/docs" className="btn-primary" style={{ background: 'rgb(var(--vermillion))' }}>
-            {content.primaryCta}
-          </a>
-          <a
-            href={signUpPath}
-            className="btn-secondary"
-            style={{ borderColor: 'rgba(252, 250, 245, 0.2)', color: 'rgb(var(--ivory))' }}
-          >
-            {content.secondaryCta}
-          </a>
+    <section className="module-section" id="how-it-works">
+      <div className="container-v2">
+        <p className="module-eyebrow">{content.eyebrow}</p>
+        <h2 className="module-title">{content.title}</h2>
+        <p className="module-subtitle">{content.description}</p>
+
+        <div className="steps-grid-v2">
+          {content.steps.map((step, i) => (
+            <div key={i} className="step-card-v2">
+              <span className="step-number">{String(i + 1).padStart(2, '0')}</span>
+              <h4 className="step-title">{step.title}</h4>
+              <p className="step-desc">{step.description}</p>
+            </div>
+          ))}
         </div>
       </div>
+    </section>
+  )
+}
 
-      <div className="split-right">
-        <div className="code-editor">
-          <div className="code-editor-header">
-            <div className="code-editor-dot" />
-            <div className="code-editor-dot" />
-            <div className="code-editor-dot" />
-            <div className="code-tabs">
-              {content.codeTabs.map((tab, i) => (
-                <button
-                  key={tab.label}
-                  className={`code-tab ${i === activeTab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(i)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+// ============ DEVELOPERS SECTION ============
+function DevelopersSection({ content }: { content: DevelopersContent }) {
+  const [activeTab, setActiveTab] = useState(0)
+
+  return (
+    <section className="developers-section" id="developers">
+      <div className="developers-split">
+        <div className="developers-left">
+          <p className="module-eyebrow">{content.eyebrow}</p>
+          <h2 className="developers-title">{content.title}</h2>
+          <p className="developers-desc">{content.description}</p>
+          <div className="developers-ctas">
+            <a href="/docs" className="btn-primary">{content.primaryCta}</a>
+            <a href="#" className="btn-secondary">{content.secondaryCta}</a>
           </div>
-          <div className="code-editor-body">
-            <pre>
-              <code dangerouslySetInnerHTML={{ __html: highlightCode(content.codeTabs[activeTab].code, content.codeTabs[activeTab].label) }} />
-            </pre>
+        </div>
+        <div className="developers-right">
+          <div className="code-editor">
+            <div className="code-editor-header">
+              <span className="code-editor-dot"></span>
+              <span className="code-editor-dot"></span>
+              <span className="code-editor-dot"></span>
+              <div className="code-tabs">
+                {content.codeTabs.map((tab, i) => (
+                  <button
+                    key={tab.label}
+                    className={`code-tab ${i === activeTab ? 'active' : ''}`}
+                    onClick={() => setActiveTab(i)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="code-editor-body">
+              <pre><code>{content.codeTabs[activeTab]?.code}</code></pre>
+            </div>
           </div>
         </div>
       </div>
@@ -618,112 +473,96 @@ function DeveloperSection({ content, signUpPath }: { content: DeveloperContent; 
   )
 }
 
+// ============ PARTNERS MARQUEE ============
+function PartnersMarquee({ content }: { content: PartnersContent }) {
+  const duplicatedPartners = [...content.partners, ...content.partners]
+  return (
+    <section className="partners-marquee-section">
+      <div className="partners-marquee-wrapper">
+        <div className="partners-marquee">
+          {duplicatedPartners.map((partner, i) => (
+            <div key={i} className="partners-marquee-item">
+              {partner.logo ? (
+                <img
+                  src={partner.logo}
+                  alt={partner.nameCn || partner.name}
+                  className="partner-logo-img"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                  }}
+                />
+              ) : null}
+              <span className={partner.logo ? 'hidden' : ''}>{partner.nameCn || partner.name}</span>
+              <span className="dot"></span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============ TESTIMONIALS SECTION ============
 function TestimonialsSection({ content }: { content: TestimonialsContent }) {
   const [activeIndex, setActiveIndex] = useState(0)
 
   return (
-    <section id="testimonials" className="py-section">
-      <div className="container">
-        <div className="section-number">04</div>
-
-        <span className="section-label">{content.eyebrow}</span>
-        <h2 className="mt-6 mb-16 max-w-2xl">{content.title}</h2>
-
-        <div className="testimonial-editorial">
-          <motion.p
-            key={activeIndex}
-            className="testimonial-quote"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {content.items[activeIndex].quote}
-          </motion.p>
-
-          <motion.div
-            key={`author-${activeIndex}`}
-            className="testimonial-author"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="testimonial-avatar">
-              {content.items[activeIndex].name[0]}
-            </div>
-            <div className="testimonial-info">
-              <div className="testimonial-name">{content.items[activeIndex].name}</div>
-              <div className="testimonial-title">{content.items[activeIndex].title}</div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="flex gap-4 mt-12">
-          {content.items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              className="w-12 h-1 rounded-full transition-all"
-              style={{
-                background: i === activeIndex ? 'rgb(var(--vermillion))' : 'rgb(var(--ink) / 0.1)',
-              }}
-            />
-          ))}
+    <section className="testimonial-section-v2">
+      <div className="testimonial-bg">
+        <img src="/Visual/data image.jpg" alt="" className="testimonial-bg-image" />
+        <div className="testimonial-bg-overlay" />
+      </div>
+      <div className="container-v2">
+        <p className="module-eyebrow" style={{ color: 'rgb(var(--teal))' }}>{content.eyebrow}</p>
+        <h2 className="module-title-light">{content.title}</h2>
+        <div className="testimonial-content-v2">
+          <blockquote className="testimonial-quote-v2">
+            "{content.items[activeIndex].quote}"
+          </blockquote>
+          <div className="testimonial-author-v2">
+            <span>— {content.items[activeIndex].name}, {content.items[activeIndex].title}</span>
+          </div>
+          <div className="testimonial-dots-v2">
+            {content.items.map((_, i) => (
+              <button
+                key={i}
+                className={`dot ${i === activeIndex ? 'active' : ''}`}
+                onClick={() => setActiveIndex(i)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function PricingSection({ content, signUpPath }: { content: PricingContent; signUpPath: string }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
-
+// ============ PRICING SECTION ============
+function PricingSection({ content }: { content: PricingContent }) {
   return (
-    <section id="pricing" className="py-section bg-ivory-dark/30">
-      <div className="container">
-        <div className="section-number">05</div>
+    <section className="module-section" id="pricing">
+      <div className="container-v2">
+        <p className="module-eyebrow">{content.eyebrow}</p>
+        <h2 className="module-title">{content.title}</h2>
+        <p className="module-subtitle">{content.description}</p>
 
-        <motion.div
-          ref={ref}
-          className="text-center max-w-2xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-        >
-          <span className="section-label">{content.eyebrow}</span>
-          <h2 className="mt-6 mb-4">{content.title}</h2>
-          <p className="text-ink-muted text-lg">{content.description}</p>
-        </motion.div>
-
-        <div className="pricing-grid">
+        <div className="pricing-grid-v2">
           {content.plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              className={`pricing-card ${i === 1 ? 'featured' : ''}`}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-            >
-              <div className="pricing-badge">{plan.badge}</div>
-              <h3 className="pricing-name">{plan.name}</h3>
-              <div className="pricing-price">{plan.price}</div>
-              <div className="pricing-period">{plan.period}</div>
-
-              <div className="pricing-features">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="pricing-feature">{feature}</div>
+            <div key={i} className={`pricing-card-v2 ${plan.badge === 'Enterprise' || plan.badge === '企业' ? 'featured' : ''}`}>
+              <span className="pricing-badge">{plan.badge}</span>
+              <h3 className="pricing-plan-name">{plan.name}</h3>
+              <div className="pricing-price">{plan.price}<span className="pricing-period">{plan.period}</span></div>
+              <ul className="pricing-features-v2">
+                {plan.features.map((feature, j) => (
+                  <li key={j} className="pricing-feature-v2">
+                    <Check size={16} className="check-icon" />
+                    <span>{feature}</span>
+                  </li>
                 ))}
-              </div>
-
-              <a
-                href={signUpPath}
-                className={i === 1 ? 'btn-primary w-full justify-center' : 'btn-secondary w-full justify-center'}
-                style={i === 1 ? { background: 'rgb(var(--vermillion))' } : {}}
-              >
-                {plan.cta}
-              </a>
-            </motion.div>
+              </ul>
+              <button className="btn-pricing">{plan.cta}</button>
+            </div>
           ))}
         </div>
       </div>
@@ -731,129 +570,111 @@ function PricingSection({ content, signUpPath }: { content: PricingContent; sign
   )
 }
 
+// ============ FAQ SECTION ============
 function FaqSection({ content }: { content: FaqContent }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="py-section">
-      <div className="container">
-        <div className="section-number">06</div>
+    <section className="module-section module-gray" id="faq">
+      <div className="container-v2">
+        <p className="module-eyebrow">{content.eyebrow}</p>
+        <h2 className="module-title">{content.title}</h2>
+        <p className="module-subtitle">{content.description}</p>
 
-        <div className="grid lg:grid-cols-2 gap-16">
-          <div>
-            <span className="section-label">{content.eyebrow}</span>
-            <h2 className="mt-6 mb-4">{content.title}</h2>
-            <p className="text-ink-muted text-lg">{content.description}</p>
-          </div>
-
-          <div>
-            {content.items.map((item, i) => (
-              <div key={item.question} className="faq-item" data-open={openIndex === i}>
-                <button
-                  className="faq-trigger"
-                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                >
-                  <span>{item.question}</span>
-                  <span className="faq-icon" />
-                </button>
-                {openIndex === i && (
-                  <motion.div
-                    className="faq-content"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {item.answer}
-                  </motion.div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="faq-grid">
+          {content.items.map((item, i) => (
+            <div key={i} className={`faq-item ${openIndex === i ? 'open' : ''}`}>
+              <button className="faq-trigger" onClick={() => setOpenIndex(openIndex === i ? null : i)}>
+                <span>{item.question}</span>
+                <span className="faq-icon">{openIndex === i ? '−' : '+'}</span>
+              </button>
+              {openIndex === i && (
+                <div className="faq-answer">
+                  <p>{item.answer}</p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </section>
   )
 }
 
-function CtaSection({ content, signUpPath }: { content: CtaContent; signUpPath: string }) {
+// ============ CTA SECTION ============
+function CtaSection({ content }: { content: CtaContent }) {
   return (
-    <section className="cta-section">
-      <div className="container relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="cta-title">{content.title}</h2>
-          <p className="cta-description">{content.description}</p>
-
-          <div className="flex gap-4 mt-10">
-            <a
-              href={signUpPath}
-              className="btn-primary"
-              style={{ background: 'rgb(var(--vermillion))' }}
-            >
-              {content.primaryCta}
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </a>
-            <a
-              href="#developers"
-              className="btn-secondary"
-              style={{ borderColor: 'rgba(252, 250, 245, 0.2)', color: 'rgb(var(--ivory))' }}
-            >
-              {content.secondaryCta}
-            </a>
-          </div>
-        </motion.div>
+    <section className="cta-section-v2">
+      <div className="cta-bg">
+        <img src="/Visual/Visual-Human-Particles 时间粒子.jpg" alt="" />
+        <div className="cta-overlay" />
+      </div>
+      <div className="container-v2 cta-content">
+        <h2 className="cta-title">{content.title}</h2>
+        <p className="cta-description">{content.description}</p>
+        <div className="cta-buttons">
+          <a href="/docs" className="btn-cta-primary">{content.primaryCta}</a>
+          <a href="/docs" className="btn-cta-secondary">{content.secondaryCta}</a>
+        </div>
       </div>
     </section>
   )
 }
 
-function Footer({ content }: { content: FooterContent }) {
+// ============ FOOTER SECTION ============
+function FooterSection({ content }: { content: FooterContent }) {
   return (
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-grid">
-          <div>
-            <div className="footer-brand">{content.brandName}</div>
-            <p className="footer-tagline">{content.tagline}</p>
+    <footer className="footer-v2">
+      <div className="container-v2">
+        <div className="footer-grid-v2">
+          <div className="footer-brand-v2">
+            <div className="footer-logo-v2">
+              <img src="/Logo/SVG/Logo-Graphic-OmniMemory_White.svg" alt="" width={32} height={32} />
+              <span>{content.brandName}</span>
+            </div>
+            <p className="footer-tagline-v2">{content.tagline}</p>
+            <div className="footer-social-v2">
+              <a href="#" className="social-icon"><X size={18} /></a>
+              <a href="#" className="social-icon"><Linkedin size={18} /></a>
+              <a href="#" className="social-icon"><Github size={18} /></a>
+              <a href="#" className="social-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+              </a>
+            </div>
           </div>
 
-          <div>
-            <div className="footer-heading">Product</div>
-            {content.links.slice(0, 2).map((link) => (
-              <a key={link.label} href={link.href} className="footer-link">
-                {link.label}
-              </a>
+          <div className="footer-links-col">
+            <h4 className="footer-col-title">Links</h4>
+            {content.links.map((link, i) => (
+              <a key={i} href={link.href} className="footer-link-v2">{link.label}</a>
             ))}
           </div>
 
-          <div>
-            <div className="footer-heading">Resources</div>
-            {content.links.slice(2).map((link) => (
-              <a key={link.label} href={link.href} className="footer-link">
-                {link.label}
-              </a>
-            ))}
+          <div className="footer-links-col">
+            <h4 className="footer-col-title">Developers</h4>
+            <a href="/docs" className="footer-link-v2">Documentation</a>
+            <a href="/docs/api" className="footer-link-v2">API Reference</a>
+            <a href="https://discord.gg/omnimemory" className="footer-link-v2">Discord</a>
+            <a href="/support" className="footer-link-v2">Support</a>
           </div>
 
-          <div>
-            <div className="footer-heading">Company</div>
-            <a href="#" className="footer-link">About</a>
-            <a href="#" className="footer-link">Blog</a>
-            <a href="#" className="footer-link">Careers</a>
+          <div className="footer-links-col">
+            <h4 className="footer-col-title">Company</h4>
+            <a href="/research" className="footer-link-v2">Research</a>
+            <a href="/careers" className="footer-link-v2">Careers</a>
+            <a href="#" className="footer-link-v2">Blog</a>
+            <a href="#" className="footer-link-v2">Contact</a>
           </div>
         </div>
 
-        <div className="footer-bottom">
+        <div className="footer-bottom-v2">
           <span>{content.copyright}</span>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-vermillion transition-colors">Privacy</a>
-            <a href="#" className="hover:text-vermillion transition-colors">Terms</a>
+          <div className="footer-bottom-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Cookies</a>
           </div>
         </div>
       </div>
@@ -861,55 +682,7 @@ function Footer({ content }: { content: FooterContent }) {
   )
 }
 
-// ============ COMPONENTS ============
-
-function LogoMark() {
-  return (
-    <div className="logo-mark">
-      <svg viewBox="0 0 32 32" fill="none">
-        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#logo-gradient)" />
-        <circle cx="16" cy="16" r="6" fill="rgb(252, 250, 245)" />
-        <circle cx="16" cy="16" r="3" fill="url(#logo-gradient)" />
-        <defs>
-          <linearGradient id="logo-gradient" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#e84132" />
-            <stop offset="1" stopColor="#d4af37" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
-  )
-}
-
-function highlightCode(code: string, lang: string = 'Python'): string {
-  if (lang === 'REST') {
-    return code
-      .replace(/(curl)/g, '<span class="keyword">$1</span>')
-      .replace(/(-X|-H|-d)/g, '<span class="property">$1</span>')
-      .replace(/(".*?")/g, '<span class="string">$1</span>')
-      .replace(/(POST|GET)/g, '<span class="function">$1</span>')
-      .replace(/(#.*)/g, '<span class="comment">$1</span>')
-      .replace(/(\\)/g, '<span class="comment">$1</span>')
-  }
-  if (lang === 'JavaScript') {
-    return code
-      .replace(/(import|from|const|await|new|async|if)/g, '<span class="keyword">$1</span>')
-      .replace(/('.*?')/g, '<span class="string">$1</span>')
-      .replace(/(Memory|mem|result)/g, '<span class="function">$1</span>')
-      .replace(/(apiKey|role|content):/g, '<span class="property">$1</span>:')
-      .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
-  }
-  // Python (default)
-  return code
-    .replace(/(from|import|if|def|class)/g, '<span class="keyword">$1</span>')
-    .replace(/(".*?")/g, '<span class="string">$1</span>')
-    .replace(/(Memory|mem|result)/g, '<span class="function">$1</span>')
-    .replace(/(api_key|role|content)=/g, '<span class="property">$1</span>=')
-    .replace(/(#.*)/g, '<span class="comment">$1</span>')
-}
-
 // ============ UTILITIES ============
-
 function getLocaleFromPathname({ pathname }: { pathname: string }): Locale | null {
   const segment = pathname.split('/').filter(Boolean)[0]
   if (!segment) return null
@@ -966,15 +739,10 @@ function getPreferredLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
   const pathLocale = getLocaleFromPathname({ pathname: window.location.pathname })
   if (pathLocale) return pathLocale
-  return 'zh'
-}
-
-function getNextLocale({ currentLocale }: { currentLocale: Locale }): Locale {
-  return currentLocale === 'en' ? 'zh' : 'en'
+  return 'en'
 }
 
 // ============ CONSTANTS ============
-
 const LOCALE_STORAGE_KEY = 'omni-memory-locale'
 const SUPPORTED_LOCALES: Locale[] = ['en', 'zh']
 
@@ -992,18 +760,19 @@ const ROUTE_PATHS = {
   passwordReset: '/auth/password-reset',
 } as const
 
+// ============ CODE SAMPLES ============
 const CODE_SAMPLE_PYTHON = `from omem import Memory
 
 mem = Memory(api_key="qbk_xxx")  # That's it!
 
 # Save a conversation
 mem.add("conv-001", [
-    {"role": "user", "content": "鏄庡ぉ鍜?Caroline 鍘昏タ婀?},
-    {"role": "assistant", "content": "濂界殑锛屾垜璁颁綇浜?},
+    {"role": "user", "content": "Meeting with Caroline tomorrow"},
+    {"role": "assistant", "content": "Got it, I will remember"},
 ])
 
 # Search memories
-result = mem.search("鎴戜粈涔堟椂鍊欏幓瑗挎箹锛?)
+result = mem.search("When is my meeting?")
 if result:
     print(result.to_prompt())`
 
@@ -1035,28 +804,40 @@ curl -X POST "https://api.omnimemory.ai/v1/memory/retrieval" \\
   -d '{"query": "When is my meeting?", "topk": 10}'`
 
 // ============ CONTENT ============
-
 const contentByLocale: Record<Locale, AppContent> = {
   en: {
     navbar: {
       brandName: 'Omni Memory',
       navLinks: [
-        { 
-          label: 'Developers',
+        {
+          label: 'Product',
           dropdown: [
-            { label: 'Documentation', href: '/docs', icon: '馃摎' },
-                        { label: 'API Reference', href: '/docs/api', icon: 'API' },
-            { label: 'Support', href: '/support', icon: '馃挰' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '馃幃' },
+            { label: 'How It Works', href: '#how-it-works' },
+            { label: 'Enterprise', href: '#enterprise' },
+            { label: 'Pricing', href: '#pricing' },
           ]
         },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Enterprise', href: '#enterprise' },
+        {
+          label: 'Developers',
+          dropdown: [
+            { label: 'Documentation', href: '/docs' },
+            { label: 'API Reference', href: '/docs/api' },
+            { label: 'Support', href: '/support' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory' },
+          ]
+        },
+        {
+          label: 'Solutions',
+          dropdown: [
+            { label: 'AI Assistants', href: '#' },
+            { label: 'Healthcare', href: '#' },
+            { label: 'Customer Service', href: '#' },
+          ]
+        },
         { label: 'Research', href: '/research' },
         { label: 'Join Us', href: '/careers' },
       ],
       ctaLabel: 'Get Started',
-      toggleLabel: '涓枃',
     },
     hero: {
       badge: 'Now in Beta',
@@ -1078,10 +859,10 @@ const contentByLocale: Record<Locale, AppContent> = {
       title: 'Production-ready memory infrastructure',
       description: 'Deploy with confidence. Full control over your data and infrastructure.',
       items: [
-        { icon: '馃敀', tag: 'Privacy', title: 'Self-Hosted Database', description: 'Deploy on your infrastructure with Qdrant + Neo4j. Your data never leaves your servers. Full data sovereignty.' },
-        { icon: '馃殌', tag: 'Deploy', title: 'One-Command Setup', description: 'Docker Compose deployment in minutes. Kubernetes-ready. No complex configuration required.' },
-        { icon: '馃懃', tag: 'Support', title: 'Dedicated Team', description: 'SLA-backed enterprise support. Direct access to engineering team. Custom integration assistance.' },
-        { icon: '馃搳', tag: 'Console', title: 'API Dashboard', description: 'Monitor usage, manage API keys, configure memory policies. Full observability into your memory layer.' },
+        { icon: 'shield', tag: 'Privacy', title: 'Self-Hosted Database', description: 'Deploy on your infrastructure with Qdrant + Neo4j. Your data never leaves your servers. Full data sovereignty.' },
+        { icon: 'deploy', tag: 'Deploy', title: 'One-Command Setup', description: 'Docker Compose deployment in minutes. Kubernetes-ready. No complex configuration required.' },
+        { icon: 'support', tag: 'Support', title: 'Dedicated Team', description: 'SLA-backed enterprise support. Direct access to engineering team. Custom integration assistance.' },
+        { icon: 'dashboard', tag: 'Console', title: 'API Dashboard', description: 'Monitor usage, manage API keys, configure memory policies. Full observability into your memory layer.' },
       ],
     },
     howItWorks: {
@@ -1110,7 +891,7 @@ const contentByLocale: Record<Locale, AppContent> = {
       eyebrow: 'Testimonials',
       title: 'Teams building with Omni Memory',
       items: [
-        { name: 'Sarah Chen', title: 'Head of AI, Aurora Labs', quote: 'We replaced three internal services with Omni Memory. Agent latency dropped 40% immediately鈥攊t just works.' },
+        { name: 'Sarah Chen', title: 'Head of AI, Aurora Labs', quote: 'We replaced three internal services with Omni Memory. Agent latency dropped 40% immediately—it just works.' },
         { name: 'Marcus Williams', title: 'VP Product, Northwind', quote: 'Our clinical assistants finally remember patient context across sessions. Game changer for healthcare AI.' },
         { name: 'Elena Rodriguez', title: 'Founder, Signalwave', quote: 'The policy controls let us scope memory by project without building custom infrastructure. Shipped in a week.' },
       ],
@@ -1118,12 +899,11 @@ const contentByLocale: Record<Locale, AppContent> = {
     partners: {
       label: 'Trusted by leading research institutions and enterprises',
       partners: [
-        { name: 'Tsinghua University', nameCn: '娓呭崕澶у' },
-        { name: 'Peking University', nameCn: '鍖椾含澶у' },
-        { name: 'Zhejiang University', nameCn: '娴欐睙澶у' },
-        { name: 'NUS' },
-        { name: 'VU Amsterdam' },
-        { name: 'Meituan', nameCn: '缇庡洟' },
+        { name: 'Tsinghua University', nameCn: '清华大学', logo: '/partner/tsinghua.png' },
+        { name: 'Peking University', nameCn: '北京大学', logo: '/partner/peking.png' },
+        { name: 'Zhejiang University', nameCn: '浙江大学', logo: '/partner/zhejiang.png' },
+        { name: 'NUS', logo: '/partner/nus.png' },
+        { name: 'VU Amsterdam', logo: '/partner/vu-amsterdam.png' },
       ],
     },
     pricing: {
@@ -1132,7 +912,6 @@ const contentByLocale: Record<Locale, AppContent> = {
       description: 'Start free, upgrade as you grow. Predictable, usage-based pricing.',
       plans: [
         { badge: 'Starter', name: 'Build', price: 'Free', period: 'forever', cta: 'Start Free', features: ['2M memories', 'Multi-modal API', 'Community support'] },
-        { badge: 'Growth', name: 'Scale', price: '$499', period: '/month', cta: 'Contact Sales', features: ['50M memories', 'Policy engine', 'Priority support', 'Advanced analytics'] },
         { badge: 'Enterprise', name: 'Govern', price: 'Custom', period: '', cta: 'Contact Us', features: ['Unlimited memories', 'Dedicated VPC', 'Custom SLAs', 'Dedicated support'] },
       ],
     },
@@ -1144,7 +923,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { question: 'What AI models are supported?', answer: 'We normalize across providers. Write once, retrieve across GPT, Claude, Gemini, or custom models.' },
         { question: 'What data types can be stored?', answer: 'Text, audio transcripts, images with context, and structured events. All enriched with entity and intent signals.' },
         { question: 'How do you handle privacy?', answer: 'Automated PII detection, configurable retention, consent tracking, and right-to-forget workflows. SOC 2 Type II certified.' },
-        { question: "What's the retrieval latency?", answer: 'P95 recall under 500ms globally with multi-region caching and hybrid retrieval.' },
+        { question: "What's the retrieval latency?", answer: 'P95 recall under 700ms  globally with multi-region caching and hybrid retrieval.' },
       ],
     },
     cta: {
@@ -1162,7 +941,7 @@ const contentByLocale: Record<Locale, AppContent> = {
         { label: 'Documentation', href: '/docs' },
         { label: 'Pricing', href: '#pricing' },
       ],
-      copyright: '漏 2025 Omni Memory. All rights reserved.',
+      copyright: '© 2025 Omni Memory. All rights reserved.',
     },
   },
   zh: {
@@ -1170,27 +949,40 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       navLinks: [
         {
+          label: '产品',
+          dropdown: [
+            { label: '工作原理', href: '#how-it-works' },
+            { label: '企业版', href: '#enterprise' },
+            { label: '价格', href: '#pricing' },
+          ]
+        },
+        {
           label: '开发者',
           dropdown: [
-            { label: '文档', href: '/docs', icon: 'DOC' },
-            { label: 'API 参考', href: '/docs/api', icon: 'API' },
-            { label: '支持', href: '/support', icon: 'SUP' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: 'CHAT' },
+            { label: '文档', href: '/docs' },
+            { label: 'API 参考', href: '/docs/api' },
+            { label: '支持', href: '/support' },
+            { label: 'Discord', href: 'https://discord.gg/omnimemory' },
           ],
         },
-        { label: '价格', href: '#pricing' },
-        { label: '企业', href: '#enterprise' },
+        {
+          label: '解决方案',
+          dropdown: [
+            { label: 'AI 助手', href: '#' },
+            { label: '医疗健康', href: '#' },
+            { label: '客户服务', href: '#' },
+          ]
+        },
         { label: '研究', href: '/research' },
         { label: '加入我们', href: '/careers' },
       ],
       ctaLabel: '开始使用',
-      toggleLabel: 'EN',
     },
     hero: {
       badge: '公测中',
       titleLine1: '记忆',
       titleLine2: '决定智能上限',
-      description: 'Omni Memory 构建多模态记忆系统，让 AI 以真实上下文持续成长。',
+      description: 'Omni Memory 构建多模态记忆系统，让 AI 以真实上下文持续成长，打造真正理解用户的个性化智能。',
       primaryCta: '开始构建',
       secondaryCta: '查看文档',
     },
@@ -1206,10 +998,10 @@ const contentByLocale: Record<Locale, AppContent> = {
       title: '生产就绪的记忆基础设施',
       description: '自托管部署，全面掌控数据与基础设施。',
       items: [
-        { icon: 'LOCK', tag: '隐私', title: '自托管数据库', description: '在你的基础设施上部署 Qdrant + Neo4j，数据不出域。' },
-        { icon: 'DEPLOY', tag: '部署', title: '一键部署', description: 'Docker Compose 快速部署，支持 Kubernetes。' },
-        { icon: 'SUPPORT', tag: '支持', title: '专属团队', description: 'SLA 保障，工程团队直连与定制集成。' },
-        { icon: 'CONSOLE', tag: '控制台', title: 'API 控制台', description: '监控用量、管理 API Key、配置记忆策略。' },
+        { icon: 'shield', tag: '隐私', title: '自托管数据库', description: '在你的基础设施上部署 Qdrant + Neo4j，数据不出域。完全数据主权。' },
+        { icon: 'deploy', tag: '部署', title: '一键部署', description: 'Docker Compose 快速部署，支持 Kubernetes，无需复杂配置。' },
+        { icon: 'support', tag: '支持', title: '专属团队', description: 'SLA 保障的企业支持，直连工程团队，定制集成协助。' },
+        { icon: 'dashboard', tag: '控制台', title: 'API 控制台', description: '监控用量、管理 API Key、配置记忆策略，全面可观测。' },
       ],
     },
     howItWorks: {
@@ -1246,12 +1038,11 @@ const contentByLocale: Record<Locale, AppContent> = {
     partners: {
       label: '顶尖研究机构与企业的信赖',
       partners: [
-        { name: 'Tsinghua University', nameCn: '清华大学' },
-        { name: 'Peking University', nameCn: '北京大学' },
-        { name: 'Zhejiang University', nameCn: '浙江大学' },
-        { name: 'NUS' },
-        { name: 'VU Amsterdam' },
-        { name: 'Meituan', nameCn: '美团' },
+        { name: 'Tsinghua University', nameCn: '清华大学', logo: '/partner/tsinghua.png' },
+        { name: 'Peking University', nameCn: '北京大学', logo: '/partner/peking.png' },
+        { name: 'Zhejiang University', nameCn: '浙江大学', logo: '/partner/zhejiang.png' },
+        { name: 'NUS', logo: '/partner/nus.png' },
+        { name: 'VU Amsterdam', logo: '/partner/vu-amsterdam.png' },
       ],
     },
     pricing: {
@@ -1260,7 +1051,6 @@ const contentByLocale: Record<Locale, AppContent> = {
       description: '从免费开始，随成长升级。可预测的按量计费。',
       plans: [
         { badge: '入门', name: '构建', price: '免费', period: '永久', cta: '免费开始', features: ['200万条记忆', '多模态 API', '社区支持'] },
-        { badge: '成长', name: '扩展', price: '¥3,499', period: '/月', cta: '联系销售', features: ['5000万条记忆', '策略引擎', '优先支持', '高级分析'] },
         { badge: '企业', name: '治理', price: '定制', period: '', cta: '联系我们', features: ['无限记忆', '专属 VPC', '定制 SLA', '专属支持'] },
       ],
     },
@@ -1271,7 +1061,7 @@ const contentByLocale: Record<Locale, AppContent> = {
       items: [
         { question: '支持哪些 AI 模型？', answer: '我们对不同模型提供统一接口，支持 GPT、Claude、Gemini 等。' },
         { question: '可存储哪些数据类型？', answer: '文本、音频转写、带上下文的图像与结构化事件。' },
-        { question: '如何处理隐私？', answer: 'PII 检测、保留期配置、同意追踪与删除流程。' },
+        { question: '如何处理隐私？', answer: 'PII 检测、保留期配置、同意追踪与删除流程。SOC 2 Type II 认证。' },
         { question: '检索延迟是多少？', answer: 'P95 召回低于 500ms，支持多区域缓存。' },
       ],
     },
@@ -1296,7 +1086,6 @@ const contentByLocale: Record<Locale, AppContent> = {
 }
 
 // ============ TYPES ============
-
 type Locale = 'en' | 'zh'
 type RouteKey = 'marketing' | 'docs' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
 
@@ -1304,9 +1093,9 @@ interface AppContent {
   navbar: NavbarContent
   hero: HeroContent
   stats: StatsContent
-  features: FeaturesSectionContent
+  features: FeaturesContent
   howItWorks: HowItWorksContent
-  developers: DeveloperContent
+  developers: DevelopersContent
   testimonials: TestimonialsContent
   partners: PartnersContent
   pricing: PricingContent
@@ -1315,23 +1104,24 @@ interface AppContent {
   footer: FooterContent
 }
 
-interface NavLink { 
+interface NavbarContent {
+  brandName: string
+  navLinks: NavLink[]
+  ctaLabel: string
+}
+interface NavLink {
   label: string
   href?: string
-  dropdown?: { label: string; href: string; icon?: string }[]
+  dropdown?: { label: string; href: string; icon: string }[]
 }
-interface NavbarContent { brandName: string; navLinks: NavLink[]; ctaLabel: string; toggleLabel: string }
 interface HeroContent { badge: string; titleLine1: string; titleLine2: string; description: string; primaryCta: string; secondaryCta: string }
 interface StatsContent { items: { value: string; label: string }[] }
-interface FeaturesSectionContent { eyebrow: string; title: string; description: string; items: { icon: string; tag: string; title: string; description: string }[] }
+interface FeaturesContent { eyebrow: string; title: string; description: string; items: { icon: string; tag: string; title: string; description: string }[] }
 interface HowItWorksContent { eyebrow: string; title: string; description: string; steps: { title: string; description: string }[] }
-interface DeveloperContent { eyebrow: string; title: string; description: string; primaryCta: string; secondaryCta: string; codeTabs: { label: string; code: string }[] }
+interface DevelopersContent { eyebrow: string; title: string; description: string; primaryCta: string; secondaryCta: string; codeTabs: { label: string; code: string }[] }
 interface TestimonialsContent { eyebrow: string; title: string; items: { name: string; title: string; quote: string }[] }
+interface PartnersContent { label: string; partners: { name: string; nameCn?: string; logo?: string }[] }
 interface PricingContent { eyebrow: string; title: string; description: string; plans: { badge: string; name: string; price: string; period: string; cta: string; features: string[] }[] }
 interface FaqContent { eyebrow: string; title: string; description: string; items: { question: string; answer: string }[] }
 interface CtaContent { title: string; description: string; primaryCta: string; secondaryCta: string }
-interface PartnersContent { label: string; partners: { name: string; nameCn?: string }[] }
-interface FooterContent { brandName: string; tagline: string; links: { label: string; href: string }[]; copyright: string }
-
-
-
+interface FooterContent { brandName: string; tagline: string; copyright: string; links: { label: string; href: string }[] }

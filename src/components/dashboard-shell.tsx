@@ -95,7 +95,7 @@ export function DashboardShell({
                 <p className="text-xs text-ink/60">{accountLabel}</p>
                 <button
                   type="button"
-                  className="w-full rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                  className="w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory hover:bg-teal transition-colors"
                   onClick={handleSignOut}
                   disabled={isSigningOut}
                 >
@@ -117,7 +117,7 @@ export function DashboardShell({
                 </button>
                 <button
                   type="button"
-                  className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                  className="rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory hover:bg-seafoam transition-colors"
                   onClick={onSignUp ?? onSignIn}
                   disabled={!onSignUp && !onSignIn}
                 >
@@ -154,7 +154,7 @@ export function DashboardShell({
                   <p className="text-xs text-ink/60">{accountLabel}</p>
                   <button
                     type="button"
-                    className="w-full rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                    className="w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory hover:bg-teal transition-colors"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >
@@ -168,7 +168,7 @@ export function DashboardShell({
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
+                    className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70 hover:border-teal hover:text-teal transition-colors"
                     onClick={onSignIn}
                     disabled={!onSignIn}
                   >
@@ -176,7 +176,7 @@ export function DashboardShell({
                   </button>
                   <button
                     type="button"
-                    className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-ivory"
+                    className="rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory hover:bg-seafoam transition-colors"
                     onClick={onSignUp ?? onSignIn}
                     disabled={!onSignUp && !onSignIn}
                   >
@@ -223,8 +223,8 @@ function NavSections({
                   onClick={() => onNavigate(item.path)}
                   className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
                     isActive
-                      ? 'bg-ink text-ivory shadow-sm'
-                      : 'text-ink/70 hover:bg-ink/5 hover:text-ink'
+                      ? 'bg-deep-blue text-ivory shadow-sm'
+                      : 'text-ink/70 hover:bg-teal/10 hover:text-teal'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >

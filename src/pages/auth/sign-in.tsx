@@ -50,7 +50,7 @@ export function SignInPage({
         </CardHeader>
         <CardBody className="space-y-4">
           <p className="text-sm text-muted">You already have an active session.</p>
-          <Button className="bg-vermillion text-white" radius="full" onPress={() => onNavigate(dashboardPath)}>
+          <Button className="bg-teal text-white hover:bg-seafoam" radius="full" onPress={() => onNavigate(dashboardPath)}>
             进入个人空间
           </Button>
         </CardBody>
@@ -81,17 +81,17 @@ export function SignInPage({
         />
         {error ? <p className="text-sm text-danger-500">{error}</p> : null}
         {errorMessage ? <p className="text-sm text-danger-500">{errorMessage}</p> : null}
-        <Button className="bg-vermillion text-white" radius="full" isLoading={isBusy} onPress={handleSignIn}>
+        <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleSignIn}>
           Sign in
         </Button>
         <button
-          className="text-sm font-medium text-ink/70 hover:text-ink"
+          className="text-sm font-medium text-ink/70 hover:text-teal transition-colors"
           onClick={() => onNavigate(passwordResetPath)}
         >
           忘记密码？
         </button>
         <button
-          className="text-sm font-medium text-ink/70 hover:text-ink"
+          className="text-sm font-medium text-ink/70 hover:text-teal transition-colors"
           onClick={() => onNavigate(signUpPath)}
         >
           Don&apos;t have an account? Sign up

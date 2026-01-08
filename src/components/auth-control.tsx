@@ -54,7 +54,7 @@ export function AuthControl({ className, onSignIn, onSignUp }: AuthControlProps)
           Sign in
         </Button>
         <Button
-          className="bg-vermillion text-white"
+          className="bg-teal text-white shadow-teal-glow hover:bg-seafoam transition-all"
           radius="full"
           size="sm"
           isDisabled={!onSignUp}
@@ -68,7 +68,7 @@ export function AuthControl({ className, onSignIn, onSignUp }: AuthControlProps)
 
   return (
     <div className={className ? `flex items-center gap-2 ${className}` : 'flex items-center gap-2'}>
-      <Chip className="bg-white/80 text-xs font-semibold text-ink">{session.user.email ?? 'Signed in'}</Chip>
+      <Chip className="bg-teal/10 text-xs font-semibold text-teal border border-teal/20">{session.user.email ?? 'Signed in'}</Chip>
       {errorMessage ? <span className="text-xs text-danger-500">{errorMessage}</span> : null}
       <Button
         className="border border-ink/20 text-ink"

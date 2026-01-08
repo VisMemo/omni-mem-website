@@ -5,15 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Omni Memory is the multi-model memory service for AI agents, copilots, and apps. Capture and recall text, audio, images, and events in under 500ms."
+      content="Omni Memory is the multi-modal memory service for AI agents, copilots, and apps. Capture and recall text, audio, images, and events in under 500ms."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Satoshi:ital,wght@0,300;0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="theme-color" content="#0c183d" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Omni Memory | The Memory Layer for AI" />
+    <meta property="og:description" content="Multi-modal memory service for AI agents. Capture and recall text, audio, images, and events in under 500ms." />
+    <meta property="og:type" content="website" />
+
+    <!-- Preconnect to font origins for faster loading -->
+    <link rel="preconnect" href="/" crossorigin />
+
+    <!-- Preload critical brand fonts -->
+    <link rel="preload" href="/Font/BigCaslon CC/Big_Caslon_CC_Regular.otf" as="font" type="font/otf" crossorigin />
+    <link rel="preload" href="/Font/BigCaslon CC/Big_Caslon_CC_Italic.otf" as="font" type="font/otf" crossorigin />
+    <link rel="preload" href="/Font/Inter/Inter-VariableFont_slnt,wght.ttf" as="font" type="font/ttf" crossorigin />
+
+    <!-- Preload hero image for faster LCP -->
+    <link rel="preload" href="/Hero image.jpg" as="image" />
+
     <title>Omni Memory | The Memory Layer for AI</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/Logo/SVG/Logo-Graphic-OmniMemory.svg" />
   </head>
   <body>
     <div id="root"></div>

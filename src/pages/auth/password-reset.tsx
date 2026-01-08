@@ -61,11 +61,11 @@ export function PasswordResetPage({ signInPath, onNavigate }: PasswordResetPageP
         />
         {errorMessage ? <p className="text-sm text-danger-500">{errorMessage}</p> : null}
         {successMessage ? <p className="text-sm text-emerald-500">{successMessage}</p> : null}
-        <Button className="bg-vermillion text-white" radius="full" isLoading={isBusy} onPress={handleReset}>
+        <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleReset}>
           重置密码
         </Button>
         <button
-          className="text-sm font-medium text-ink/70 hover:text-ink"
+          className="text-sm font-medium text-ink/70 hover:text-teal transition-colors"
           onClick={() => onNavigate(signInPath)}
         >
           返回登录
