@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -256,7 +256,7 @@ export function MemoryPolicyPage() {
     const data = (await response.json()) as { message?: string }
     if (!response.ok) {
       setLlmStatus('error')
-      setLlmMessage(data?.message ?? '添加失败')
+      setLlmMessage(data?.message ?? '操作失败')
       return
     }
     setFormLabel('')
@@ -294,7 +294,7 @@ export function MemoryPolicyPage() {
     const data = (await response.json()) as { message?: string }
     if (!response.ok) {
       setLlmStatus('error')
-      setLlmMessage(data?.message ?? '更新失败')
+      setLlmMessage(data?.message ?? '操作失败')
       return
     }
     await loadLlmKeys()
@@ -316,7 +316,7 @@ export function MemoryPolicyPage() {
     const data = (await response.json()) as { message?: string }
     if (!response.ok) {
       setLlmStatus('error')
-      setLlmMessage(data?.message ?? '删除失败')
+      setLlmMessage(data?.message ?? '操作失败')
       return
     }
     await loadLlmKeys()
@@ -338,7 +338,7 @@ export function MemoryPolicyPage() {
     const data = (await response.json()) as { message?: string }
     if (!response.ok) {
       setLlmStatus('error')
-      setLlmMessage(data?.message ?? '鎿嶄綔澶辫触')
+      setLlmMessage(data?.message ?? '操作失败')
       return
     }
     await loadLlmKeys()
@@ -357,9 +357,11 @@ export function MemoryPolicyPage() {
     ]
   }, [apiKeys])
 
+  const isLlmLoading = llmStatus === 'loading'
+
   return (
     <div className="space-y-8">
-      <header className="space-y-2">
+            <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">记忆</p>
         <h1 className="text-2xl font-semibold text-ink">记忆策略</h1>
         <p className="text-sm text-ink/60">配置记忆隔离策略并管理 LLM 密钥。</p>
@@ -398,91 +400,76 @@ export function MemoryPolicyPage() {
               <p className="text-xs text-red-600">{policyMessage ?? '保存失败'}</p>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="mt-4 rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
-            onClick={() => updateMemoryPolicy(defaultScope)}
-          >
-            保存策略
-          </button>
-        </div>
-
-        <div className="rounded-xl bg-white/70 p-6">
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold text-ink">LLM 密钥管理</h2>
-            <p className="text-sm text-ink/60">添加并绑定不同的 LLM 密钥。</p>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-                备注
-              </label>
-              <input
-                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-                placeholder="例如：主用 OpenAI"
-                value={formLabel}
-                onChange={(event) => setFormLabel(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-                LLM 密钥
-              </label>
-              <input
-                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-                placeholder="sk-..."
-                type="password"
-                value={formKey}
-                onChange={(event) => setFormKey(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-                平台
-              </label>
-              <select
-                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-                value={formProvider}
-                onChange={(event) => {
-                  setFormProvider(event.target.value)
-                  setFormModelName('')
-                }}
-              >
-                <option value="">请选择</option>
-                {PROVIDER_OPTIONS.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
+          <div className="mt-6 space-y-4">
+            <h3 className="text-sm font-semibold text-ink">添加 LLM 密钥</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  备注
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formLabel}
+                  onChange={(event) => setFormLabel(event.target.value)}
+                  placeholder="例如：主用 OpenAI"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  LLM 密钥
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formKey}
+                  onChange={(event) => setFormKey(event.target.value)}
+                  placeholder="sk-..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  平台
+                </label>
+                <select
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formProvider}
+                  onChange={(event) => setFormProvider(event.target.value)}
+                >
+                  <option value="">请选择</option>
+                  {PROVIDER_OPTIONS.map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+                  模型名称
+                </label>
+                <select
+                  className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+                  value={formModelName}
+                  onChange={(event) => setFormModelName(event.target.value)}
+                  disabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
+                >
+                  <option value="">
+                    {modelStatus === 'loading' ? '加载中...' : '请选择'}
                   </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-                模型名称
-              </label>
-              <select
-                className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-                value={formModelName}
-                onChange={(event) => setFormModelName(event.target.value)}
-                disabled={!formProvider || !formKey.trim() || modelStatus === 'loading'}
-              >
-                <option value="">请选择</option>
-                {modelOptions.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
+                  {modelOptions.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-
           <div className="mt-4">
             <button
               type="button"
               className="rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
               onClick={handleAddLlmKey}
-              disabled={llmStatus === 'loading'}
+              disabled={isLlmLoading}
             >
               添加
             </button>
@@ -500,7 +487,7 @@ export function MemoryPolicyPage() {
           ) : (
             <div className="mt-6 overflow-hidden rounded-lg bg-white/60">
               <table className="w-full text-sm">
-                <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
+                                <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
                   <tr>
                     <th className="px-4 py-3 text-left">备注</th>
                     <th className="px-4 py-3 text-left">平台</th>
@@ -513,9 +500,7 @@ export function MemoryPolicyPage() {
                 <tbody>
                   {llmKeys.length === 0 ? (
                     <tr>
-                      <td className="px-4 py-3 text-ink/60" colSpan={6}>
-                        暂无 LLM 密钥
-                      </td>
+                      <td className="px-4 py-3 text-ink/60" colSpan={6}>暂无 LLM 密钥</td>
                     </tr>
                   ) : (
                     llmKeys.map((row) => {
@@ -545,7 +530,7 @@ export function MemoryPolicyPage() {
                           <td className="px-4 py-3 text-ink/60">{modelLabel}</td>
                           <td className="px-4 py-3">
                             {isManaged ? (
-                              <div className="text-sm text-ink/60">所有 API 密钥</div>
+                              <div className="text-sm text-ink/60">所有未指定API密钥</div>
                             ) : (
                               <select
                                 className="h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
@@ -574,7 +559,7 @@ export function MemoryPolicyPage() {
                                     : 'rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-600 hover:bg-emerald-50'
                                 }
                                 onClick={() => handleManagedKeyToggle(row.id, managedAction)}
-                                disabled={!formProvider || !formKey.trim() || (modelStatus as string) === 'loading'}
+                                disabled={isLlmLoading}
                               >
                                 {managedLabel}
                               </button>
@@ -601,3 +586,9 @@ export function MemoryPolicyPage() {
     </div>
   )
 }
+
+
+
+
+
+
