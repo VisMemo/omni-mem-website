@@ -116,7 +116,7 @@ export function DashboardPage() {
         title: '权益',
         value: accountId ? `${formatNumber(entitlements?.credit_default)} 积分` : '-',
         meta: accountId
-          ? `API 密钥隔离：${memoryScopeLabel}`
+          ? `记忆隔离策略：${memoryScopeLabel}`
           : '登录后查看权益配置。',
         status: overviewStatusLabel,
       },
