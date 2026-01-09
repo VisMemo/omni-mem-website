@@ -14,12 +14,6 @@ interface ScopeResponse {
   entitlements?: ScopeEntitlements | null
 }
 
-function formatAccountId(value?: string | null) {
-  if (!value) return '-'
-  if (value.length <= 12) return value
-  return `${value.slice(0, 6)}-****-****-${value.slice(-4)}`
-}
-
 export function ProfilePage() {
   const { client, session, refreshSession } = useSupabaseSession()
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
@@ -90,7 +84,7 @@ export function ProfilePage() {
   }, [session])
 
   async function handleSaveProfile() {
-    if (!client || !session?.user) {
+    if (!session?.user) {
       setProfileStatus('error')
       setProfileMessage('登录状态不可用，请刷新后再试。')
       return
@@ -103,32 +97,34 @@ export function ProfilePage() {
       return
     }
 
-    setProfileStatus('saving')
-    setProfileMessage(null)
-
-    const { error: updateUserError } = await client.auth.updateUser({
-      data: {
-        name: trimmedName,
-      },
-    })
-    if (updateUserError) {
+    const activeSession = await getSession()
+    if (!activeSession) {
       setProfileStatus('error')
-      setProfileMessage(updateUserError.message)
+      setProfileMessage('会话已过期，请重新登录。')
       return
     }
 
-    const { error: updateAccountError } = await client
-      .from('accounts')
-      .update({ name: trimmedName, updated_at: new Date().toISOString() })
-      .eq('id', session.user.id)
-    if (updateAccountError) {
+    setProfileStatus('saving')
+    setProfileMessage(null)
+
+    const response = await fetch(`${apiBaseUrl}/settings/account-name`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${activeSession.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Principal-User-Id': activeSession.user.id,
+      },
+      body: JSON.stringify({ name: trimmedName }),
+    })
+    const data = (await response.json().catch(() => ({}))) as { name?: string; message?: string }
+    if (!response.ok) {
       setProfileStatus('error')
-      setProfileMessage(updateAccountError.message)
+      setProfileMessage(data?.message ?? '账户名称更新失败。')
       return
     }
 
     await refreshSession()
-    setInitialDisplayName(trimmedName)
+    setInitialDisplayName(data?.name ?? trimmedName)
     setProfileStatus('success')
     setProfileMessage('账户名称已更新。')
   }
@@ -194,8 +190,6 @@ export function ProfilePage() {
 
   const entitlements = scopeInfo?.entitlements ?? null
   const emailValue = session?.user?.email ?? '-'
-  const accountIdValue = formatAccountId(session?.user?.id ?? null)
-  const scopeValue = scopeInfo?.scope ?? '-'
   const trimmedDisplayName = displayName.trim()
   const canSaveName =
     Boolean(trimmedDisplayName) &&
@@ -281,26 +275,6 @@ export function ProfilePage() {
                 {emailMessage}
               </p>
             ) : null}
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              账户 ID
-            </label>
-            <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
-              value={accountIdValue}
-              readOnly
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              套餐级别
-            </label>
-            <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
-              value={scopeValue}
-              readOnly
-            />
           </div>
         </div>
       </section>

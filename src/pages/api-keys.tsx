@@ -165,14 +165,20 @@ export function ApiKeysPage() {
           ? `${apiBaseUrl}/apikeys/${apiKeyId}`
           : `${apiBaseUrl}/apikeys/${apiKeyId}/${action}`
 
+      const headers: Record<string, string> = {
+        'X-Principal-User-Id': active.user.id,
+        Authorization: `Bearer ${active.access_token}`,
+        'X-Request-Id': requestId,
+      }
+      const body = method === 'DELETE' ? undefined : JSON.stringify({})
+      if (method !== 'DELETE') {
+        headers['Content-Type'] = 'application/json'
+      }
+
       const response = await fetch(endpoint, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Principal-User-Id': active.user.id,
-          Authorization: `Bearer ${active.access_token}`,
-          'X-Request-Id': requestId,
-        },
+        headers,
+        body,
       })
 
       const data = (await response.json()) as ApiKeyCreateResponse & { status?: string; message?: string }
@@ -323,6 +329,7 @@ export function ApiKeysPage() {
                             onClick={() => handleAction('rotate', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
                             aria-label="轮换"
+                            title="轮换密钥"
                           >
                             <RotateCw className="h-4 w-4" />
                           </button>
@@ -332,6 +339,7 @@ export function ApiKeysPage() {
                             onClick={() => handleAction('revoke', row.id)}
                             disabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
                             aria-label="撤销"
+                            title="撤销密钥"
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
@@ -341,6 +349,7 @@ export function ApiKeysPage() {
                             onClick={() => handleAction('delete', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
                             aria-label="删除"
+                            title="删除密钥"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

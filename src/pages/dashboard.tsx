@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -28,6 +28,10 @@ type BalanceResponse = {
   balance: number
 }
 
+type MemoryPolicyResponse = {
+  default_scope?: 'user' | 'apikey' | null
+}
+
 type GroupBy = 'account' | 'apikey'
 
 type OverviewItem = {
@@ -43,9 +47,10 @@ function formatNumber(value?: number | null) {
   return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : '-'
 }
 
-function formatSwitch(value?: boolean | null) {
-  if (value === null || value === undefined) return '-'
-  return value ? '已开启' : '未开启'
+function formatMemoryScope(value?: string | null) {
+  if (!value) return '-'
+  if (value === 'apikey') return 'API 密钥隔离'
+  return '用户隔离'
 }
 
 function formatDateInput(value: Date) {
@@ -70,18 +75,20 @@ export function DashboardPage() {
   const [overviewMessage, setOverviewMessage] = useState<string | null>(null)
   const [scopeInfo, setScopeInfo] = useState<ScopeResponse | null>(null)
   const [balanceInfo, setBalanceInfo] = useState<BalanceResponse | null>(null)
+  const [memoryPolicy, setMemoryPolicy] = useState<MemoryPolicyResponse | null>(null)
 
   const accountId = session?.user?.id ?? null
   const accountEmail = session?.user?.email ?? null
   const accessToken = session?.access_token ?? null
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const entitlements = scopeInfo?.entitlements ?? null
+  const memoryScopeLabel = formatMemoryScope(memoryPolicy?.default_scope ?? null)
   const groupByLabel = groupBy === 'account' ? '账户' : 'API 密钥'
   const overviewStatusLabel = useMemo(() => {
     if (!accountId) return '未登录'
     if (overviewStatus === 'loading') return '加载中'
     if (overviewStatus === 'error') return '加载失败'
-    return '已接通'
+    return ''
   }, [accountId, overviewStatus])
   const overviewItems = useMemo<OverviewItem[]>(
     () => [
@@ -109,12 +116,12 @@ export function DashboardPage() {
         title: '权益',
         value: accountId ? `${formatNumber(entitlements?.credit_default)} 积分` : '-',
         meta: accountId
-          ? `API 密钥隔离：${formatSwitch(entitlements?.allow_apikey_scope)}`
+          ? `API 密钥隔离：${memoryScopeLabel}`
           : '登录后查看权益配置。',
         status: overviewStatusLabel,
       },
     ],
-    [accountEmail, accountId, balanceInfo, entitlements, overviewStatusLabel, scopeInfo],
+    [accountEmail, accountId, balanceInfo, entitlements, memoryScopeLabel, overviewStatusLabel, scopeInfo],
   )
 
   useEffect(() => {
@@ -148,11 +155,20 @@ export function DashboardPage() {
               }
               return data
             }),
+          fetch(`${apiBaseUrl}/settings/memory-policy`, { headers })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }: { response: Response; data: MemoryPolicyResponse & { message?: string } }) => {
+              if (!response.ok) {
+                throw new Error(data?.message ?? '加载记忆隔离配置失败。')
+              }
+              return data
+            }),
         ])
       })
-      .then(([scopeData, balanceData]) => {
+      .then(([scopeData, balanceData, memoryPolicyData]) => {
         setScopeInfo(scopeData)
         setBalanceInfo(balanceData)
+        setMemoryPolicy(memoryPolicyData)
         setOverviewStatus('idle')
       })
       .catch((error) => {
@@ -219,9 +235,11 @@ export function DashboardPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
                 {item.title}
               </p>
-              <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/60">
-                {item.status}
-              </span>
+              {item.status ? (
+                <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/60">
+                  {item.status}
+                </span>
+              ) : null}
             </div>
             <div className="mt-3 text-2xl font-semibold text-ink">{item.value}</div>
             <p className="mt-1 text-sm text-ink/60">{item.meta}</p>
@@ -341,3 +359,4 @@ export function DashboardPage() {
     </div>
   )
 }
+

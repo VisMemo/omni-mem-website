@@ -1,6 +1,6 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useMemo, useState } from 'react'
-import { useSupabaseSession } from '../../hooks/use-supabase-session'
+import { getApiEnv } from '../../lib/env'
 
 interface UpdatePasswordPageProps {
   dashboardPath: string
@@ -9,12 +9,12 @@ interface UpdatePasswordPageProps {
 }
 
 export function UpdatePasswordPage({ dashboardPath, signInPath, onNavigate }: UpdatePasswordPageProps) {
-  const { client, session } = useSupabaseSession()
-  const redirectTo = useMemo(() => {
-    if (typeof window === 'undefined') return dashboardPath
+  const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
+  const resetToken = useMemo(() => {
+    if (typeof window === 'undefined') return null
     const params = new URLSearchParams(window.location.search)
-    return params.get('callback') ?? dashboardPath
-  }, [dashboardPath])
+    return params.get('token')
+  }, [])
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
   const [isBusy, setIsBusy] = useState(false)
@@ -25,30 +25,35 @@ export function UpdatePasswordPage({ dashboardPath, signInPath, onNavigate }: Up
     setErrorMessage(null)
     setSuccessMessage(null)
 
-    if (!client) {
-      setErrorMessage('Supabase client is not ready.')
+    if (!resetToken) {
+      setErrorMessage('链接已失效，请重新发起密码重置。')
       return
     }
 
     if (!password || !repeatPassword) {
-      setErrorMessage('Password is required.')
+      setErrorMessage('请输入新密码。')
       return
     }
 
     if (password !== repeatPassword) {
-      setErrorMessage('Passwords do not match.')
+      setErrorMessage('两次输入的密码不一致。')
       return
     }
 
     setIsBusy(true)
     try {
-      const { error } = await client.auth.updateUser({ password })
-      if (error) {
-        throw new Error(error.message)
+      const response = await fetch(`${apiBaseUrl}/auth/password-reset/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_token: resetToken, password }),
+      })
+      const data = (await response.json().catch(() => ({}))) as { message?: string }
+      if (!response.ok) {
+        throw new Error(data?.message ?? '密码更新失败')
       }
 
       setSuccessMessage('密码已更新。')
-      onNavigate(redirectTo)
+      onNavigate(signInPath)
     } catch (error) {
       setErrorMessage(String(error))
     } finally {
@@ -56,7 +61,7 @@ export function UpdatePasswordPage({ dashboardPath, signInPath, onNavigate }: Up
     }
   }
 
-  if (!session) {
+  if (!resetToken) {
     return (
       <Card className="glass-panel mx-auto w-full max-w-md">
         <CardHeader className="flex flex-col items-start gap-2">
