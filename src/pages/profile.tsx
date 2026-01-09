@@ -126,7 +126,7 @@ export function ProfilePage() {
     await refreshSession()
     setInitialDisplayName(data?.name ?? trimmedName)
     setProfileStatus('success')
-    setProfileMessage('账户名称已更新。')
+    setProfileMessage('账户名称已更新，重新登录可刷新显示。')
   }
 
   async function handleEmailUpdate() {
