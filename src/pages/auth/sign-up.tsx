@@ -1,6 +1,6 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
-import { useState } from 'react'
-import { signUpWithPassword } from '../../lib/auth'
+import { useMemo, useState } from 'react'
+import { getApiEnv } from '../../lib/env'
 import { useSupabaseSession } from '../../hooks/use-supabase-session'
 
 interface SignUpPageProps {
@@ -11,30 +11,108 @@ interface SignUpPageProps {
 
 export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPageProps) {
   const { client, session, error } = useSupabaseSession()
+  const { apiBaseUrl } = useMemo(() => getApiEnv(), [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [otp, setOtp] = useState('')
+  const [step, setStep] = useState<'request' | 'verify'>('request')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isBusy, setIsBusy] = useState(false)
 
-  async function handleSignUp() {
+  async function handleRequestOtp() {
     if (!client) {
       setErrorMessage('Supabase client is not ready.')
+      return
+    }
+
+    if (!email || !password) {
+      setErrorMessage('Email and password are required.')
       return
     }
 
     setIsBusy(true)
     setErrorMessage(null)
     setSuccessMessage(null)
-    const result = await signUpWithPassword({ client, email, password })
-    setIsBusy(false)
+    try {
+      const response = await fetch(`${apiBaseUrl}/auth/v1/otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          options: { shouldCreateUser: true },
+        }),
+      })
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.msg ?? payload?.message ?? 'OTP request failed.')
+      }
 
-    if (!result.ok) {
-      setErrorMessage(result.error ?? 'Sign up failed.')
+      setStep('verify')
+      setSuccessMessage('验证码已发送，请查收邮箱。')
+    } catch (requestError) {
+      setErrorMessage(
+        requestError instanceof Error ? requestError.message : 'OTP request failed.'
+      )
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  async function handleVerifyOtp() {
+    if (!client) {
+      setErrorMessage('Supabase client is not ready.')
       return
     }
 
-    setSuccessMessage('Account created. You can now sign in.')
+    if (!email || !password || !otp) {
+      setErrorMessage('Email, password, and OTP are required.')
+      return
+    }
+
+    setIsBusy(true)
+    setErrorMessage(null)
+    setSuccessMessage(null)
+    try {
+      const response = await fetch(`${apiBaseUrl}/auth/v1/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          token: otp,
+          type: 'email',
+        }),
+      })
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.msg ?? payload?.message ?? 'OTP verification failed.')
+      }
+
+      const accessToken = payload?.session?.access_token ?? null
+      const refreshToken = payload?.session?.refresh_token ?? null
+      if (!accessToken || !refreshToken) {
+        throw new Error('Session not available after OTP verification.')
+      }
+
+      await client.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      const { error: passwordError } = await client.auth.updateUser({ password })
+      if (passwordError) {
+        throw new Error(passwordError.message)
+      }
+
+      setSuccessMessage('注册成功，正在进入控制台...')
+      onNavigate(dashboardPath)
+    } catch (verifyError) {
+      setErrorMessage(
+        verifyError instanceof Error ? verifyError.message : 'OTP verification failed.'
+      )
+    } finally {
+      setIsBusy(false)
+    }
   }
 
   if (session) {
@@ -75,12 +153,32 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
           value={password}
           onValueChange={setPassword}
         />
+        {step === 'verify' ? (
+          <Input
+            label="OTP"
+            placeholder="Enter OTP code"
+            type="text"
+            value={otp}
+            onValueChange={(value) => setOtp(value.trim())}
+          />
+        ) : null}
         {error ? <p className="text-sm text-danger-500">{error}</p> : null}
         {errorMessage ? <p className="text-sm text-danger-500">{errorMessage}</p> : null}
         {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
-        <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleSignUp}>
-          Create account
-        </Button>
+        {step === 'request' ? (
+          <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleRequestOtp}>
+            Send OTP
+          </Button>
+        ) : (
+          <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleVerifyOtp}>
+            Verify OTP
+          </Button>
+        )}
+        {step === 'verify' ? (
+          <Button radius="full" variant="flat" isLoading={isBusy} onPress={handleRequestOtp}>
+            Resend OTP
+          </Button>
+        ) : null}
         <button
           className="text-sm font-medium text-ink/70 hover:text-teal transition-colors"
           onClick={() => onNavigate(signInPath)}

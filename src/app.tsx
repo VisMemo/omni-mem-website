@@ -12,6 +12,7 @@ import { ProfilePage } from './pages/profile'
 import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
 import { PasswordResetPage } from './pages/auth/password-reset'
+import { UpdatePasswordPage } from './pages/auth/update-password'
 import { DocsPage } from './pages/docs'
 import { FaqPage } from './pages/faq'
 
@@ -26,6 +27,7 @@ export function App() {
   const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
   const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
   const passwordResetPath = buildLocalePathname({ pathname: ROUTE_PATHS.passwordReset, locale })
+  const updatePasswordPath = buildLocalePathname({ pathname: ROUTE_PATHS.updatePassword, locale })
   const dashboardPath = buildLocalePathname({ pathname: ROUTE_PATHS.dashboard, locale })
   const apiKeysPath = buildLocalePathname({ pathname: ROUTE_PATHS.apiKeys, locale })
   const uploadsPath = buildLocalePathname({ pathname: ROUTE_PATHS.uploads, locale })
@@ -240,7 +242,21 @@ export function App() {
           )}
           {routeKey === 'passwordReset' && (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
-              <PasswordResetPage signInPath={signInPath} onNavigate={navigateTo} />
+              <PasswordResetPage
+                signInPath={signInPath}
+                dashboardPath={dashboardPath}
+                updatePasswordPath={updatePasswordPath}
+                onNavigate={navigateTo}
+              />
+            </div>
+          )}
+          {routeKey === 'updatePassword' && (
+            <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
+              <UpdatePasswordPage
+                dashboardPath={dashboardPath}
+                signInPath={signInPath}
+                onNavigate={navigateTo}
+              />
             </div>
           )}
           {routeKey === 'docs' && (
@@ -754,6 +770,7 @@ function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
   if (strippedPath.startsWith(ROUTE_PATHS.signIn)) return 'signIn'
   if (strippedPath.startsWith(ROUTE_PATHS.signUp)) return 'signUp'
   if (strippedPath.startsWith(ROUTE_PATHS.passwordReset)) return 'passwordReset'
+  if (strippedPath.startsWith(ROUTE_PATHS.updatePassword)) return 'updatePassword'
   return 'marketing'
 }
 
@@ -844,6 +861,7 @@ const ROUTE_PATHS = {
   signIn: '/auth/sign-in',
   signUp: '/auth/sign-up',
   passwordReset: '/auth/password-reset',
+  updatePassword: '/update-password',
 } as const
 
 // ============ CODE SAMPLES ============
@@ -1181,7 +1199,20 @@ const contentByLocale: Record<Locale, AppContent> = {
 
 // ============ TYPES ============
 type Locale = 'en' | 'zh'
-type RouteKey = 'marketing' | 'docs' | 'faq' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
+type RouteKey =
+  | 'marketing'
+  | 'docs'
+  | 'faq'
+  | 'dashboard'
+  | 'apiKeys'
+  | 'uploads'
+  | 'usage'
+  | 'memoryPolicy'
+  | 'profile'
+  | 'signIn'
+  | 'signUp'
+  | 'passwordReset'
+  | 'updatePassword'
 
 interface AppContent {
   navbar: NavbarContent

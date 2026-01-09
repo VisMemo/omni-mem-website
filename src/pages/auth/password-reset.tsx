@@ -1,16 +1,19 @@
-import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
+﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useMemo, useState } from 'react'
-import { getApiEnv } from '../../lib/env'
+import { useSupabaseSession } from '../../hooks/use-supabase-session'
 
 interface PasswordResetPageProps {
   signInPath: string
+  dashboardPath: string
+  updatePasswordPath: string
   onNavigate: (path: string) => void
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export function PasswordResetPage({ signInPath, onNavigate }: PasswordResetPageProps) {
-  const { apiBaseUrl } = useMemo(() => getApiEnv(), [])
+export function PasswordResetPage({ signInPath, dashboardPath, updatePasswordPath, onNavigate }: PasswordResetPageProps) {
+  const { client } = useSupabaseSession()
+  const siteUrl = useMemo(() => window.location.origin, [])
   const [email, setEmail] = useState('')
   const [isBusy, setIsBusy] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -20,6 +23,11 @@ export function PasswordResetPage({ signInPath, onNavigate }: PasswordResetPageP
     setErrorMessage(null)
     setSuccessMessage(null)
 
+    if (!client) {
+      setErrorMessage('Supabase client is not ready.')
+      return
+    }
+
     if (!EMAIL_REGEX.test(email)) {
       setErrorMessage('请输入有效邮箱地址')
       return
@@ -27,17 +35,13 @@ export function PasswordResetPage({ signInPath, onNavigate }: PasswordResetPageP
 
     setIsBusy(true)
     try {
-      const response = await fetch(`${apiBaseUrl}/auth/password-reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data?.message ?? 'Reset failed.')
+      const redirectTo = `${siteUrl}${updatePasswordPath}?callback=${encodeURIComponent(dashboardPath)}`
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo })
+      if (error) {
+        throw new Error(error.message)
       }
 
-      setSuccessMessage('重置成功（测试模式）')
+      setSuccessMessage('重置邮件已发送，请检查邮箱。')
     } catch (error) {
       setErrorMessage(String(error))
     } finally {
