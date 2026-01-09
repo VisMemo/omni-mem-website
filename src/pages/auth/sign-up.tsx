@@ -1,6 +1,5 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
-import { useMemo, useState } from 'react'
-import { getApiEnv } from '../../lib/env'
+import { useState } from 'react'
 import { useSupabaseSession } from '../../hooks/use-supabase-session'
 
 interface SignUpPageProps {
@@ -11,8 +10,6 @@ interface SignUpPageProps {
 
 export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPageProps) {
   const { client, session, error } = useSupabaseSession()
-  const { apiBaseUrl } = useMemo(() => getApiEnv(), [])
-  const authBaseUrl = useMemo(() => apiBaseUrl.replace(/\/api\/v1\/?$/, ''), [apiBaseUrl])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
@@ -36,17 +33,12 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     setErrorMessage(null)
     setSuccessMessage(null)
     try {
-      const response = await fetch(`${authBaseUrl}/auth/v1/otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          options: { shouldCreateUser: true },
-        }),
+      const { error: otpError } = await client.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
       })
-      const payload = await response.json()
-      if (!response.ok) {
-        throw new Error(payload?.msg ?? payload?.message ?? 'OTP request failed.')
+      if (otpError) {
+        throw new Error(otpError.message)
       }
 
       setStep('verify')
@@ -75,30 +67,37 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     setErrorMessage(null)
     setSuccessMessage(null)
     try {
-      const response = await fetch(`${authBaseUrl}/auth/v1/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const verifyTypes: Array<'signup' | 'email'> = ['signup', 'email']
+      let verificationError: Error | null = null
+      let session = null
+
+      for (const type of verifyTypes) {
+        const { data, error: verifyError } = await client.auth.verifyOtp({
           email,
           token: otp,
-          type: 'email',
-        }),
-      })
-      const payload = await response.json()
-      if (!response.ok) {
-        throw new Error(payload?.msg ?? payload?.message ?? 'OTP verification failed.')
+          type,
+        })
+        if (verifyError) {
+          verificationError = verifyError
+          continue
+        }
+        session = data.session ?? null
+        break
       }
 
-      const accessToken = payload?.session?.access_token ?? null
-      const refreshToken = payload?.session?.refresh_token ?? null
-      if (!accessToken || !refreshToken) {
-        throw new Error('Session not available after OTP verification.')
+      if (!session) {
+        const { data: sessionData, error: sessionError } = await client.auth.getSession()
+        if (sessionError) {
+          throw new Error(sessionError.message)
+        }
+        session = sessionData.session ?? null
       }
 
-      await client.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      })
+      if (!session) {
+        throw new Error(
+          verificationError?.message ?? 'Session not available after OTP verification.'
+        )
+      }
 
       const { error: passwordError } = await client.auth.updateUser({ password })
       if (passwordError) {
