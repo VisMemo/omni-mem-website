@@ -24,6 +24,10 @@ export function App() {
   const [isScrolled, setIsScrolled] = useState(false)
   const content = contentByLocale[locale]
   const { session, isLoading: isSessionLoading } = useSupabaseSession()
+  const accountDisplayName =
+    session?.user?.user_metadata?.name ??
+    (session?.user?.email ? session.user.email.split('@')[0] : null)
+  const accountEmail = session?.user?.email ?? null
   const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
   const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
   const passwordResetPath = buildLocalePathname({ pathname: ROUTE_PATHS.passwordReset, locale })
@@ -192,6 +196,14 @@ export function App() {
                 {content.navbar.ctaLabel}
               </a>
             )}
+            {!isMarketing && session ? (
+              <div className="hidden flex-col items-end text-xs text-ink/60 sm:flex">
+                <span className="font-semibold text-ink">
+                  {accountDisplayName ?? '账户'}
+                </span>
+                {accountEmail ? <span>{accountEmail}</span> : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </nav>

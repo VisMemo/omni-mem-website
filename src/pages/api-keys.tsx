@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Copy, KeyRound, RotateCw, Trash2, XCircle } from 'lucide-react'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { KeyRound, RotateCw, Trash2, XCircle } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -130,7 +130,7 @@ export function ApiKeysPage() {
       setLastPlaintext(data.api_key_plaintext ?? null)
       setMessage(
         data.api_key_plaintext
-          ? `已创建，请立刻复制：${data.api_key_plaintext}`
+          ? '已创建密钥，请立即复制。'
           : '创建成功，密钥仅显示一次。',
       )
 
@@ -187,7 +187,7 @@ export function ApiKeysPage() {
         setLastPlaintext(data.api_key_plaintext ?? null)
         setMessage(
           data.api_key_plaintext
-            ? `已轮换，请立刻复制：${data.api_key_plaintext}`
+            ? '已轮换密钥，请立即复制。'
             : '轮换完成，密钥仅显示一次。',
         )
       } else {
@@ -202,23 +202,6 @@ export function ApiKeysPage() {
       setMessage(String(error))
     }
   }
-
-  async function handleCopyPrefix(prefix: string | null) {
-    if (!prefix) {
-      setStatus('error')
-      setMessage('没有可复制的前缀。')
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(prefix)
-      setStatus('success')
-      setMessage(`已复制前缀：${prefix}`)
-    } catch (error) {
-      setStatus('error')
-      setMessage(String(error))
-    }
-  }
-
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -252,28 +235,33 @@ export function ApiKeysPage() {
           </button>
         </div>
         {message ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-            <span className={status === 'error' ? 'text-red-600' : 'text-emerald-600'}>
-              {message}
-            </span>
-            {lastPlaintext ? (
-              <button
-                type="button"
-                className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(lastPlaintext)
-                    setStatus('success')
-                    setMessage('已复制到剪贴板。')
-                  } catch (error) {
-                    setStatus('error')
-                    setMessage(String(error))
-                  }
-                }}
-              >
-                复制密钥
-              </button>
-            ) : null}
+          <p className={`mt-3 text-sm ${status === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>
+            {message}
+          </p>
+        ) : null}
+        {lastPlaintext ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <input
+              className="h-9 w-full max-w-xl rounded-md border border-ink/20 bg-ink/5 px-3 text-sm text-ink/80"
+              value={lastPlaintext}
+              readOnly
+            />
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md bg-teal px-4 py-2 text-sm font-semibold text-ivory hover:bg-seafoam"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(lastPlaintext)
+                  setStatus('success')
+                  setMessage('已复制到剪贴板。')
+                } catch (error) {
+                  setStatus('error')
+                  setMessage(String(error))
+                }
+              }}
+            >
+              复制密钥
+            </button>
           </div>
         ) : null}
       </section>
@@ -329,14 +317,6 @@ export function ApiKeysPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
-                            onClick={() => handleCopyPrefix(row.key_prefix)}
-                            aria-label="复制前缀"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
                           <button
                             type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
@@ -396,3 +376,4 @@ export function ApiKeysPage() {
     </div>
   )
 }
+

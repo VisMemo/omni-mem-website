@@ -10,8 +10,10 @@ interface SignUpPageProps {
 
 export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPageProps) {
   const { client, session, error } = useSupabaseSession()
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'request' | 'verify'>('request')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -24,8 +26,14 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
       return
     }
 
-    if (!email || !password) {
-      setErrorMessage('Email and password are required.')
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername || !email || !password || !confirmPassword) {
+      setErrorMessage('Username, email, and password are required.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.')
       return
     }
 
@@ -35,7 +43,12 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     try {
       const { error: otpError } = await client.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          data: {
+            name: trimmedUsername,
+          },
+        },
       })
       if (otpError) {
         throw new Error(otpError.message)
@@ -58,8 +71,14 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
       return
     }
 
-    if (!email || !password || !otp) {
-      setErrorMessage('Email, password, and OTP are required.')
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername || !email || !password || !confirmPassword || !otp) {
+      setErrorMessage('Username, email, password, and OTP are required.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.')
       return
     }
 
@@ -99,7 +118,12 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
         )
       }
 
-      const { error: passwordError } = await client.auth.updateUser({ password })
+      const { error: passwordError } = await client.auth.updateUser({
+        password,
+        data: {
+          name: trimmedUsername,
+        },
+      })
       if (passwordError) {
         throw new Error(passwordError.message)
       }
@@ -140,6 +164,13 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
       </CardHeader>
       <CardBody className="space-y-4">
         <Input
+          label="Username"
+          placeholder="Create a username"
+          type="text"
+          value={username}
+          onValueChange={setUsername}
+        />
+        <Input
           label="Email"
           placeholder="you@example.com"
           type="email"
@@ -152,6 +183,13 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
           type="password"
           value={password}
           onValueChange={setPassword}
+        />
+        <Input
+          label="Confirm password"
+          placeholder="Re-enter your password"
+          type="password"
+          value={confirmPassword}
+          onValueChange={setConfirmPassword}
         />
         {step === 'verify' ? (
           <Input

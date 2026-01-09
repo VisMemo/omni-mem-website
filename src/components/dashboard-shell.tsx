@@ -87,7 +87,11 @@ export function DashboardShell({
     setIsSigningOut(false)
   }
 
-  const accountLabel = session?.user?.email ?? labels.loggedIn
+  const accountName = session?.user?.user_metadata?.name
+  const accountLabel =
+    accountName && String(accountName).trim()
+      ? String(accountName)
+      : session?.user?.email ?? labels.loggedIn
 
   const mobileNav = navOpen ? (
     <div className="fixed inset-0 z-40 lg:hidden">
