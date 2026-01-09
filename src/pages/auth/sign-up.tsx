@@ -12,6 +12,7 @@ interface SignUpPageProps {
 export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPageProps) {
   const { client, session, error } = useSupabaseSession()
   const { apiBaseUrl } = useMemo(() => getApiEnv(), [])
+  const authBaseUrl = useMemo(() => apiBaseUrl.replace(/\/api\/v1\/?$/, ''), [apiBaseUrl])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
@@ -35,7 +36,7 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     setErrorMessage(null)
     setSuccessMessage(null)
     try {
-      const response = await fetch(`${apiBaseUrl}/auth/v1/otp`, {
+      const response = await fetch(`${authBaseUrl}/auth/v1/otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,7 +75,7 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     setErrorMessage(null)
     setSuccessMessage(null)
     try {
-      const response = await fetch(`${apiBaseUrl}/auth/v1/verify`, {
+      const response = await fetch(`${authBaseUrl}/auth/v1/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,16 +168,16 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
         {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
         {step === 'request' ? (
           <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleRequestOtp}>
-            Send OTP
+            注册
           </Button>
         ) : (
           <Button className="bg-teal text-white hover:bg-seafoam" radius="full" isLoading={isBusy} onPress={handleVerifyOtp}>
-            Verify OTP
+            确认验证码
           </Button>
         )}
         {step === 'verify' ? (
           <Button radius="full" variant="flat" isLoading={isBusy} onPress={handleRequestOtp}>
-            Resend OTP
+            重新发送验证码
           </Button>
         ) : null}
         <button
