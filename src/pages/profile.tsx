@@ -213,7 +213,7 @@ export function ProfilePage() {
         <p className="text-sm text-ink/60">管理账户名称、套餐与账单概览。</p>
       </header>
 
-      <section className="rounded-xl bg-white/70 p-6">
+      <section className="rounded-xl bg-white/70 p-6 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-ink">账户资料</h2>
@@ -254,7 +254,7 @@ export function ProfilePage() {
               绑定邮箱
             </label>
             <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
+              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60 shadow-none focus:shadow-none"
               value={emailValue}
               readOnly
             />

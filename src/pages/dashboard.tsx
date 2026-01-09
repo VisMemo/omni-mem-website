@@ -80,6 +80,14 @@ export function DashboardPage() {
   const accountId = session?.user?.id ?? null
   const accountEmail = session?.user?.email ?? null
   const accessToken = session?.access_token ?? null
+  const accountName = useMemo(() => {
+    if (!session?.user) return ''
+    const metadataName = session.user.user_metadata?.name
+    if (metadataName && String(metadataName).trim()) {
+      return String(metadataName)
+    }
+    return accountEmail ? accountEmail.split('@')[0] : ''
+  }, [accountEmail, session])
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const entitlements = scopeInfo?.entitlements ?? null
   const memoryScopeLabel = formatMemoryScope(memoryPolicy?.default_scope ?? null)
@@ -94,8 +102,8 @@ export function DashboardPage() {
     () => [
       {
         title: '账户',
-        value: accountId ? accountEmail ?? '已登录' : '未登录',
-        meta: accountId ? `账户 ID：${accountId}` : '登录后查看账户信息。',
+        value: accountId ? accountName || accountEmail || '已登录' : '未登录',
+        meta: accountId ? `邮箱：${accountEmail ?? '-'}` : '登录后查看账户信息。',
         status: overviewStatusLabel,
       },
       {
