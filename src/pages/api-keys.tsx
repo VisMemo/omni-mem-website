@@ -100,6 +100,13 @@ export function ApiKeysPage() {
       return
     }
 
+    const trimmedLabel = label.trim()
+    if (!trimmedLabel) {
+      setStatus('error')
+      setMessage('标签不能为空。')
+      return
+    }
+
     setStatus('loading')
     setMessage(null)
 
@@ -117,7 +124,7 @@ export function ApiKeysPage() {
           Authorization: `Bearer ${active.access_token}`,
           'X-Request-Id': crypto.randomUUID(),
         },
-        body: JSON.stringify({ label }),
+        body: JSON.stringify({ label: trimmedLabel }),
       })
 
       const data = (await response.json()) as ApiKeyCreateResponse
@@ -234,7 +241,7 @@ export function ApiKeysPage() {
             type="button"
             className="inline-flex items-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-ivory"
             onClick={handleCreateKey}
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || !label.trim()}
           >
             <KeyRound className="mr-2 h-4 w-4" />
             新建 API 密钥

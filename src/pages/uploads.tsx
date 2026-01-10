@@ -17,43 +17,16 @@ type UploadRow = {
   sizeBytes?: number | null
 }
 
-type UploadInitResponse = {
-  upload_id: string
-  oss_key: string
-  upload_url: string
-  upload_method?: string
-  upload_expires_in?: number
-  upload_headers?: Record<string, string>
-  message?: string
+type ApiKeyRow = {
+  id: string
+  label: string | null
 }
 
-type UploadStatusResponse = {
-  upload_id: string
-  status: string
-  error_code?: string | null
-  error_message?: string | null
-  filename?: string | null
-  memory_scope?: string | null
-  updated_at?: string | null
-  message?: string
+type ApiKeyListResponse = {
+  data: ApiKeyRow[]
 }
 
-type UploadHistoryResponse = {
-  data: Array<{
-    id: string
-    filename?: string | null
-    mime?: string | null
-    status: string
-    memory_scope?: string | null
-    created_at?: string | null
-    updated_at?: string | null
-    request_id?: string | null
-    size_bytes?: number | null
-    balance_used?: number | null
-  }>
-}
-
-const ACTIVE_STATUSES = new Set(['init', 'uploaded', 'processing'])
+const ACTIVE_STATUSES = new Set(['queued', 'processing', 'running'])
 
 export function UploadsPage() {
   const { session, refreshSession } = useSupabaseSession()
@@ -63,7 +36,9 @@ export function UploadsPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [inlineStatus, setInlineStatus] = useState<string | null>(null)
-  const [pollingUploadId, setPollingUploadId] = useState<string | null>(null)
+  const [pollingJobId, setPollingJobId] = useState<string | null>(null)
+  const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([])
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>('')
   const [page, setPage] = useState(1)
   const [hasNext, setHasNext] = useState(false)
   const [refreshToken, setRefreshToken] = useState(0)
@@ -100,42 +75,25 @@ export function UploadsPage() {
     })
   }
 
-  async function uploadWithProgress(options: {
-    url: string
-    method: string
-    headers: Record<string, string>
-    body: Blob
-    onProgress: (percent: number) => void
-  }) {
-    const { url, method, headers, body, onProgress } = options
-
-    return new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open(method, url)
-      for (const [key, value] of Object.entries(headers)) {
-        xhr.setRequestHeader(key, value)
-      }
-      xhr.upload.onprogress = (event) => {
-        if (!event.lengthComputable) return
-        const percent = Math.round((event.loaded / event.total) * 100)
-        onProgress(percent)
-      }
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve()
-          return
-        }
-        reject(new Error('上传到对象存储失败。'))
-      }
-      xhr.onerror = () => reject(new Error('上传到对象存储失败。'))
-      xhr.send(body)
-    })
-  }
-
   async function handleUpload() {
     if (!selectedFile || !accountId || !accessToken) {
       setStatus('error')
-      setMessage('请先登录并选择文件。')
+      setMessage('Please sign in and select a file.')
+      setInlineStatus(null)
+      return
+    }
+
+    if (!selectedApiKeyId) {
+      setStatus('error')
+      setMessage('请先指定记忆归属的apikey')
+      setInlineStatus(null)
+      return
+    }
+
+    const lowerName = selectedFile.name.toLowerCase()
+    if (!lowerName.endsWith('.json') && !selectedFile.type.includes('json')) {
+      setStatus('error')
+      setMessage('Only JSON files are supported.')
       setInlineStatus(null)
       return
     }
@@ -147,11 +105,28 @@ export function UploadsPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('会话已过期，请重新登录。')
+        throw new Error('Session expired. Please sign in again.')
+      }
+
+      const text = await selectedFile.text()
+      let parsed
+      try {
+        parsed = JSON.parse(text)
+      } catch {
+        throw new Error('Only JSON files are supported.')
+      }
+
+      let ingestBody
+      if (Array.isArray(parsed)) {
+        ingestBody = { turns: parsed }
+      } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.turns)) {
+        ingestBody = parsed
+      } else {
+        ingestBody = { turns: [{ role: 'user', content: JSON.stringify(parsed) }] }
       }
 
       const requestId = crypto.randomUUID()
-      const initResponse = await fetch(`${apiBaseUrl}/uploads/init`, {
+      const response = await fetch(`${apiBaseUrl}/memory/ingest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,63 +135,33 @@ export function UploadsPage() {
           'X-Request-Id': requestId,
         },
         body: JSON.stringify({
-          filename: selectedFile.name,
-          size: selectedFile.size,
-          mime: selectedFile.type || 'application/octet-stream',
+          ...ingestBody,
+          api_key_id: selectedApiKeyId,
         }),
       })
 
-      const initData = (await initResponse.json()) as UploadInitResponse
-      if (!initResponse.ok) {
-        throw new Error(initData?.message ?? '初始化上传失败。')
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.message ?? 'Upload failed.')
       }
 
+      const jobId = data.job_id ?? data.jobId ?? requestId
       const now = new Date().toISOString()
-      const scope = session?.user?.id ? 'user' : 'apikey'
       upsertUpload({
-        id: initData.upload_id,
+        id: jobId,
         file: selectedFile.name,
         fileType: getFileTypeLabel(selectedFile.name, selectedFile.type),
-        status: 'uploading',
-        scope,
+        status: 'processing',
+        scope: 'apikey',
         createdAt: now,
         updatedAt: now,
         balanceUsed: 0,
         error: null,
-        progress: 0,
+        progress: null,
         sizeBytes: selectedFile.size,
       })
-      setPollingUploadId(initData.upload_id)
+      setPollingJobId(jobId)
 
-      const uploadHeaders = initData.upload_headers ?? {}
-      const uploadMethod = initData.upload_method ?? 'PUT'
-      await uploadWithProgress({
-        url: initData.upload_url,
-        method: uploadMethod,
-        headers: uploadHeaders,
-        body: selectedFile,
-        onProgress: (percent) => {
-          upsertUpload({
-            id: initData.upload_id,
-            progress: percent,
-            updatedAt: new Date().toISOString(),
-          })
-        },
-      })
-
-      upsertUpload({
-        id: initData.upload_id,
-        file: selectedFile.name,
-        fileType: getFileTypeLabel(selectedFile.name, selectedFile.type),
-        status: 'uploaded',
-        scope,
-        createdAt: now,
-        updatedAt: new Date().toISOString(),
-        balanceUsed: 0,
-        error: null,
-        progress: 100,
-        sizeBytes: selectedFile.size,
-      })
       setStatus('success')
       setMessage(null)
       setSelectedFile(null)
@@ -226,61 +171,44 @@ export function UploadsPage() {
       setInlineStatus(null)
     }
   }
-
   useEffect(() => {
     if (!accountId || !accessToken) return
 
     let cancelled = false
 
-    async function loadUploadHistory() {
+    async function loadApiKeys() {
       try {
         const active = await getActiveSession()
         if (!active) return
 
-        const response = await fetch(
-          `${apiBaseUrl}/uploads/history?page=${page}&pageSize=${pageSize}`,
-          {
-            headers: {
-              Authorization: `Bearer ${active.access_token}`,
-              'X-Principal-User-Id': active.user.id,
-            },
+        const response = await fetch(`${apiBaseUrl}/apikeys?page=1&pageSize=200`, {
+          headers: {
+            Authorization: `Bearer ${active.access_token}`,
+            'X-Principal-User-Id': active.user.id,
           },
-        )
-        const data = (await response.json()) as UploadHistoryResponse
+        })
+        const data = (await response.json()) as ApiKeyListResponse & { message?: string }
         if (!response.ok) {
-          return
+          throw new Error(data?.message ?? '加载 API 密钥失败')
         }
 
         if (cancelled) return
-        const rows = (data.data ?? []).map((row) => ({
-          id: row.id,
-          file: row.filename ?? 'upload',
-          fileType: getFileTypeLabel(row.filename ?? 'upload', row.mime ?? ''),
-          status: row.status,
-          scope: row.memory_scope ?? 'user',
-          createdAt: row.created_at ?? row.updated_at ?? new Date().toISOString(),
-          updatedAt: row.updated_at ?? new Date().toISOString(),
-          balanceUsed: Number(row.balance_used ?? 0),
-          error: null,
-          progress: null,
-          sizeBytes: row.size_bytes ?? null,
-        }))
-
-        setUploads((prev) => mergeUploadRows(prev, rows))
-        setHasNext(rows.length === pageSize)
-      } catch {
-        return
+        setApiKeys(data.data ?? [])
+        setHasNext(false)
+      } catch (error) {
+        if (cancelled) return
+        setStatus('error')
+        setMessage(String(error))
       }
     }
 
-    loadUploadHistory()
+    loadApiKeys()
     return () => {
       cancelled = true
     }
-  }, [accountId, accessToken, apiBaseUrl, refreshSession, page, refreshToken])
-
+  }, [accountId, accessToken, apiBaseUrl, refreshSession, refreshToken])
   useEffect(() => {
-    if (!pollingUploadId || !accountId || !accessToken) return
+    if (!pollingJobId || !accountId || !accessToken) return
 
     let cancelled = false
     let interval: number | null = null
@@ -289,42 +217,40 @@ export function UploadsPage() {
       try {
         const active = await getActiveSession()
         if (!active) {
-          throw new Error('会话已过期，请重新登录。')
+          throw new Error('Session expired. Please sign in again.')
         }
 
-        const response = await fetch(`${apiBaseUrl}/uploads/${pollingUploadId}`, {
+        const response = await fetch(`${apiBaseUrl}/memory/ingest/jobs/${pollingJobId}`, {
           headers: {
             Authorization: `Bearer ${active.access_token}`,
             'X-Principal-User-Id': active.user.id,
           },
         })
-        const data = (await response.json()) as UploadStatusResponse
+        const data = (await response.json()) as { status?: string; message?: string }
         if (!response.ok) {
-          throw new Error(data?.message ?? '获取上传状态失败。')
+          throw new Error(data?.message ?? 'Failed to fetch ingest status.')
         }
 
         if (cancelled) return
+        const nextStatus = data.status ?? 'processing'
         upsertUpload({
-          id: data.upload_id,
-          file: data.filename ?? 'upload',
-          status: data.status,
-          scope: data.memory_scope ?? 'user',
-          updatedAt: data.updated_at ?? new Date().toISOString(),
-          error: data.error_message ?? null,
+          id: pollingJobId,
+          status: nextStatus,
+          updatedAt: new Date().toISOString(),
         })
 
-        if (data.status === 'done') {
-          setInlineStatus('记忆已同步。')
+        if (nextStatus === 'done' || nextStatus === 'COMPLETED') {
+          setInlineStatus('Memory synced.')
         }
 
-        if (!ACTIVE_STATUSES.has(data.status)) {
-          setPollingUploadId(null)
+        if (!ACTIVE_STATUSES.has(nextStatus)) {
+          setPollingJobId(null)
         }
       } catch (error) {
         if (cancelled) return
         setStatus('error')
         setMessage(String(error))
-        setPollingUploadId(null)
+        setPollingJobId(null)
       }
     }
 
@@ -337,8 +263,7 @@ export function UploadsPage() {
         window.clearInterval(interval)
       }
     }
-  }, [pollingUploadId, accountId, accessToken, apiBaseUrl, refreshSession])
-
+  }, [pollingJobId, accountId, accessToken, apiBaseUrl, refreshSession])
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -356,6 +281,20 @@ export function UploadsPage() {
             <RefreshCcw className="mr-2 h-4 w-4" />
             刷新
           </button>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded-md border border-ink/20 bg-white/80 px-3 text-xs text-ink/80"
+              value={selectedApiKeyId}
+              onChange={(event) => setSelectedApiKeyId(event.target.value)}
+            >
+              <option value="">选择 API Key</option>
+              {apiKeys.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label ?? item.id}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             className="inline-flex items-center rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory"
@@ -368,6 +307,7 @@ export function UploadsPage() {
           <input
             ref={fileInputRef}
             type="file"
+            accept="application/json,.json"
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0] ?? null
@@ -471,19 +411,22 @@ function formatBytes(bytes: number) {
 
 function formatStatus(row: UploadRow) {
   if (row.status === 'uploading') {
-    return '上传中'
+    return 'Uploading'
   }
   if (row.status === 'uploaded') {
-    return '已上传'
+    return 'Uploaded'
+  }
+  if (row.status === 'queued') {
+    return 'Queued'
   }
   if (row.status === 'processing') {
-    return '处理中'
+    return 'Processing'
   }
-  if (row.status === 'done') {
-    return '已同步'
+  if (row.status === 'COMPLETED' || row.status === 'done') {
+    return 'Completed'
   }
   if (row.status === 'failed') {
-    return row.error ? `失败：${row.error}` : '失败'
+    return row.error ? `Failed: ${row.error}` : 'Failed'
   }
   return row.status
 }
@@ -503,7 +446,7 @@ function renderStatusCell(row: UploadRow) {
   }
 
   const badgeClass =
-    row.status === 'done'
+    row.status === 'done' || row.status === 'COMPLETED'
       ? 'bg-emerald-500/10 text-emerald-600'
       : row.status === 'failed'
         ? 'bg-red-500/10 text-red-600'
