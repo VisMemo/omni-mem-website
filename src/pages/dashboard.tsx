@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -56,8 +56,8 @@ function formatNumber(value?: number | null) {
 
 function formatMemoryScope(value?: string | null) {
   if (!value) return '-'
-  if (value === 'apikey') return 'API å¯†é’¥éš”ç¦»'
-  return 'ç”¨æˆ·éš”ç¦»'
+  if (value === 'apikey') return 'API ÃÜÔ¿¸ôÀë'
+  return 'ÓÃ»§¸ôÀë'
 }
 
 function formatNodesInK(value?: number | null) {
@@ -110,45 +110,50 @@ export function DashboardPage() {
   const entitlements = scopeInfo?.entitlements ?? null
   const qdrantNodeCounts = scopeInfo?.qdrant_node_counts ?? null
   const memoryScopeLabel = formatMemoryScope(memoryPolicy?.default_scope ?? null)
-  const groupByLabel = groupBy === 'account' ? 'è´¦æˆ·' : 'API å¯†é’¥'
+  const apikeyLimitLabel = !scopeInfo?.scope
+    ? 'apikeyÏŞÖÆ£º-'
+    : scopeInfo.scope === 'normal'
+      ? 'apikeyÏŞÖÆ£º1¸ö'
+      : 'apikeyÏŞÖÆ£ºÎŞÏŞÖÆ'
+  const groupByLabel = groupBy === 'account' ? 'ÕË»§' : 'API ÃÜÔ¿'
   const overviewStatusLabel = useMemo(() => {
-    if (!accountId) return 'æœªç™»å½•'
-    if (overviewStatus === 'loading') return 'åŠ è½½ä¸­'
-    if (overviewStatus === 'error') return 'åŠ è½½å¤±è´¥'
+    if (!accountId) return 'Î´µÇÂ¼'
+    if (overviewStatus === 'loading') return '¼ÓÔØÖĞ'
+    if (overviewStatus === 'error') return '¼ÓÔØÊ§°Ü'
     return ''
   }, [accountId, overviewStatus])
   const overviewItems = useMemo<OverviewItem[]>(
     () => [
       {
-        title: 'è´¦æˆ·',
-        value: accountId ? accountName || accountEmail || 'å·²ç™»å½•' : 'æœªç™»å½•',
-        meta: accountId ? `é‚®ç®±ï¼š${accountEmail ?? '-'}` : 'ç™»å½•åæŸ¥çœ‹è´¦æˆ·ä¿¡æ¯ã€‚',
+        title: 'ÕË»§',
+        value: accountId ? accountName || accountEmail || 'ÒÑµÇÂ¼' : 'Î´µÇÂ¼',
+        meta: accountId ? `ÓÊÏä£º${accountEmail ?? '-'}` : 'µÇÂ¼ºó²é¿´ÕË»§ĞÅÏ¢¡£',
         status: overviewStatusLabel,
       },
       {
-        title: 'å¥—é¤',
+        title: 'Ì×²Í',
         value: accountId ? `${scopeInfo?.scope ?? '-'}` : '-',
-        meta: accountId ? `ä½™é¢ï¼š${formatNumber(balanceInfo?.balance)}` : 'ç™»å½•åæŸ¥çœ‹å¥—é¤ä¸ä½™é¢ã€‚',
+        meta: accountId ? `Óà¶î£º${formatNumber(balanceInfo?.balance)}` : 'µÇÂ¼ºó²é¿´Ì×²ÍÓëÓà¶î¡£',
         status: overviewStatusLabel,
       },
       {
-        title: 'é…é¢',
+        title: 'Åä¶î',
         value: accountId
-          ? `å·²ç”¨èŠ‚ç‚¹ ${formatNodesInK(
+          ? `ÒÑÓÃ½Úµã ${formatNodesInK(
               qdrantNodeCounts?.total ?? 0,
-            )}/èŠ‚ç‚¹ä¸Šé™ ${formatNodesInK(entitlements?.memory_node_limit ?? 0)}`
+            )}/½ÚµãÉÏÏŞ ${formatNodesInK(entitlements?.memory_node_limit ?? 0)}`
           : '-',
         meta: accountId
-          ? `3 ç§’é™æµï¼š${formatNumber(entitlements?.rate_limit_3s)}`
-          : 'ç™»å½•åæŸ¥çœ‹é…é¢ä¸é™æµã€‚',
+          ? `3 ÃëÏŞÁ÷£º${formatNumber(entitlements?.rate_limit_3s)}`
+          : 'µÇÂ¼ºó²é¿´Åä¶îÓëÏŞÁ÷¡£',
         status: overviewStatusLabel,
       },
       {
-        title: 'æƒç›Š',
-        value: accountId ? `${formatNumber(entitlements?.credit_default)} ç§¯åˆ†` : '-',
+        title: 'È¨Òæ',
+        value: accountId ? `${formatNumber(entitlements?.credit_default)} »ı·Ö` : '-',
         meta: accountId
-          ? `è®°å¿†éš”ç¦»ç­–ç•¥ï¼š${memoryScopeLabel}`
-          : 'ç™»å½•åæŸ¥çœ‹æƒç›Šé…ç½®ã€‚',
+          ? `¼ÇÒä¸ôÀë²ßÂÔ£º${memoryScopeLabel} ¡¤ ${apikeyLimitLabel}`
+          : 'µÇÂ¼ºó²é¿´È¨ÒæÅäÖÃ¡£',
         status: overviewStatusLabel,
       },
     ],
@@ -172,7 +177,7 @@ export function DashboardPage() {
       .then((active) => {
         const sessionToUse = active ?? session
         if (!sessionToUse) {
-          throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
+          throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
         }
         const headers = {
           Authorization: `Bearer ${sessionToUse.access_token}`,
@@ -183,7 +188,7 @@ export function DashboardPage() {
             .then((response) => response.json().then((data) => ({ response, data })))
             .then(({ response, data }: { response: Response; data: ScopeResponse & { message?: string } }) => {
               if (!response.ok) {
-                throw new Error(data?.message ?? 'åŠ è½½å¥—é¤ä¿¡æ¯å¤±è´¥ã€‚')
+                throw new Error(data?.message ?? '¼ÓÔØÌ×²ÍĞÅÏ¢Ê§°Ü¡£')
               }
               return data
             }),
@@ -191,7 +196,7 @@ export function DashboardPage() {
             .then((response) => response.json().then((data) => ({ response, data })))
             .then(({ response, data }: { response: Response; data: BalanceResponse & { message?: string } }) => {
               if (!response.ok) {
-                throw new Error(data?.message ?? 'åŠ è½½ä½™é¢å¤±è´¥ã€‚')
+                throw new Error(data?.message ?? '¼ÓÔØÓà¶îÊ§°Ü¡£')
               }
               return data
             }),
@@ -199,7 +204,7 @@ export function DashboardPage() {
             .then((response) => response.json().then((data) => ({ response, data })))
             .then(({ response, data }: { response: Response; data: MemoryPolicyResponse & { message?: string } }) => {
               if (!response.ok) {
-                throw new Error(data?.message ?? 'åŠ è½½è®°å¿†éš”ç¦»é…ç½®å¤±è´¥ã€‚')
+                throw new Error(data?.message ?? '¼ÓÔØ¼ÇÒä¸ôÀëÅäÖÃÊ§°Ü¡£')
               }
               return data
             }),
@@ -234,7 +239,7 @@ export function DashboardPage() {
       .then((active) => {
         const sessionToUse = active ?? session
         if (!sessionToUse) {
-          throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
+          throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
         }
         return fetch(
           `${apiBaseUrl}/usage/summary?from=${fromDate}&to=${toDate}&groupBy=${groupBy}`,
@@ -249,7 +254,7 @@ export function DashboardPage() {
       .then((response) => response.json().then((data) => ({ response, data })))
       .then(({ response, data }: { response: Response; data: UsageSummaryResponse & { message?: string } }) => {
         if (!response.ok) {
-          throw new Error(data?.message ?? 'åŠ è½½ç”¨é‡æ±‡æ€»å¤±è´¥ã€‚')
+          throw new Error(data?.message ?? '¼ÓÔØÓÃÁ¿»ã×ÜÊ§°Ü¡£')
         }
         setUsage(data.data ?? [])
         setStatus('idle')
@@ -263,9 +268,9 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       <header className="rounded-xl bg-white/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">æ§åˆ¶å°</p>
-        <h1 className="text-2xl font-semibold text-ink">æ¦‚è§ˆ</h1>
-        <p className="text-sm text-ink/60">ç”¨é‡ã€é…é¢ä¸æƒç›Šçš„æ•´ä½“è§†å›¾ã€‚</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">¿ØÖÆÌ¨</p>
+        <h1 className="text-2xl font-semibold text-ink">¸ÅÀÀ</h1>
+        <p className="text-sm text-ink/60">ÓÃÁ¿¡¢Åä¶îÓëÈ¨ÒæµÄÕûÌåÊÓÍ¼¡£</p>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -288,16 +293,16 @@ export function DashboardPage() {
       </section>
 
       {overviewStatus === 'loading' ? (
-        <p className="text-sm text-ink/60">æ¦‚è§ˆåŠ è½½ä¸­â€¦</p>
+        <p className="text-sm text-ink/60">¸ÅÀÀ¼ÓÔØÖĞ¡­</p>
       ) : overviewStatus === 'error' ? (
-        <p className="text-sm text-red-600">{overviewMessage ?? 'æ¦‚è§ˆåŠ è½½å¤±è´¥'}</p>
+        <p className="text-sm text-red-600">{overviewMessage ?? '¸ÅÀÀ¼ÓÔØÊ§°Ü'}</p>
       ) : null}
 
       <section className="space-y-4 rounded-xl bg-white/70 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-ink">ç”¨é‡æ¦‚è§ˆ</h2>
-            <p className="text-sm text-ink/60">å½“å‰æŒ‰ {groupByLabel} ç»Ÿè®¡ã€‚</p>
+            <h2 className="text-lg font-semibold text-ink">ÓÃÁ¿¸ÅÀÀ</h2>
+            <p className="text-sm text-ink/60">µ±Ç°°´ {groupByLabel} Í³¼Æ¡£</p>
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-white/60 px-2 py-1">
             <button
@@ -309,7 +314,7 @@ export function DashboardPage() {
               }`}
               onClick={() => setGroupBy('account')}
             >
-              è´¦æˆ·
+              ÕË»§
             </button>
             <button
               type="button"
@@ -320,7 +325,7 @@ export function DashboardPage() {
               }`}
               onClick={() => setGroupBy('apikey')}
             >
-              API å¯†é’¥
+              API ÃÜÔ¿
             </button>
           </div>
         </div>
@@ -347,7 +352,7 @@ export function DashboardPage() {
               setToDate(range.to)
             }}
           >
-            æœ€è¿‘ 30 å¤©
+            ×î½ü 30 Ìì
           </button>
         </div>
 
@@ -355,28 +360,28 @@ export function DashboardPage() {
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>
-                <th className="px-4 py-3 text-left">æ ‡è¯†</th>
-                <th className="px-4 py-3 text-left">æ€»é‡</th>
-                <th className="px-4 py-3 text-left">äº‹ä»¶</th>
+                <th className="px-4 py-3 text-left">±êÊ¶</th>
+                <th className="px-4 py-3 text-left">×ÜÁ¿</th>
+                <th className="px-4 py-3 text-left">ÊÂ¼ş</th>
               </tr>
             </thead>
             <tbody>
               {status === 'loading' ? (
                 <tr>
                   <td className="px-4 py-3 text-ink/60" colSpan={3}>
-                    ç”¨é‡åŠ è½½ä¸­â€¦
+                    ÓÃÁ¿¼ÓÔØÖĞ¡­
                   </td>
                 </tr>
               ) : status === 'error' ? (
                 <tr>
                   <td className="px-4 py-3 text-red-600" colSpan={3}>
-                    {message ?? 'ç”¨é‡åŠ è½½å¤±è´¥'}
+                    {message ?? 'ÓÃÁ¿¼ÓÔØÊ§°Ü'}
                   </td>
                 </tr>
               ) : usage.length === 0 ? (
                 <tr>
                   <td className="px-4 py-3 text-ink/60" colSpan={3}>
-                    æš‚æ— ç”¨é‡æ•°æ®ã€‚
+                    ÔİÎŞÓÃÁ¿Êı¾İ¡£
                   </td>
                 </tr>
               ) : (
@@ -399,4 +404,5 @@ export function DashboardPage() {
     </div>
   )
 }
+
 

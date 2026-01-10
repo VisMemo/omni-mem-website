@@ -1,5 +1,5 @@
-ï»¿import { useEffect, useMemo, useState } from 'react'
-import { KeyRound, RotateCw, Trash2, XCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Copy, KeyRound, Pencil, RotateCw, Trash2, X, XCircle } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -25,6 +25,12 @@ type ApiKeyCreateResponse = {
   message?: string
 }
 
+type ApiKeyRevealResponse = {
+  api_key_id?: string
+  api_key_plaintext?: string | null
+  message?: string
+}
+
 export function ApiKeysPage() {
   const { session, refreshSession } = useSupabaseSession()
   const [label, setLabel] = useState('')
@@ -32,6 +38,12 @@ export function ApiKeysPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [lastPlaintext, setLastPlaintext] = useState<string | null>(null)
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null)
+  const [editingLabel, setEditingLabel] = useState('')
+  const [editMessage, setEditMessage] = useState<string | null>(null)
+  const [revealKeyId, setRevealKeyId] = useState<string | null>(null)
+  const [revealPassword, setRevealPassword] = useState('')
+  const [revealMessage, setRevealMessage] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [hasNext, setHasNext] = useState(false)
   const pageSize = 10
@@ -57,7 +69,7 @@ export function ApiKeysPage() {
     )
     const data = (await response.json()) as ApiKeyListResponse & { message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? 'åŠ è½½ API å¯†é’¥å¤±è´¥')
+      throw new Error(data?.message ?? '¼ÓÔØ API ÃÜÔ¿Ê§°Ü')
     }
     const nextRows = data.data ?? []
     setRows(nextRows)
@@ -74,7 +86,7 @@ export function ApiKeysPage() {
     getActiveSession()
       .then((active) => {
         if (!active) {
-          throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
+          throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
         }
         return fetchKeys(active.user.id, active.access_token, page)
       })
@@ -96,14 +108,14 @@ export function ApiKeysPage() {
   async function handleCreateKey() {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('è¯·å…ˆç™»å½•ä»¥åˆ›å»º API å¯†é’¥ã€‚')
+      setMessage('ÇëÏÈµÇÂ¼ÒÔ´´½¨ API ÃÜÔ¿¡£')
       return
     }
 
     const trimmedLabel = label.trim()
     if (!trimmedLabel) {
       setStatus('error')
-      setMessage('æ ‡ç­¾ä¸èƒ½ä¸ºç©ºã€‚')
+      setMessage('±êÇ©²»ÄÜÎª¿Õ¡£')
       return
     }
 
@@ -113,7 +125,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
+        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
       }
 
       const response = await fetch(`${apiBaseUrl}/apikeys`, {
@@ -129,7 +141,7 @@ export function ApiKeysPage() {
 
       const data = (await response.json()) as ApiKeyCreateResponse
       if (!response.ok) {
-        throw new Error(data?.message ?? 'åˆ›å»º API å¯†é’¥å¤±è´¥')
+        throw new Error(data?.message ?? '´´½¨ API ÃÜÔ¿Ê§°Ü')
       }
 
       setLabel('')
@@ -137,8 +149,8 @@ export function ApiKeysPage() {
       setLastPlaintext(data.api_key_plaintext ?? null)
       setMessage(
         data.api_key_plaintext
-          ? 'å·²åˆ›å»ºå¯†é’¥ï¼Œè¯·ç«‹å³å¤åˆ¶ã€‚'
-          : 'åˆ›å»ºæˆåŠŸï¼Œå¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚',
+          ? 'ÒÑ´´½¨ÃÜÔ¿£¬ÇëÁ¢¼´¸´ÖÆ¡£'
+          : '´´½¨³É¹¦£¬ÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£',
       )
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -148,11 +160,115 @@ export function ApiKeysPage() {
       setMessage(String(error))
     }
   }
+  async function handleUpdateLabel() {
+    if (!editingKeyId) return
+    if (!accountId || !accessToken) {
+      setEditMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
+      return
+    }
 
-  async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
+    const trimmed = editingLabel.trim()
+    if (!trimmed) {
+      setEditMessage('±êÇ©²»ÄÜÎª¿Õ¡£')
+      return
+    }
+
+    const duplicate = rows.some(
+      (row) => row.id !== editingKeyId && (row.label ?? '').trim() === trimmed,
+    )
+    if (duplicate) {
+      setEditMessage('±êÇ©ÒÑ´æÔÚ£¬Çë¸ü»»¡£')
+      return
+    }
+
+    setStatus('loading')
+    setEditMessage(null)
+
+    try {
+      const active = await getActiveSession()
+      if (!active) {
+        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/apikeys/${editingKeyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Principal-User-Id': active.user.id,
+          Authorization: `Bearer ${active.access_token}`,
+        },
+        body: JSON.stringify({ label: trimmed }),
+      })
+      const data = (await response.json()) as ApiKeyCreateResponse
+      if (!response.ok) {
+        throw new Error(data?.message ?? '¸üĞÂ±êÇ©Ê§°Ü')
+      }
+
+      setEditingKeyId(null)
+      setEditingLabel('')
+      setMessage('±êÇ©ÒÑ¸üĞÂ¡£')
+      await fetchKeys(active.user.id, active.access_token, page)
+      setStatus('idle')
+    } catch (error) {
+      setStatus('error')
+      setEditMessage(String(error))
+    }
+  }
+
+  async function handleRevealKey() {
+    if (!revealKeyId) return
+    if (!accountId || !accessToken) {
+      setRevealMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
+      return
+    }
+
+    const trimmed = revealPassword.trim()
+    if (!trimmed) {
+      setRevealMessage('ÇëÊäÈëÃÜÂëÒÔ¼ÌĞø¡£')
+      return
+    }
+
+    setStatus('loading')
+    setRevealMessage(null)
+
+    try {
+      const active = await getActiveSession()
+      if (!active) {
+        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/apikeys/${revealKeyId}/reveal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Principal-User-Id': active.user.id,
+          Authorization: `Bearer ${active.access_token}`,
+        },
+        body: JSON.stringify({ password: trimmed }),
+      })
+      const data = (await response.json()) as ApiKeyRevealResponse
+      if (!response.ok) {
+        throw new Error(data?.message ?? 'Ğ£ÑéÊ§°Ü')
+      }
+      if (!data.api_key_plaintext) {
+        throw new Error('Î´»ñÈ¡µ½ÃÜÔ¿Ã÷ÎÄ£¬Çë³¢ÊÔÂÖ»»ºóÖØÊÔ¡£')
+      }
+
+      await navigator.clipboard.writeText(data.api_key_plaintext)
+      setRevealKeyId(null)
+      setRevealPassword('')
+      setMessage('ÒÑ¸´ÖÆµ½¼ôÌù°å¡£')
+      setStatus('idle')
+    } catch (error) {
+      setStatus('error')
+      setRevealMessage(String(error))
+    }
+  }
+
+async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('è¯·å…ˆç™»å½•ä»¥ç®¡ç† API å¯†é’¥ã€‚')
+      setMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
       return
     }
 
@@ -162,7 +278,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
+        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
       }
 
       const requestId = crypto.randomUUID()
@@ -192,7 +308,7 @@ export function ApiKeysPage() {
       if (!response.ok) {
         throw new Error(
           data?.message ??
-            (action === 'revoke' ? 'æ’¤é”€å¤±è´¥' : action === 'rotate' ? 'è½®æ¢å¤±è´¥' : 'åˆ é™¤å¤±è´¥'),
+            (action === 'revoke' ? '³·ÏúÊ§°Ü' : action === 'rotate' ? 'ÂÖ»»Ê§°Ü' : 'É¾³ıÊ§°Ü'),
         )
       }
 
@@ -200,12 +316,12 @@ export function ApiKeysPage() {
         setLastPlaintext(data.api_key_plaintext ?? null)
         setMessage(
           data.api_key_plaintext
-            ? 'å·²è½®æ¢å¯†é’¥ï¼Œè¯·ç«‹å³å¤åˆ¶ã€‚'
-            : 'è½®æ¢å®Œæˆï¼Œå¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚',
+            ? 'ÒÑÂÖ»»ÃÜÔ¿£¬ÇëÁ¢¼´¸´ÖÆ¡£'
+            : 'ÂÖ»»Íê³É£¬ÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£',
         )
       } else {
         setLastPlaintext(null)
-        setMessage(action === 'revoke' ? 'æ’¤é”€æˆåŠŸ' : 'åˆ é™¤æˆåŠŸ')
+        setMessage(action === 'revoke' ? '³·Ïú³É¹¦' : 'É¾³ı³É¹¦')
       }
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -219,21 +335,21 @@ export function ApiKeysPage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">è®¿é—®æ§åˆ¶</p>
-          <h1 className="text-2xl font-semibold text-ink">API å¯†é’¥</h1>
-          <p className="text-sm text-ink/60">åˆ›å»ºä¸ç®¡ç† API å¯†é’¥ï¼Œç”¨äºè‡ªåŠ¨åŒ–è°ƒç”¨ã€‚</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">·ÃÎÊ¿ØÖÆ</p>
+          <h1 className="text-2xl font-semibold text-ink">API ÃÜÔ¿</h1>
+          <p className="text-sm text-ink/60">´´½¨Óë¹ÜÀí API ÃÜÔ¿£¬ÓÃÓÚ×Ô¶¯»¯µ÷ÓÃ¡£</p>
         </div>
       </header>
 
       <section className="rounded-xl bg-white/70 p-6">
-        <h2 className="text-lg font-semibold text-ink">åˆ›å»º API å¯†é’¥</h2>
+        <h2 className="text-lg font-semibold text-ink">´´½¨ API ÃÜÔ¿</h2>
         <p className="text-sm text-ink/60">
-          æ ‡ç­¾ç”¨äºåŒºåˆ†ç”¨é€”ï¼Œç”Ÿæˆåçš„å¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚
+          ±êÇ©ÓÃÓÚÇø·ÖÓÃÍ¾£¬Éú³ÉºóµÄÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <input
             className="h-9 w-full max-w-xs rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-            placeholder="æ ‡ç­¾ï¼ˆä¾‹å¦‚ï¼šç”Ÿäº§ç¯å¢ƒï¼‰"
+            placeholder="±êÇ©£¨ÀıÈç£ºÉú²ú»·¾³£©"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
           />
@@ -244,7 +360,7 @@ export function ApiKeysPage() {
             disabled={status === 'loading' || !label.trim()}
           >
             <KeyRound className="mr-2 h-4 w-4" />
-            æ–°å»º API å¯†é’¥
+            ĞÂ½¨ API ÃÜÔ¿
           </button>
         </div>
         {message ? (
@@ -266,14 +382,14 @@ export function ApiKeysPage() {
                 try {
                   await navigator.clipboard.writeText(lastPlaintext)
                   setStatus('success')
-                  setMessage('å·²å¤åˆ¶åˆ°å‰ªè´´æ¿ã€‚')
+                  setMessage('ÒÑ¸´ÖÆµ½¼ôÌù°å¡£')
                 } catch (error) {
                   setStatus('error')
                   setMessage(String(error))
                 }
               }}
             >
-              å¤åˆ¶å¯†é’¥
+              ¸´ÖÆÃÜÔ¿
             </button>
           </div>
         ) : null}
@@ -281,35 +397,35 @@ export function ApiKeysPage() {
 
       <section className="rounded-xl bg-white/70 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">å½“å‰å¯†é’¥</h2>
-          <p className="text-xs text-ink/50">å…± {rows.length} ä¸ª</p>
+          <h2 className="text-lg font-semibold text-ink">µ±Ç°ÃÜÔ¿</h2>
+          <p className="text-xs text-ink/50">¹² {rows.length} ¸ö</p>
         </div>
         <div className="mt-4 overflow-hidden rounded-lg bg-white/60">
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>
-                <th className="px-4 py-3 text-left">æ ‡ç­¾</th>
-                <th className="px-4 py-3 text-left">å‰ç¼€</th>
-                <th className="px-4 py-3 text-left">åˆ›å»ºæ—¶é—´</th>
-                <th className="px-4 py-3 text-left">æœ€è¿‘ä½¿ç”¨</th>
-                <th className="px-4 py-3 text-left">çŠ¶æ€</th>
-                <th className="px-4 py-3 text-right">æ“ä½œ</th>
+                <th className="px-4 py-3 text-left">±êÇ©</th>
+                <th className="px-4 py-3 text-left">Ç°×º</th>
+                <th className="px-4 py-3 text-left">´´½¨Ê±¼ä</th>
+                <th className="px-4 py-3 text-left">×î½üÊ¹ÓÃ</th>
+                <th className="px-4 py-3 text-left">×´Ì¬</th>
+                <th className="px-4 py-3 text-right">²Ù×÷</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
                   <td className="px-4 py-3 text-ink/60" colSpan={6}>
-                    æš‚æ—  API å¯†é’¥ã€‚
+                    ÔİÎŞ API ÃÜÔ¿¡£
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => {
                   const statusLabel = row.deleted_at
-                    ? 'å·²åˆ é™¤'
+                    ? 'ÒÑÉ¾³ı'
                     : row.revoked_at
-                      ? 'å·²æ’¤é”€'
-                      : 'å¯ç”¨'
+                      ? 'ÒÑ³·Ïú'
+                      : 'ÆôÓÃ'
                   const statusClass = row.deleted_at
                     ? 'bg-red-500/10 text-red-600'
                     : row.revoked_at
@@ -333,10 +449,38 @@ export function ApiKeysPage() {
                           <button
                             type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
+                            onClick={() => {
+                              setRevealKeyId(row.id)
+                              setRevealPassword('')
+                              setRevealMessage(null)
+                            }}
+                            disabled={status === 'loading' || Boolean(row.deleted_at)}
+                            aria-label="¸´ÖÆ"
+                            title="¸´ÖÆÃÜÔ¿"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
+                            onClick={() => {
+                              setEditingKeyId(row.id)
+                              setEditingLabel(row.label ?? '')
+                              setEditMessage(null)
+                            }}
+                            disabled={status === 'loading' || Boolean(row.deleted_at)}
+                            aria-label="±à¼­"
+                            title="ĞŞ¸Ä±¸×¢"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
                             onClick={() => handleAction('rotate', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="è½®æ¢"
-                            title="è½®æ¢å¯†é’¥"
+                            aria-label="ÂÖ»»"
+                            title="ÂÖ»»ÃÜÔ¿"
                           >
                             <RotateCw className="h-4 w-4" />
                           </button>
@@ -345,8 +489,8 @@ export function ApiKeysPage() {
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
                             onClick={() => handleAction('revoke', row.id)}
                             disabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
-                            aria-label="æ’¤é”€"
-                            title="æ’¤é”€å¯†é’¥"
+                            aria-label="³·Ïú"
+                            title="³·ÏúÃÜÔ¿"
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
@@ -355,8 +499,8 @@ export function ApiKeysPage() {
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-500/10"
                             onClick={() => handleAction('delete', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="åˆ é™¤"
-                            title="åˆ é™¤å¯†é’¥"
+                            aria-label="É¾³ı"
+                            title="É¾³ıÃÜÔ¿"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -376,20 +520,125 @@ export function ApiKeysPage() {
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={page <= 1}
           >
-            ä¸Šä¸€é¡µ
+            ÉÏÒ»Ò³
           </button>
-          <span className="text-xs text-ink/50">ç¬¬ {page} é¡µ</span>
+          <span className="text-xs text-ink/50">µÚ {page} Ò³</span>
           <button
             type="button"
             className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={!hasNext}
           >
-            ä¸‹ä¸€é¡µ
+            ÏÂÒ»Ò³
           </button>
         </div>
       </section>
+      {editingKeyId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-ink">ĞŞ¸Ä API Key ±¸×¢</h3>
+              <button
+                type="button"
+                className="rounded-md p-1 text-ink/60 hover:bg-ink/5"
+                onClick={() => {
+                  setEditingKeyId(null)
+                  setEditMessage(null)
+                }}
+                aria-label="¹Ø±Õ"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-ink/60">½ö¿ÉĞŞ¸Ä±¸×¢Ãû³Æ£¬ÇÒ²»¿ÉÎª¿Õ¡£</p>
+            <input
+              className="mt-4 h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+              value={editingLabel}
+              onChange={(event) => setEditingLabel(event.target.value)}
+              placeholder="±¸×¢Ãû³Æ"
+            />
+            {editMessage ? (
+              <p className="mt-2 text-sm text-red-600">{editMessage}</p>
+            ) : null}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:bg-ink/5"
+                onClick={() => setEditingKeyId(null)}
+              >
+                È¡Ïû
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-ivory"
+                onClick={handleUpdateLabel}
+                disabled={status === 'loading'}
+              >
+                ±£´æ
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {revealKeyId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-ink">ÑéÖ¤ÃÜÂë¸´ÖÆÃÜÔ¿</h3>
+              <button
+                type="button"
+                className="rounded-md p-1 text-ink/60 hover:bg-ink/5"
+                onClick={() => {
+                  setRevealKeyId(null)
+                  setRevealMessage(null)
+                }}
+                aria-label="¹Ø±Õ"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-ink/60">
+              ÎªÈ·±£°²È«£¬ÇëÊäÈëÕË»§ÃÜÂëºó¸´ÖÆÃÜÔ¿¡£
+            </p>
+            <input
+              type="password"
+              className="mt-4 h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
+              value={revealPassword}
+              onChange={(event) => setRevealPassword(event.target.value)}
+              placeholder="ÕË»§ÃÜÂë"
+            />
+            {revealMessage ? (
+              <p className="mt-2 text-sm text-red-600">{revealMessage}</p>
+            ) : null}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:bg-ink/5"
+                onClick={() => setRevealKeyId(null)}
+              >
+                È¡Ïû
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-ivory"
+                onClick={handleRevealKey}
+                disabled={status === 'loading'}
+              >
+                ÑéÖ¤²¢¸´ÖÆ
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
+
+
+
+
+
+
+
+
 
