@@ -19,9 +19,16 @@ type ScopeEntitlements = {
   allow_apikey_scope: boolean
 }
 
+type QdrantNodeCounts = {
+  total?: number
+  by_collection?: Record<string, number>
+  updated_at?: string
+}
+
 type ScopeResponse = {
   scope: string
   entitlements?: ScopeEntitlements | null
+  qdrant_node_counts?: QdrantNodeCounts | null
 }
 
 type BalanceResponse = {
@@ -51,6 +58,17 @@ function formatMemoryScope(value?: string | null) {
   if (!value) return '-'
   if (value === 'apikey') return 'API 密钥隔离'
   return '用户隔离'
+}
+
+function formatNodesInK(value?: number | null) {
+  if (value === null || value === undefined) return '-'
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '-'
+  const truncated = Math.floor((numeric / 1000) * 10) / 10
+  if (Number.isInteger(truncated)) {
+    return `${truncated}k`
+  }
+  return `${truncated.toFixed(1)}k`
 }
 
 function formatDateInput(value: Date) {
@@ -90,6 +108,7 @@ export function DashboardPage() {
   }, [accountEmail, session])
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const entitlements = scopeInfo?.entitlements ?? null
+  const qdrantNodeCounts = scopeInfo?.qdrant_node_counts ?? null
   const memoryScopeLabel = formatMemoryScope(memoryPolicy?.default_scope ?? null)
   const groupByLabel = groupBy === 'account' ? '账户' : 'API 密钥'
   const overviewStatusLabel = useMemo(() => {
@@ -114,7 +133,11 @@ export function DashboardPage() {
       },
       {
         title: '配额',
-        value: accountId ? `${formatNumber(entitlements?.memory_node_limit)} 节点` : '-',
+        value: accountId
+          ? `${formatNodesInK(qdrantNodeCounts?.total)}/${formatNodesInK(
+              entitlements?.memory_node_limit,
+            )}`
+          : '-',
         meta: accountId
           ? `3 秒限流：${formatNumber(entitlements?.rate_limit_3s)}`
           : '登录后查看配额与限流。',
@@ -129,7 +152,16 @@ export function DashboardPage() {
         status: overviewStatusLabel,
       },
     ],
-    [accountEmail, accountId, balanceInfo, entitlements, memoryScopeLabel, overviewStatusLabel, scopeInfo],
+    [
+      accountEmail,
+      accountId,
+      balanceInfo,
+      entitlements,
+      memoryScopeLabel,
+      overviewStatusLabel,
+      qdrantNodeCounts,
+      scopeInfo,
+    ],
   )
 
   useEffect(() => {
