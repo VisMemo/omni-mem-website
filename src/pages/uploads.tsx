@@ -210,6 +210,7 @@ export function UploadsPage() {
   useEffect(() => {
     if (!pollingJobId || !accountId || !accessToken) return
 
+    const jobId = pollingJobId
     let cancelled = false
     let interval: number | null = null
 
@@ -220,7 +221,7 @@ export function UploadsPage() {
           throw new Error('Session expired. Please sign in again.')
         }
 
-        const response = await fetch(`${apiBaseUrl}/memory/ingest/jobs/${pollingJobId}`, {
+        const response = await fetch(`${apiBaseUrl}/memory/ingest/jobs/${jobId}`, {
           headers: {
             Authorization: `Bearer ${active.access_token}`,
             'X-Principal-User-Id': active.user.id,
@@ -234,7 +235,7 @@ export function UploadsPage() {
         if (cancelled) return
         const nextStatus = data.status ?? 'processing'
         upsertUpload({
-          id: pollingJobId,
+          id: jobId,
           status: nextStatus,
           updatedAt: new Date().toISOString(),
         })
