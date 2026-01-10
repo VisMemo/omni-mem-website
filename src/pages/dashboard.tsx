@@ -134,9 +134,9 @@ export function DashboardPage() {
       {
         title: '配额',
         value: accountId
-          ? `${formatNodesInK(qdrantNodeCounts?.total)}/${formatNodesInK(
-              entitlements?.memory_node_limit,
-            )}`
+          ? `已用节点 ${formatNodesInK(
+              qdrantNodeCounts?.total ?? 0,
+            )}/节点上限 ${formatNodesInK(entitlements?.memory_node_limit ?? 0)}`
           : '-',
         meta: accountId
           ? `3 秒限流：${formatNumber(entitlements?.rate_limit_3s)}`
