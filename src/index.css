@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -4817,4 +4817,5 @@ section {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(var(--ink), 0.06), transparent);
 }
+
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+ï»¿import { useEffect, useMemo, useState } from 'react'
 import { Copy, KeyRound, Pencil, RotateCw, Trash2, X, XCircle } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
@@ -69,7 +69,7 @@ export function ApiKeysPage() {
     )
     const data = (await response.json()) as ApiKeyListResponse & { message?: string }
     if (!response.ok) {
-      throw new Error(data?.message ?? '¼ÓÔØ API ÃÜÔ¿Ê§°Ü')
+      throw new Error(data?.message ?? 'åŠ è½½ API å¯†é’¥å¤±è´¥')
     }
     const nextRows = data.data ?? []
     setRows(nextRows)
@@ -86,7 +86,7 @@ export function ApiKeysPage() {
     getActiveSession()
       .then((active) => {
         if (!active) {
-          throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+          throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
         }
         return fetchKeys(active.user.id, active.access_token, page)
       })
@@ -108,14 +108,14 @@ export function ApiKeysPage() {
   async function handleCreateKey() {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('ÇëÏÈµÇÂ¼ÒÔ´´½¨ API ÃÜÔ¿¡£')
+      setMessage('è¯·å…ˆç™»å½•ä»¥åˆ›å»º API å¯†é’¥ã€‚')
       return
     }
 
     const trimmedLabel = label.trim()
     if (!trimmedLabel) {
       setStatus('error')
-      setMessage('±êÇ©²»ÄÜÎª¿Õ¡£')
+      setMessage('æ ‡ç­¾ä¸èƒ½ä¸ºç©ºã€‚')
       return
     }
 
@@ -125,7 +125,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
       }
 
       const response = await fetch(`${apiBaseUrl}/apikeys`, {
@@ -141,7 +141,7 @@ export function ApiKeysPage() {
 
       const data = (await response.json()) as ApiKeyCreateResponse
       if (!response.ok) {
-        throw new Error(data?.message ?? '´´½¨ API ÃÜÔ¿Ê§°Ü')
+        throw new Error(data?.message ?? 'åˆ›å»º API å¯†é’¥å¤±è´¥')
       }
 
       setLabel('')
@@ -149,8 +149,8 @@ export function ApiKeysPage() {
       setLastPlaintext(data.api_key_plaintext ?? null)
       setMessage(
         data.api_key_plaintext
-          ? 'ÒÑ´´½¨ÃÜÔ¿£¬ÇëÁ¢¼´¸´ÖÆ¡£'
-          : '´´½¨³É¹¦£¬ÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£',
+          ? 'å·²åˆ›å»ºå¯†é’¥ï¼Œè¯·ç«‹å³å¤åˆ¶ã€‚'
+          : 'åˆ›å»ºæˆåŠŸï¼Œå¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚',
       )
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -163,13 +163,13 @@ export function ApiKeysPage() {
   async function handleUpdateLabel() {
     if (!editingKeyId) return
     if (!accountId || !accessToken) {
-      setEditMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
+      setEditMessage('è¯·å…ˆç™»å½•ä»¥ç®¡ç† API å¯†é’¥ã€‚')
       return
     }
 
     const trimmed = editingLabel.trim()
     if (!trimmed) {
-      setEditMessage('±êÇ©²»ÄÜÎª¿Õ¡£')
+      setEditMessage('æ ‡ç­¾ä¸èƒ½ä¸ºç©ºã€‚')
       return
     }
 
@@ -177,7 +177,7 @@ export function ApiKeysPage() {
       (row) => row.id !== editingKeyId && (row.label ?? '').trim() === trimmed,
     )
     if (duplicate) {
-      setEditMessage('±êÇ©ÒÑ´æÔÚ£¬Çë¸ü»»¡£')
+      setEditMessage('æ ‡ç­¾å·²å­˜åœ¨ï¼Œè¯·æ›´æ¢ã€‚')
       return
     }
 
@@ -187,7 +187,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
       }
 
       const response = await fetch(`${apiBaseUrl}/apikeys/${editingKeyId}`, {
@@ -201,12 +201,12 @@ export function ApiKeysPage() {
       })
       const data = (await response.json()) as ApiKeyCreateResponse
       if (!response.ok) {
-        throw new Error(data?.message ?? '¸üĞÂ±êÇ©Ê§°Ü')
+        throw new Error(data?.message ?? 'æ›´æ–°æ ‡ç­¾å¤±è´¥')
       }
 
       setEditingKeyId(null)
       setEditingLabel('')
-      setMessage('±êÇ©ÒÑ¸üĞÂ¡£')
+      setMessage('æ ‡ç­¾å·²æ›´æ–°ã€‚')
       await fetchKeys(active.user.id, active.access_token, page)
       setStatus('idle')
     } catch (error) {
@@ -218,13 +218,13 @@ export function ApiKeysPage() {
   async function handleRevealKey() {
     if (!revealKeyId) return
     if (!accountId || !accessToken) {
-      setRevealMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
+      setRevealMessage('è¯·å…ˆç™»å½•ä»¥ç®¡ç† API å¯†é’¥ã€‚')
       return
     }
 
     const trimmed = revealPassword.trim()
     if (!trimmed) {
-      setRevealMessage('ÇëÊäÈëÃÜÂëÒÔ¼ÌĞø¡£')
+      setRevealMessage('è¯·è¾“å…¥å¯†ç ä»¥ç»§ç»­ã€‚')
       return
     }
 
@@ -234,7 +234,7 @@ export function ApiKeysPage() {
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
       }
 
       const response = await fetch(`${apiBaseUrl}/apikeys/${revealKeyId}/reveal`, {
@@ -248,16 +248,16 @@ export function ApiKeysPage() {
       })
       const data = (await response.json()) as ApiKeyRevealResponse
       if (!response.ok) {
-        throw new Error(data?.message ?? 'Ğ£ÑéÊ§°Ü')
+        throw new Error(data?.message ?? 'æ ¡éªŒå¤±è´¥')
       }
       if (!data.api_key_plaintext) {
-        throw new Error('Î´»ñÈ¡µ½ÃÜÔ¿Ã÷ÎÄ£¬Çë³¢ÊÔÂÖ»»ºóÖØÊÔ¡£')
+        throw new Error('æœªè·å–åˆ°å¯†é’¥æ˜æ–‡ï¼Œè¯·å°è¯•è½®æ¢åé‡è¯•ã€‚')
       }
 
       await navigator.clipboard.writeText(data.api_key_plaintext)
       setRevealKeyId(null)
       setRevealPassword('')
-      setMessage('ÒÑ¸´ÖÆµ½¼ôÌù°å¡£')
+      setMessage('å·²å¤åˆ¶åˆ°å‰ªè´´æ¿ã€‚')
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -268,7 +268,7 @@ export function ApiKeysPage() {
 async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
     if (!accountId || !accessToken) {
       setStatus('error')
-      setMessage('ÇëÏÈµÇÂ¼ÒÔ¹ÜÀí API ÃÜÔ¿¡£')
+      setMessage('è¯·å…ˆç™»å½•ä»¥ç®¡ç† API å¯†é’¥ã€‚')
       return
     }
 
@@ -278,7 +278,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
     try {
       const active = await getActiveSession()
       if (!active) {
-        throw new Error('»á»°ÒÑ¹ıÆÚ£¬ÇëÖØĞÂµÇÂ¼¡£')
+        throw new Error('ä¼šè¯å·²è¿‡æœŸï¼Œè¯·é‡æ–°ç™»å½•ã€‚')
       }
 
       const requestId = crypto.randomUUID()
@@ -308,7 +308,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
       if (!response.ok) {
         throw new Error(
           data?.message ??
-            (action === 'revoke' ? '³·ÏúÊ§°Ü' : action === 'rotate' ? 'ÂÖ»»Ê§°Ü' : 'É¾³ıÊ§°Ü'),
+            (action === 'revoke' ? 'æ’¤é”€å¤±è´¥' : action === 'rotate' ? 'è½®æ¢å¤±è´¥' : 'åˆ é™¤å¤±è´¥'),
         )
       }
 
@@ -316,12 +316,12 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         setLastPlaintext(data.api_key_plaintext ?? null)
         setMessage(
           data.api_key_plaintext
-            ? 'ÒÑÂÖ»»ÃÜÔ¿£¬ÇëÁ¢¼´¸´ÖÆ¡£'
-            : 'ÂÖ»»Íê³É£¬ÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£',
+            ? 'å·²è½®æ¢å¯†é’¥ï¼Œè¯·ç«‹å³å¤åˆ¶ã€‚'
+            : 'è½®æ¢å®Œæˆï¼Œå¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚',
         )
       } else {
         setLastPlaintext(null)
-        setMessage(action === 'revoke' ? '³·Ïú³É¹¦' : 'É¾³ı³É¹¦')
+        setMessage(action === 'revoke' ? 'æ’¤é”€æˆåŠŸ' : 'åˆ é™¤æˆåŠŸ')
       }
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -335,21 +335,21 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
     <div className="space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">·ÃÎÊ¿ØÖÆ</p>
-          <h1 className="text-2xl font-semibold text-ink">API ÃÜÔ¿</h1>
-          <p className="text-sm text-ink/60">´´½¨Óë¹ÜÀí API ÃÜÔ¿£¬ÓÃÓÚ×Ô¶¯»¯µ÷ÓÃ¡£</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">è®¿é—®æ§åˆ¶</p>
+          <h1 className="text-2xl font-semibold text-ink">API å¯†é’¥</h1>
+          <p className="text-sm text-ink/60">åˆ›å»ºä¸ç®¡ç† API å¯†é’¥ï¼Œç”¨äºè‡ªåŠ¨åŒ–è°ƒç”¨ã€‚</p>
         </div>
       </header>
 
       <section className="rounded-xl bg-white/70 p-6">
-        <h2 className="text-lg font-semibold text-ink">´´½¨ API ÃÜÔ¿</h2>
+        <h2 className="text-lg font-semibold text-ink">åˆ›å»º API å¯†é’¥</h2>
         <p className="text-sm text-ink/60">
-          ±êÇ©ÓÃÓÚÇø·ÖÓÃÍ¾£¬Éú³ÉºóµÄÃÜÔ¿½öÏÔÊ¾Ò»´Î¡£
+          æ ‡ç­¾ç”¨äºåŒºåˆ†ç”¨é€”ï¼Œç”Ÿæˆåçš„å¯†é’¥ä»…æ˜¾ç¤ºä¸€æ¬¡ã€‚
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <input
             className="h-9 w-full max-w-xs rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
-            placeholder="±êÇ©£¨ÀıÈç£ºÉú²ú»·¾³£©"
+            placeholder="æ ‡ç­¾ï¼ˆä¾‹å¦‚ï¼šç”Ÿäº§ç¯å¢ƒï¼‰"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
           />
@@ -360,7 +360,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
             disabled={status === 'loading' || !label.trim()}
           >
             <KeyRound className="mr-2 h-4 w-4" />
-            ĞÂ½¨ API ÃÜÔ¿
+            æ–°å»º API å¯†é’¥
           </button>
         </div>
         {message ? (
@@ -382,14 +382,14 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                 try {
                   await navigator.clipboard.writeText(lastPlaintext)
                   setStatus('success')
-                  setMessage('ÒÑ¸´ÖÆµ½¼ôÌù°å¡£')
+                  setMessage('å·²å¤åˆ¶åˆ°å‰ªè´´æ¿ã€‚')
                 } catch (error) {
                   setStatus('error')
                   setMessage(String(error))
                 }
               }}
             >
-              ¸´ÖÆÃÜÔ¿
+              å¤åˆ¶å¯†é’¥
             </button>
           </div>
         ) : null}
@@ -397,35 +397,35 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
 
       <section className="rounded-xl bg-white/70 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">µ±Ç°ÃÜÔ¿</h2>
-          <p className="text-xs text-ink/50">¹² {rows.length} ¸ö</p>
+          <h2 className="text-lg font-semibold text-ink">å½“å‰å¯†é’¥</h2>
+          <p className="text-xs text-ink/50">å…± {rows.length} ä¸ª</p>
         </div>
         <div className="mt-4 overflow-hidden rounded-lg bg-white/60">
           <table className="w-full text-sm">
             <thead className="bg-ink/5 text-xs uppercase tracking-[0.12em] text-ink/60">
               <tr>
-                <th className="px-4 py-3 text-left">±êÇ©</th>
-                <th className="px-4 py-3 text-left">Ç°×º</th>
-                <th className="px-4 py-3 text-left">´´½¨Ê±¼ä</th>
-                <th className="px-4 py-3 text-left">×î½üÊ¹ÓÃ</th>
-                <th className="px-4 py-3 text-left">×´Ì¬</th>
-                <th className="px-4 py-3 text-right">²Ù×÷</th>
+                <th className="px-4 py-3 text-left">æ ‡ç­¾</th>
+                <th className="px-4 py-3 text-left">å‰ç¼€</th>
+                <th className="px-4 py-3 text-left">åˆ›å»ºæ—¶é—´</th>
+                <th className="px-4 py-3 text-left">æœ€è¿‘ä½¿ç”¨</th>
+                <th className="px-4 py-3 text-left">çŠ¶æ€</th>
+                <th className="px-4 py-3 text-right">æ“ä½œ</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
                   <td className="px-4 py-3 text-ink/60" colSpan={6}>
-                    ÔİÎŞ API ÃÜÔ¿¡£
+                    æš‚æ—  API å¯†é’¥ã€‚
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => {
                   const statusLabel = row.deleted_at
-                    ? 'ÒÑÉ¾³ı'
+                    ? 'å·²åˆ é™¤'
                     : row.revoked_at
-                      ? 'ÒÑ³·Ïú'
-                      : 'ÆôÓÃ'
+                      ? 'å·²æ’¤é”€'
+                      : 'å¯ç”¨'
                   const statusClass = row.deleted_at
                     ? 'bg-red-500/10 text-red-600'
                     : row.revoked_at
@@ -455,8 +455,8 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                               setRevealMessage(null)
                             }}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="¸´ÖÆ"
-                            title="¸´ÖÆÃÜÔ¿"
+                            aria-label="å¤åˆ¶"
+                            title="å¤åˆ¶å¯†é’¥"
                           >
                             <Copy className="h-4 w-4" />
                           </button>
@@ -469,8 +469,8 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                               setEditMessage(null)
                             }}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="±à¼­"
-                            title="ĞŞ¸Ä±¸×¢"
+                            aria-label="ç¼–è¾‘"
+                            title="ä¿®æ”¹å¤‡æ³¨"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -479,8 +479,8 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
                             onClick={() => handleAction('rotate', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="ÂÖ»»"
-                            title="ÂÖ»»ÃÜÔ¿"
+                            aria-label="è½®æ¢"
+                            title="è½®æ¢å¯†é’¥"
                           >
                             <RotateCw className="h-4 w-4" />
                           </button>
@@ -489,8 +489,8 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
                             onClick={() => handleAction('revoke', row.id)}
                             disabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
-                            aria-label="³·Ïú"
-                            title="³·ÏúÃÜÔ¿"
+                            aria-label="æ’¤é”€"
+                            title="æ’¤é”€å¯†é’¥"
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
@@ -499,8 +499,8 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-500/10"
                             onClick={() => handleAction('delete', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="É¾³ı"
-                            title="É¾³ıÃÜÔ¿"
+                            aria-label="åˆ é™¤"
+                            title="åˆ é™¤å¯†é’¥"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -520,16 +520,16 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={page <= 1}
           >
-            ÉÏÒ»Ò³
+            ä¸Šä¸€é¡µ
           </button>
-          <span className="text-xs text-ink/50">µÚ {page} Ò³</span>
+          <span className="text-xs text-ink/50">ç¬¬ {page} é¡µ</span>
           <button
             type="button"
             className="rounded-md border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:bg-ink/5"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={!hasNext}
           >
-            ÏÂÒ»Ò³
+            ä¸‹ä¸€é¡µ
           </button>
         </div>
       </section>
@@ -537,7 +537,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-ink">ĞŞ¸Ä API Key ±¸×¢</h3>
+              <h3 className="text-lg font-semibold text-ink">ä¿®æ”¹ API Key å¤‡æ³¨</h3>
               <button
                 type="button"
                 className="rounded-md p-1 text-ink/60 hover:bg-ink/5"
@@ -545,17 +545,17 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                   setEditingKeyId(null)
                   setEditMessage(null)
                 }}
-                aria-label="¹Ø±Õ"
+                aria-label="å…³é—­"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-2 text-sm text-ink/60">½ö¿ÉĞŞ¸Ä±¸×¢Ãû³Æ£¬ÇÒ²»¿ÉÎª¿Õ¡£</p>
+            <p className="mt-2 text-sm text-ink/60">ä»…å¯ä¿®æ”¹å¤‡æ³¨åç§°ï¼Œä¸”ä¸å¯ä¸ºç©ºã€‚</p>
             <input
               className="mt-4 h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
               value={editingLabel}
               onChange={(event) => setEditingLabel(event.target.value)}
-              placeholder="±¸×¢Ãû³Æ"
+              placeholder="å¤‡æ³¨åç§°"
             />
             {editMessage ? (
               <p className="mt-2 text-sm text-red-600">{editMessage}</p>
@@ -566,7 +566,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                 className="rounded-md border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:bg-ink/5"
                 onClick={() => setEditingKeyId(null)}
               >
-                È¡Ïû
+                å–æ¶ˆ
               </button>
               <button
                 type="button"
@@ -574,7 +574,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                 onClick={handleUpdateLabel}
                 disabled={status === 'loading'}
               >
-                ±£´æ
+                ä¿å­˜
               </button>
             </div>
           </div>
@@ -584,7 +584,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-ink">ÑéÖ¤ÃÜÂë¸´ÖÆÃÜÔ¿</h3>
+              <h3 className="text-lg font-semibold text-ink">éªŒè¯å¯†ç å¤åˆ¶å¯†é’¥</h3>
               <button
                 type="button"
                 className="rounded-md p-1 text-ink/60 hover:bg-ink/5"
@@ -592,20 +592,20 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                   setRevealKeyId(null)
                   setRevealMessage(null)
                 }}
-                aria-label="¹Ø±Õ"
+                aria-label="å…³é—­"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <p className="mt-2 text-sm text-ink/60">
-              ÎªÈ·±£°²È«£¬ÇëÊäÈëÕË»§ÃÜÂëºó¸´ÖÆÃÜÔ¿¡£
+              ä¸ºç¡®ä¿å®‰å…¨ï¼Œè¯·è¾“å…¥è´¦æˆ·å¯†ç åå¤åˆ¶å¯†é’¥ã€‚
             </p>
             <input
               type="password"
               className="mt-4 h-9 w-full rounded-md border border-ink/10 bg-white/80 px-3 text-sm"
               value={revealPassword}
               onChange={(event) => setRevealPassword(event.target.value)}
-              placeholder="ÕË»§ÃÜÂë"
+              placeholder="è´¦æˆ·å¯†ç "
             />
             {revealMessage ? (
               <p className="mt-2 text-sm text-red-600">{revealMessage}</p>
@@ -616,7 +616,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                 className="rounded-md border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:bg-ink/5"
                 onClick={() => setRevealKeyId(null)}
               >
-                È¡Ïû
+                å–æ¶ˆ
               </button>
               <button
                 type="button"
@@ -624,7 +624,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                 onClick={handleRevealKey}
                 disabled={status === 'loading'}
               >
-                ÑéÖ¤²¢¸´ÖÆ
+                éªŒè¯å¹¶å¤åˆ¶
               </button>
             </div>
           </div>
