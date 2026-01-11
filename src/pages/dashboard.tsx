@@ -145,7 +145,7 @@ export function DashboardPage() {
           : '-',
         meta: accountId
           ? `3 秒限流：${formatNumber(entitlements?.rate_limit_3s)}`
-          : '登录后查看配额与限流。'
+          : '登录后查看配额与限流。',
         status: overviewStatusLabel,
       },
       {
@@ -153,7 +153,7 @@ export function DashboardPage() {
         value: accountId ? `${formatNumber(entitlements?.credit_default)} 积分` : '-',
         meta: accountId
           ? `记忆隔离策略：${memoryScopeLabel} · ${apikeyLimitLabel}`
-          : '登录后查看权益配置。'
+          : '登录后查看权益配置。',
         status: overviewStatusLabel,
       },
     ],
