@@ -13,7 +13,10 @@ export function UpdatePasswordPage({ dashboardPath, signInPath, onNavigate }: Up
   const resetToken = useMemo(() => {
     if (typeof window === 'undefined') return null
     const params = new URLSearchParams(window.location.search)
-    return params.get('token')
+    const tokenFromQuery = params.get('token') ?? params.get('access_token')
+    if (tokenFromQuery) return tokenFromQuery
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    return hashParams.get('access_token') ?? null
   }, [])
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')

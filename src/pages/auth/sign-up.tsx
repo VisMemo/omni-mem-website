@@ -1,5 +1,5 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSupabaseSession } from '../../hooks/use-supabase-session'
 
 interface SignUpPageProps {
@@ -10,6 +10,10 @@ interface SignUpPageProps {
 
 export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPageProps) {
   const { client, session, error } = useSupabaseSession()
+  const signInRedirectUrl = useMemo(() => {
+    if (typeof window === 'undefined') return null
+    return `${window.location.origin}${signInPath}`
+  }, [signInPath])
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,6 +49,7 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
         email,
         options: {
           shouldCreateUser: true,
+          ...(signInRedirectUrl ? { emailRedirectTo: signInRedirectUrl } : {}),
           data: {
             name: trimmedUsername,
           },
