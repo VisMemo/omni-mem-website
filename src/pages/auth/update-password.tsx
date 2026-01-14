@@ -1,6 +1,7 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useMemo, useState } from 'react'
 import { getApiEnv } from '../../lib/env'
+import { validatePasswordComplexity } from '../../lib/password'
 
 interface UpdatePasswordPageProps {
   dashboardPath: string
@@ -40,6 +41,12 @@ export function UpdatePasswordPage({ dashboardPath, signInPath, onNavigate }: Up
 
     if (password !== repeatPassword) {
       setErrorMessage('两次输入的密码不一致。')
+      return
+    }
+
+    const passwordError = validatePasswordComplexity(password)
+    if (passwordError) {
+      setErrorMessage(passwordError)
       return
     }
 

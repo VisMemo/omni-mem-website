@@ -1,6 +1,7 @@
 ﻿import { Button, Card, CardBody, CardHeader, Input } from '@nextui-org/react'
 import { useMemo, useState } from 'react'
 import { useSupabaseSession } from '../../hooks/use-supabase-session'
+import { validatePasswordComplexity } from '../../lib/password'
 
 interface SignUpPageProps {
   signInPath: string
@@ -33,6 +34,12 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     const trimmedUsername = username.trim()
     if (!trimmedUsername || !email || !password || !confirmPassword) {
       setErrorMessage('Username, email, and password are required.')
+      return
+    }
+
+    const passwordError = validatePasswordComplexity(password)
+    if (passwordError) {
+      setErrorMessage(passwordError)
       return
     }
 
@@ -79,6 +86,12 @@ export function SignUpPage({ signInPath, dashboardPath, onNavigate }: SignUpPage
     const trimmedUsername = username.trim()
     if (!trimmedUsername || !email || !password || !confirmPassword || !otp) {
       setErrorMessage('Username, email, password, and OTP are required.')
+      return
+    }
+
+    const passwordError = validatePasswordComplexity(password)
+    if (passwordError) {
+      setErrorMessage(passwordError)
       return
     }
 
