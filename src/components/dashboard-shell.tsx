@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Menu, X, type LucideIcon } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { signOut } from '../lib/auth'
+import { UserFeedbackWidget } from './user-feedback-widget'
 
 export interface DashboardLink {
   label: string
@@ -224,6 +225,7 @@ export function DashboardShell({
           {children}
         </main>
       </div>
+      <UserFeedbackWidget />
     </div>
   )
 }
