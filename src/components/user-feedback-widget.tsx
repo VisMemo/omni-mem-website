@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, Card, CardBody, CardHeader, Input, Textarea } from '@nextui-org/react'
 import { MessageSquare, X } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
+import { getApiEnv } from '../lib/env'
 
 const FIELD_LIMITS = {
   title: 120,
@@ -9,14 +10,14 @@ const FIELD_LIMITS = {
 }
 
 export function UserFeedbackWidget() {
-  const { client, session } = useSupabaseSession()
+  const { session, refreshSession } = useSupabaseSession()
+  const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const accountId = session?.user?.id ?? null
   const canSubmit = useMemo(() => {
     if (!title.trim()) return false
     if (!content.trim()) return false
@@ -26,31 +27,46 @@ export function UserFeedbackWidget() {
 
   if (!session) return null
 
+  async function getActiveSession() {
+    const refreshed = await refreshSession()
+    return refreshed ?? session
+  }
+
   async function handleSubmit() {
-    if (!client) {
-      setMessage('反馈服务暂不可用，请稍后再试。')
-      return
-    }
-
-    if (!accountId) {
-      setMessage('账号信息异常，请重新登录后再提交。')
-      return
-    }
-
     setIsSubmitting(true)
     setMessage(null)
 
-    const { error } = await client.from('user_feedback').insert({
-      account_id: accountId,
-      feedback_title: title.trim(),
-      feedback_content: content.trim(),
-    })
+    try {
+      const active = await getActiveSession()
+      if (!active?.access_token) {
+        setMessage('请先登录后再提交。')
+        return
+      }
 
-    setIsSubmitting(false)
+      const response = await fetch(`${apiBaseUrl}/user-feedback`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${active.access_token}`,
+          'Content-Type': 'application/json',
+          'X-Principal-User-Id': active.user.id,
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+        }),
+      })
 
-    if (error) {
-      setMessage(error.message || '提交失败，请稍后再试。')
+      if (!response.ok) {
+        const errorText = await response.text()
+        const errorMessage = parseApiErrorMessage(errorText)
+        setMessage(errorMessage || '提交失败，请稍后再试。')
+        return
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '提交失败，请稍后再试。')
       return
+    } finally {
+      setIsSubmitting(false)
     }
 
     setTitle('')
@@ -118,4 +134,14 @@ export function UserFeedbackWidget() {
       </Button>
     </div>
   )
+}
+
+function parseApiErrorMessage(text: string) {
+  if (!text) return ''
+  try {
+    const data = JSON.parse(text) as { message?: string }
+    return data?.message ?? ''
+  } catch {
+    return text.slice(0, 200)
+  }
 }
