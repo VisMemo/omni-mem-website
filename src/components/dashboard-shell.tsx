@@ -256,7 +256,7 @@ export function DashboardShell({
 
       <div className="mx-auto flex w-full max-w-[1360px] gap-6 px-4 py-6">
         <aside
-          className={`dashboard-sidebar hidden shrink-0 lg:block ${
+          className={`dashboard-sidebar shrink-0 ${
             isCollapsed ? 'w-20' : 'w-64'
           }`}
         >

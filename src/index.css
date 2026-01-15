@@ -4152,11 +4152,6 @@ section {
   flex-shrink: 0;
 }
 
-@media (max-width: 1023px) {
-  .dashboard-sidebar {
-    display: none;
-  }
-}
 
 /* ============ FOOTER V2 ============ */
 .footer-v2 {
