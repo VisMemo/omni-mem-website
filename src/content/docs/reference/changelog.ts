@@ -41,7 +41,7 @@ export const changelogPage: DocPage = {
           title: 'Before vs After',
           code: `# Before (v2.1)
 mem = Memory(
-    endpoint="https://api.qbrain.ai",
+    endpoint="https://api.omnimemory.ai",
     api_key="qbk_xxx",
     tenant_id="my-tenant"
 )
@@ -97,4 +97,5 @@ mem = Memory(api_key="qbk_xxx")`,
     },
   ],
 };
+
 

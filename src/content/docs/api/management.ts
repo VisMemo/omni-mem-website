@@ -65,7 +65,7 @@ export const listApiKeysEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl "https://api.qbrain.ai/api/v1/apikeys" \\
+      code: `curl "https://api.omnimemory.ai/api/v1/apikeys" \\
   -H "x-api-key: qbk_xxx"`,
     },
   ],
@@ -118,7 +118,7 @@ export const createApiKeyEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl -X POST "https://api.qbrain.ai/api/v1/apikeys" \\
+      code: `curl -X POST "https://api.omnimemory.ai/api/v1/apikeys" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: qbk_xxx" \\
   -d '{"label": "Production"}'`,
@@ -165,7 +165,7 @@ export const revokeApiKeyEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl -X POST "https://api.qbrain.ai/api/v1/apikeys/key_abc123/revoke" \\
+      code: `curl -X POST "https://api.omnimemory.ai/api/v1/apikeys/key_abc123/revoke" \\
   -H "x-api-key: qbk_xxx"`,
     },
   ],
@@ -237,7 +237,7 @@ export const uploadDirectEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl -X POST "https://api.qbrain.ai/api/v1/uploads/direct" \\
+      code: `curl -X POST "https://api.omnimemory.ai/api/v1/uploads/direct" \\
   -H "x-api-key: qbk_xxx" \\
   -F "file=@meeting-notes.pdf" \\
   -F "filename=meeting-notes.pdf" \\
@@ -288,7 +288,7 @@ export const uploadStatusEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl "https://api.qbrain.ai/api/v1/uploads/upload_abc123" \\
+      code: `curl "https://api.omnimemory.ai/api/v1/uploads/upload_abc123" \\
   -H "x-api-key: qbk_xxx"`,
     },
   ],
@@ -369,7 +369,7 @@ export const usageSummaryEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl "https://api.qbrain.ai/api/v1/usage/summary?from=2025-01-01&to=2025-01-31" \\
+      code: `curl "https://api.omnimemory.ai/api/v1/usage/summary?from=2025-01-01&to=2025-01-31" \\
   -H "x-api-key: qbk_xxx"`,
     },
   ],
@@ -402,7 +402,7 @@ export const balanceEndpoint: ApiEndpoint = {
   codeExamples: [
     {
       language: 'curl',
-      code: `curl "https://api.qbrain.ai/api/v1/balance" \\
+      code: `curl "https://api.omnimemory.ai/api/v1/balance" \\
   -H "x-api-key: qbk_xxx"`,
     },
   ],
@@ -433,4 +433,5 @@ export const managementEndpoints = [
   ...uploadEndpoints,
   ...usageEndpoints,
 ];
+
 

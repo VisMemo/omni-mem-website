@@ -33,8 +33,8 @@ export const ingestEndpoint: ApiEndpoint = {
         type: 'Turn[]',
         required: true,
         description: {
-          en: 'Array of conversation messages. Each turn must have `role` and `content` (or `text`).',
-          zh: '对话消息数组。每条消息必须包含 `role` 和 `content`（或 `text`）。',
+          en: 'Array of conversation messages. Each turn must have `role` and `content` (or `text`). Include `name` field for multi-speaker conversations.',
+          zh: '对话消息数组。每条消息必须包含 `role` 和 `content`（或 `text`）。多说话人对话时请包含 `name` 字段。',
         },
       },
       {
@@ -60,8 +60,10 @@ export const ingestEndpoint: ApiEndpoint = {
     example: `{
   "session_id": "conv-001",
   "turns": [
-    { "role": "user", "content": "Book a meeting tomorrow at 3pm" },
-    { "role": "assistant", "content": "Done! Meeting scheduled for tomorrow at 3pm." }
+    { "role": "user", "name": "Caroline", "content": "Hey Mel! Good to see you!" },
+    { "role": "user", "name": "Melanie", "content": "Hey Caroline! I'm swamped with work." },
+    { "role": "user", "name": "Caroline", "content": "I went to a support group yesterday." },
+    { "role": "assistant", "content": "That's wonderful! How did it go?" }
   ]
 }`,
   },
@@ -106,22 +108,31 @@ export const ingestEndpoint: ApiEndpoint = {
       code: `from omem import Memory
 
 mem = Memory(api_key="qbk_xxx")
+# Multi-speaker conversation
 mem.add("conv-001", [
+    {"role": "user", "name": "Caroline", "content": "Hey Mel! Good to see you!"},
+    {"role": "user", "name": "Melanie", "content": "Hey Caroline! I'm swamped with work."},
+    {"role": "user", "name": "Caroline", "content": "I went to a support group yesterday."},
+])
+
+# Single-user with assistant
+mem.add("conv-002", [
     {"role": "user", "content": "Book a meeting tomorrow at 3pm"},
-    {"role": "assistant", "content": "Done! Meeting scheduled."},
+    {"role": "assistant", "content": "Done! Meeting scheduled for tomorrow at 3pm."},
 ])`,
     },
     {
       language: 'curl',
       title: 'cURL',
-      code: `curl -X POST "https://api.qbrain.ai/api/v1/memory/ingest" \\
+      code: `curl -X POST "https://api.omnimemory.ai/api/v1/memory/ingest" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: qbk_xxx" \\
   -d '{
     "session_id": "conv-001",
     "turns": [
-      {"role": "user", "content": "Book a meeting tomorrow at 3pm"},
-      {"role": "assistant", "content": "Done! Meeting scheduled."}
+      {"role": "user", "name": "Caroline", "content": "Hey Mel! Good to see you!"},
+      {"role": "user", "name": "Melanie", "content": "Hey Caroline! I am swamped with work."},
+      {"role": "user", "name": "Caroline", "content": "I went to a support group yesterday."}
     ]
   }'`,
     },
@@ -234,7 +245,7 @@ if result:
     {
       language: 'curl',
       title: 'cURL',
-      code: `curl -X POST "https://api.qbrain.ai/api/v1/memory/retrieval" \\
+      code: `curl -X POST "https://api.omnimemory.ai/api/v1/memory/retrieval" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: qbk_xxx" \\
   -d '{
@@ -278,6 +289,24 @@ export const turnSchema = {
       },
     },
     {
+      name: 'name',
+      type: 'string',
+      required: false,
+      description: {
+        en: 'Speaker name for multi-party conversations. Essential for distinguishing speakers (e.g., "Caroline", "Melanie"). The backend uses this to create entity nodes in the TKG.',
+        zh: '多说话人对话中的说话人名称。对于区分说话人至关重要（例如 "Caroline"、"Melanie"）。后端使用此字段在 TKG 中创建实体节点。',
+      },
+    },
+    {
+      name: 'speaker',
+      type: 'string',
+      required: false,
+      description: {
+        en: 'Alias for `name`. Backend uses `speaker` field for entity extraction. SDK automatically maps `name` to `speaker`.',
+        zh: '`name` 的别名。后端使用 `speaker` 字段进行实体提取。SDK 自动将 `name` 映射到 `speaker`。',
+      },
+    },
+    {
       name: 'turn_id',
       type: 'string',
       required: false,
@@ -300,4 +329,5 @@ export const turnSchema = {
 
 // Export all memory endpoints
 export const memoryEndpoints = [ingestEndpoint, retrievalEndpoint];
+
 

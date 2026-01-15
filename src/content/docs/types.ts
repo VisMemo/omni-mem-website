@@ -106,6 +106,7 @@ export interface SdkClass {
 export interface NavItem {
   title: LocalizedString;
   href: string;
+  description?: LocalizedString;  // Optional subtitle/description for nav items
   items?: NavItem[];
 }
 
@@ -115,4 +116,5 @@ export interface DocsNav {
     items: NavItem[];
   }[];
 }
+
 

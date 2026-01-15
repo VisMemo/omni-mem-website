@@ -39,10 +39,10 @@ export const quickstartPage: DocPage = {
         zh: '获取 API 密钥',
       },
       content: {
-        en: `1. Sign up at [qbrain.ai](https://qbrain.ai)
+        en: `1. Sign up at [omnimemory.ai](https://omnimemory.ai)
 2. Go to Dashboard → API Keys
 3. Create a new API key (starts with \`qbk_\`)`,
-        zh: `1. 在 [qbrain.ai](https://qbrain.ai) 注册
+        zh: `1. 在 [omnimemory.ai](https://omnimemory.ai) 注册
 2. 进入控制台 → API 密钥
 3. 创建新的 API 密钥（以 \`qbk_\` 开头）`,
       },
@@ -181,4 +181,5 @@ class MyAgent:
     },
   ],
 };
+
 

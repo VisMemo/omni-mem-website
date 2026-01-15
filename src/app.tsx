@@ -41,6 +41,7 @@ export function App() {
   const profilePath = buildLocalePathname({ pathname: ROUTE_PATHS.profile, locale })
   const homePath = '/'
   const isMarketing = routeKey === 'marketing'
+  const isDocs = routeKey === 'docs'
   const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 
   useEffect(() => {
@@ -71,25 +72,35 @@ export function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
-    if (normalizedPath !== window.location.pathname) {
-      const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
-      window.history.replaceState(null, '', nextUrl)
-      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
-    }
+    // Sync locale to document and localStorage
     document.documentElement.lang = locale
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
+
+    // Update URL to reflect current locale (URL-based i18n)
+    const currentPath = window.location.pathname
+    const pathLocale = getLocaleFromPathname({ pathname: currentPath })
+    const strippedPath = stripLocaleFromPathname({ pathname: currentPath })
+
+    // Build the correct URL for current locale
+    const correctPath = buildLocalePathname({ pathname: strippedPath, locale })
+    if (currentPath !== correctPath) {
+      const nextUrl = `${correctPath}${window.location.search}${window.location.hash}`
+      window.history.replaceState(null, '', nextUrl)
+    }
   }, [locale])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     function handlePopState() {
-      const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
-      if (normalizedPath !== window.location.pathname) {
-        const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
-        window.history.replaceState(null, '', nextUrl)
+      const pathname = window.location.pathname
+      // Sync locale from URL
+      const pathLocale = getLocaleFromPathname({ pathname })
+      if (pathLocale && pathLocale !== locale) {
+        setLocale(pathLocale)
       }
-      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
+      // Get route from stripped path
+      const strippedPath = stripLocaleFromPathname({ pathname })
+      setRouteKey(getRouteFromPathname({ pathname: strippedPath }))
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -103,7 +114,9 @@ export function App() {
   }, [isProtectedRoute, isSessionLoading, routeKey, session, signInPath])
 
   function handleLocaleToggle() {
-    setLocale(locale === 'en' ? 'zh' : 'en')
+    const newLocale = locale === 'en' ? 'zh' : 'en'
+    setLocale(newLocale)
+    // URL will be updated by the useEffect that watches locale
   }
 
   function handleSignInClick() { navigateTo(signInPath) }
@@ -111,8 +124,11 @@ export function App() {
 
   function navigateTo(pathname: string) {
     if (typeof window === 'undefined') return
-    window.history.pushState({}, '', pathname)
-    setRouteKey(getRouteFromPathname({ pathname }))
+    // Build locale-aware path
+    const strippedPath = stripLocaleFromPathname({ pathname })
+    const localePath = buildLocalePathname({ pathname: strippedPath, locale })
+    window.history.pushState({}, '', localePath)
+    setRouteKey(getRouteFromPathname({ pathname: strippedPath }))
   }
 
   const dashboardLinks: DashboardLink[] = locale === 'zh' ? [
@@ -142,7 +158,11 @@ export function App() {
     }
   })()
 
-  const mainClassName = isProtectedRoute ? 'min-h-[70vh]' : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
+  const mainClassName = isProtectedRoute
+    ? 'min-h-[70vh]'
+    : isDocs
+      ? 'min-h-[70vh] pt-0'
+      : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
 
   return (
     <div className="min-h-screen bg-white">
@@ -273,7 +293,7 @@ export function App() {
             </div>
           )}
           {routeKey === 'docs' && (
-            <DocsPage locale={locale} onNavigate={navigateTo} />
+            <DocsPage locale={locale} onNavigate={navigateTo} onLocaleToggle={handleLocaleToggle} />
           )}
           {routeKey === 'faq' && (
             <FaqPage locale={locale} />
@@ -896,8 +916,17 @@ function getLocaleFromPathname({ pathname }: { pathname: string }): Locale | nul
   return null
 }
 
-function buildLocalePathname({ pathname }: { pathname: string; locale: Locale }): string {
-  return pathname
+function buildLocalePathname({ pathname, locale }: { pathname: string; locale: Locale }): string {
+  // For English (default), no prefix needed
+  // For other locales, add prefix
+  if (locale === 'en') {
+    return pathname
+  }
+  // Don't double-prefix if already has locale
+  if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+    return pathname
+  }
+  return `/${locale}${pathname}`
 }
 
 function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {

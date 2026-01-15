@@ -5269,4 +5269,1069 @@ section {
   background: linear-gradient(90deg, transparent, rgba(var(--ink), 0.06), transparent);
 }
 
+/* ============================================
+   DOCUMENTATION - Mintlify-style Layout
+   ============================================ */
 
+.mintlify-docs {
+  display: grid;
+  grid-template-columns: 280px 1fr 220px;
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+@media (max-width: 1280px) {
+  .mintlify-docs {
+    grid-template-columns: 280px 1fr;
+  }
+  .mintlify-toc {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .mintlify-docs {
+    grid-template-columns: 1fr;
+  }
+  .mintlify-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .mintlify-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay */
+.mintlify-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 40;
+  backdrop-filter: blur(4px);
+}
+
+/* Mobile Toggle */
+.mintlify-mobile-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 60;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgb(var(--teal));
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(61, 166, 166, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mintlify-mobile-btn:hover {
+  transform: scale(1.05);
+}
+
+.mintlify-mobile-btn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .mintlify-mobile-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Left Sidebar */
+.mintlify-sidebar {
+  position: sticky;
+  top: 80px;
+  height: calc(100vh - 80px);
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.mintlify-sidebar-inner {
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mintlify-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mintlify-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: rgb(var(--ink));
+  text-decoration: none;
+}
+
+.mintlify-logo img {
+  width: 24px;
+  height: 24px;
+}
+
+.mintlify-version {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgb(var(--teal));
+  background: rgba(61, 166, 166, 0.1);
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+}
+
+/* Search */
+.mintlify-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f4f4f5;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: 1px solid transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.mintlify-search:hover {
+  background: #e4e4e7;
+  border-color: #d4d4d8;
+}
+
+.mintlify-search svg {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.mintlify-search span {
+  flex: 1;
+  font-size: 14px;
+  color: #71717a;
+}
+
+.mintlify-search kbd {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: white;
+  border: 1px solid #e4e4e7;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #71717a;
+}
+
+/* Search Modal */
+.mintlify-search-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-modal-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.search-modal-input svg {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.search-modal-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: rgb(var(--ink));
+  background: transparent;
+}
+
+.search-modal-input input::placeholder {
+  color: #a1a1aa;
+}
+
+.search-modal-input kbd {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  border-radius: 4px;
+  padding: 3px 8px;
+  color: #71717a;
+}
+
+.search-modal-results {
+  overflow-y: auto;
+  max-height: 400px;
+  padding: 8px;
+}
+
+.search-result-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.search-result-item:hover {
+  background: #f4f4f5;
+}
+
+.search-result-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--ink));
+  margin-bottom: 4px;
+}
+
+.search-result-page {
+  color: #71717a;
+}
+
+.search-result-separator {
+  color: #d4d4d8;
+}
+
+.search-result-preview {
+  font-size: 13px;
+  color: #71717a;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-modal-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: #71717a;
+  font-size: 14px;
+}
+
+/* Navigation */
+.mintlify-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mintlify-nav-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+  margin: 0 0 8px 0;
+  padding-left: 12px;
+}
+
+.mintlify-nav-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mintlify-nav-section > ul > li > a {
+  display: block;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #52525b;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.mintlify-nav-section > ul > li > a:hover {
+  background: #f4f4f5;
+  color: rgb(var(--ink));
+}
+
+.mintlify-nav-section > ul > li > a.active {
+  background: rgba(61, 166, 166, 0.1);
+  color: rgb(var(--teal));
+  font-weight: 500;
+}
+
+.mintlify-nav-sub {
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0 0 0 20px;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mintlify-nav-sub a {
+  display: block;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #71717a;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.mintlify-nav-sub a:hover {
+  color: rgb(var(--teal));
+}
+
+/* Sidebar Footer */
+.mintlify-sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mintlify-sidebar-footer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #71717a;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.mintlify-sidebar-footer a:hover {
+  background: #f4f4f5;
+  color: rgb(var(--ink));
+}
+
+.mintlify-lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(var(--teal));
+  background: rgba(61, 166, 166, 0.08);
+  border: 1px solid rgba(61, 166, 166, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.mintlify-lang-toggle:hover {
+  background: rgba(61, 166, 166, 0.15);
+  border-color: rgba(61, 166, 166, 0.3);
+}
+
+.mintlify-lang-toggle svg {
+  flex-shrink: 0;
+}
+
+/* Main Content */
+.mintlify-main {
+  padding: 48px 64px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .mintlify-main {
+    padding: 32px 24px;
+  }
+}
+
+.mintlify-article {
+  max-width: 720px;
+}
+
+/* Header */
+.mintlify-header {
+  margin-bottom: 40px;
+}
+
+.mintlify-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #a1a1aa;
+  margin-bottom: 16px;
+}
+
+.mintlify-breadcrumb a {
+  color: #71717a;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.mintlify-breadcrumb a:hover {
+  color: rgb(var(--teal));
+}
+
+.mintlify-breadcrumb span {
+  color: #d4d4d8;
+}
+
+.mintlify-header h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: rgb(var(--ink));
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mintlify-header p {
+  font-size: 18px;
+  color: #71717a;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Content */
+.mintlify-content {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.mintlify-content section {
+  scroll-margin-top: 100px;
+}
+
+.mintlify-content h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  letter-spacing: -0.01em;
+  position: relative;
+}
+
+.mintlify-anchor {
+  position: absolute;
+  left: -24px;
+  color: #d4d4d8;
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.mintlify-content h2:hover .mintlify-anchor {
+  opacity: 1;
+}
+
+.mintlify-anchor:hover {
+  color: rgb(var(--teal));
+}
+
+.mintlify-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 24px 0 12px 0;
+}
+
+.mintlify-content h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 20px 0 10px 0;
+}
+
+/* Prose */
+.mintlify-prose {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #52525b;
+}
+
+.mintlify-prose p {
+  margin: 0 0 16px 0;
+}
+
+.mintlify-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.mintlify-prose a {
+  color: rgb(var(--teal));
+  text-decoration: none;
+}
+
+.mintlify-prose a:hover {
+  text-decoration: underline;
+}
+
+.mintlify-prose code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: rgba(61, 166, 166, 0.1);
+  color: rgb(var(--teal));
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mintlify-prose pre,
+.mintlify-prose pre.code-block {
+  background: #18181b;
+  color: #e4e4e7;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.mintlify-prose pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mintlify-prose ul,
+.mintlify-prose ol {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+}
+
+.mintlify-prose ol {
+  list-style-type: decimal;
+}
+
+.mintlify-prose li {
+  margin-bottom: 8px;
+}
+
+.mintlify-prose li:last-child {
+  margin-bottom: 0;
+}
+
+.mintlify-prose strong {
+  font-weight: 600;
+  color: rgb(var(--ink));
+}
+
+.mintlify-prose em {
+  font-style: italic;
+}
+
+.mintlify-prose h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 24px 0 12px 0;
+}
+
+.mintlify-prose h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 20px 0 10px 0;
+}
+
+.mintlify-prose h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 16px 0 8px 0;
+}
+
+/* Callouts */
+.callout {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.callout-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.callout-content {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.callout.info {
+  background: rgba(61, 166, 166, 0.08);
+  border: 1px solid rgba(61, 166, 166, 0.2);
+}
+
+.callout.warning {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.callout.tip {
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+/* Code Tabs */
+.mintlify-codetabs {
+  margin: 20px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #27272a;
+  background: #18181b;
+}
+
+.mintlify-codetabs .tabs {
+  display: flex;
+  gap: 0;
+  background: #27272a;
+  border-bottom: 1px solid #3f3f46;
+}
+
+.mintlify-codetabs .tabs button {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+}
+
+.mintlify-codetabs .tabs button:hover {
+  color: #e4e4e7;
+}
+
+.mintlify-codetabs .tabs button.active {
+  color: rgb(var(--teal));
+  border-bottom-color: rgb(var(--teal));
+}
+
+/* Code Block */
+.mintlify-codeblock {
+  margin: 20px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #27272a;
+  background: #18181b;
+}
+
+.codeblock-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #27272a;
+  border-bottom: 1px solid #3f3f46;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e4e4e7;
+}
+
+.codeblock-body {
+  position: relative;
+}
+
+.codeblock-body pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  background: transparent;
+}
+
+.codeblock-body code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e4e4e7;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3f3f46;
+  border: none;
+  border-radius: 6px;
+  color: #a1a1aa;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.mintlify-codeblock:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: #52525b;
+  color: white;
+}
+
+/* API Endpoint */
+.mintlify-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mintlify-endpoint .method {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.mintlify-endpoint .method.get {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+
+.mintlify-endpoint .method.post {
+  background: rgba(61, 166, 166, 0.1);
+  color: rgb(var(--teal));
+}
+
+.mintlify-endpoint .method.put {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+}
+
+.mintlify-endpoint .method.delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.mintlify-endpoint code {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: rgb(var(--ink));
+}
+
+.mintlify-content .desc {
+  font-size: 15px;
+  color: #71717a;
+  margin-bottom: 24px;
+}
+
+/* Params */
+.mintlify-params {
+  margin: 24px 0;
+}
+
+.mintlify-params h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 0 0 12px 0;
+}
+
+.params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.param {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.param-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.param-name {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+}
+
+.param-type {
+  font-size: 12px;
+  color: #71717a;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.param-required {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(var(--teal));
+  background: rgba(61, 166, 166, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.param-desc {
+  font-size: 13px;
+  color: #71717a;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Response */
+.mintlify-response {
+  margin-top: 24px;
+}
+
+.mintlify-response h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--ink));
+  margin: 0 0 12px 0;
+}
+
+.mintlify-response h4 code {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+/* Pagination */
+.mintlify-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.mintlify-pagination a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+  min-width: 160px;
+}
+
+.mintlify-pagination a:hover {
+  border-color: rgb(var(--teal));
+  box-shadow: 0 4px 12px rgba(61, 166, 166, 0.1);
+}
+
+.mintlify-pagination .next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.mintlify-pagination span {
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.mintlify-pagination strong {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgb(var(--teal));
+}
+
+/* Feedback */
+.mintlify-feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 40px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.mintlify-feedback span {
+  font-size: 14px;
+  color: #71717a;
+}
+
+.mintlify-feedback button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mintlify-feedback button:hover {
+  border-color: rgb(var(--teal));
+  background: rgba(61, 166, 166, 0.05);
+}
+
+/* Right TOC */
+.mintlify-toc {
+  position: sticky;
+  top: 80px;
+  height: calc(100vh - 80px);
+  padding: 48px 24px;
+  overflow-y: auto;
+}
+
+.mintlify-toc-inner {
+  padding-left: 16px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.mintlify-toc h4 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+  margin: 0 0 16px 0;
+}
+
+.mintlify-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mintlify-toc a {
+  display: block;
+  font-size: 13px;
+  color: #71717a;
+  text-decoration: none;
+  transition: color 0.15s;
+  line-height: 1.4;
+}
+
+.mintlify-toc a:hover {
+  color: rgb(var(--teal));
+}
+
+.mintlify-toc a.active {
+  color: rgb(var(--teal));
+  font-weight: 500;
+}
+
+/* Not Found */
+.mintlify-notfound {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.mintlify-notfound .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.mintlify-notfound h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: rgb(var(--ink));
+  margin: 0 0 12px 0;
+}
+
+.mintlify-notfound p {
+  font-size: 16px;
+  color: #71717a;
+  margin: 0 0 24px 0;
+}
+
+.mintlify-notfound p code {
+  background: #f4f4f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.mintlify-notfound a {
+  color: rgb(var(--teal));
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.mintlify-notfound a:hover {
+  text-decoration: underline;
+}
