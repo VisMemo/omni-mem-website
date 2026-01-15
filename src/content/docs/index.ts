@@ -41,7 +41,6 @@ export {
 export {
   listApiKeysEndpoint,
   createApiKeyEndpoint,
-  revokeApiKeyEndpoint,
   uploadDirectEndpoint,
   uploadStatusEndpoint,
   usageSummaryEndpoint,

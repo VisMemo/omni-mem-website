@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { Copy, KeyRound, Pencil, RotateCw, Trash2, X, XCircle } from 'lucide-react'
+import { Copy, KeyRound, Pencil, RotateCw, Trash2, X } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -265,7 +265,7 @@ export function ApiKeysPage() {
     }
   }
 
-async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: string) {
+async function handleAction(action: 'rotate' | 'delete', apiKeyId: string) {
     if (!accountId || !accessToken) {
       setStatus('error')
       setMessage('请先登录以管理 API 密钥。')
@@ -308,7 +308,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
       if (!response.ok) {
         throw new Error(
           data?.message ??
-            (action === 'revoke' ? '撤销失败' : action === 'rotate' ? '轮换失败' : '删除失败'),
+            (action === 'rotate' ? '轮换失败' : '删除失败'),
         )
       }
 
@@ -321,7 +321,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         )
       } else {
         setLastPlaintext(null)
-        setMessage(action === 'revoke' ? '撤销成功' : '删除成功')
+        setMessage('删除成功')
       }
 
       await fetchKeys(active.user.id, active.access_token, page)
@@ -336,13 +336,13 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">访问控制</p>
-          <h1 className="text-2xl font-semibold text-ink">API 密钥</h1>
+          <h1 className="text-2xl font-serif text-ink">API 密钥</h1>
           <p className="text-sm text-ink/60">创建与管理 API 密钥，用于自动化调用。</p>
         </div>
       </header>
 
       <section className="rounded-xl bg-white/70 p-6">
-        <h2 className="text-lg font-semibold text-ink">创建 API 密钥</h2>
+        <h2 className="text-lg font-serif text-ink">创建 API 密钥</h2>
         <p className="text-sm text-ink/60">
           标签用于区分用途，生成后的密钥仅显示一次。
         </p>
@@ -397,7 +397,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
 
       <section className="rounded-xl bg-white/70 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">当前密钥</h2>
+          <h2 className="text-lg font-serif text-ink">当前密钥</h2>
           <p className="text-xs text-ink/50">共 {rows.length} 个</p>
         </div>
         <div className="mt-4 overflow-hidden rounded-lg bg-white/60">
@@ -486,16 +486,6 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
                           </button>
                           <button
                             type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
-                            onClick={() => handleAction('revoke', row.id)}
-                            disabled={status === 'loading' || Boolean(row.revoked_at) || Boolean(row.deleted_at)}
-                            aria-label="撤销"
-                            title="撤销密钥"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-500/10"
                             onClick={() => handleAction('delete', row.id)}
                             disabled={status === 'loading' || Boolean(row.deleted_at)}
@@ -537,7 +527,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-ink">修改 API Key 备注</h3>
+              <h3 className="text-lg font-serif text-ink">修改 API Key 备注</h3>
               <button
                 type="button"
                 className="rounded-md p-1 text-ink/60 hover:bg-ink/5"
@@ -584,7 +574,7 @@ async function handleAction(action: 'revoke' | 'rotate' | 'delete', apiKeyId: st
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-ink">验证密码复制密钥</h3>
+              <h3 className="text-lg font-serif text-ink">验证密码复制密钥</h3>
               <button
                 type="button"
                 className="rounded-md p-1 text-ink/60 hover:bg-ink/5"

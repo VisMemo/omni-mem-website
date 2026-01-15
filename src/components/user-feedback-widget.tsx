@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Button, Card, CardBody, CardHeader, Input, Textarea } from '@nextui-org/react'
 import { MessageSquare, X } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
@@ -39,7 +39,7 @@ export function UserFeedbackWidget() {
     try {
       const active = await getActiveSession()
       if (!active?.access_token) {
-        setMessage('请先登录后再提交。')
+        setMessage('璇峰厛鐧诲綍鍚庡啀鎻愪氦銆?)
         return
       }
 
@@ -59,11 +59,11 @@ export function UserFeedbackWidget() {
       if (!response.ok) {
         const errorText = await response.text()
         const errorMessage = parseApiErrorMessage(errorText)
-        setMessage(errorMessage || '提交失败，请稍后再试。')
+        setMessage(errorMessage || '鎻愪氦澶辫触锛岃绋嶅悗鍐嶈瘯銆?)
         return
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '提交失败，请稍后再试。')
+      setMessage(error instanceof Error ? error.message : '鎻愪氦澶辫触锛岃绋嶅悗鍐嶈瘯銆?)
       return
     } finally {
       setIsSubmitting(false)
@@ -71,7 +71,7 @@ export function UserFeedbackWidget() {
 
     setTitle('')
     setContent('')
-    setMessage('已收到你的反馈，感谢支持。')
+    setMessage('宸叉敹鍒颁綘鐨勫弽棣堬紝鎰熻阿鏀寔銆?)
   }
 
   return (
@@ -80,14 +80,14 @@ export function UserFeedbackWidget() {
         <Card className="w-[320px] border border-ink/10 bg-white/95 shadow-xl">
           <CardHeader className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-ink">用户反馈</p>
-              <p className="text-xs text-ink/50">告诉我们你的问题或建议</p>
+              <p className="text-sm font-serif text-ink">鐢ㄦ埛鍙嶉</p>
+              <p className="text-xs text-ink/50">鍛婅瘔鎴戜滑浣犵殑闂鎴栧缓璁?/p>
             </div>
             <Button
               isIconOnly
               radius="full"
               variant="light"
-              aria-label="关闭反馈"
+              aria-label="鍏抽棴鍙嶉"
               onPress={() => setIsOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -95,15 +95,15 @@ export function UserFeedbackWidget() {
           </CardHeader>
           <CardBody className="space-y-3">
             <Input
-              label="标题"
-              placeholder="请输入反馈标题"
+              label="鏍囬"
+              placeholder="璇疯緭鍏ュ弽棣堟爣棰?
               value={title}
               maxLength={FIELD_LIMITS.title}
               onValueChange={setTitle}
             />
             <Textarea
-              label="内容"
-              placeholder="请输入反馈内容"
+              label="鍐呭"
+              placeholder="璇疯緭鍏ュ弽棣堝唴瀹?
               value={content}
               maxLength={FIELD_LIMITS.content}
               minRows={5}
@@ -117,7 +117,7 @@ export function UserFeedbackWidget() {
               isDisabled={!canSubmit}
               onPress={handleSubmit}
             >
-              提交反馈
+              鎻愪氦鍙嶉
             </Button>
           </CardBody>
         </Card>
@@ -127,7 +127,7 @@ export function UserFeedbackWidget() {
         isIconOnly
         radius="full"
         className="h-12 w-12 bg-deep-blue text-white shadow-lg hover:bg-teal"
-        aria-label="打开用户反馈"
+        aria-label="鎵撳紑鐢ㄦ埛鍙嶉"
         onPress={() => setIsOpen((prev) => !prev)}
       >
         <MessageSquare className="h-5 w-5" />
@@ -145,3 +145,5 @@ function parseApiErrorMessage(text: string) {
     return text.slice(0, 200)
   }
 }
+
+
