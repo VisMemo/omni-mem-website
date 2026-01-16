@@ -29,13 +29,13 @@ type LlmKeyRow = {
 }
 
 const PROVIDER_OPTIONS = [
-  'openai',
-  'openrouter',
-  'qwen',
-  'glm',
-  'gemini',
-  'deepseek',
-  'moonshot',
+  { value: 'openai', label: 'openai（暂不可用）', disabled: true },
+  { value: 'openrouter', label: 'openrouter' },
+  { value: 'qwen', label: 'qwen' },
+  { value: 'glm', label: 'glm' },
+  { value: 'gemini', label: 'gemini（暂不可用）', disabled: true },
+  { value: 'deepseek', label: 'deepseek' },
+  { value: 'moonshot', label: 'moonshot' },
 ]
 
 export function MemoryPolicyPage() {
@@ -436,8 +436,12 @@ export function MemoryPolicyPage() {
                 >
                   <option value="">请选择</option>
                   {PROVIDER_OPTIONS.map((provider) => (
-                    <option key={provider} value={provider}>
-                      {provider}
+                    <option
+                      key={provider.value}
+                      value={provider.value}
+                      disabled={Boolean(provider.disabled)}
+                    >
+                      {provider.label}
                     </option>
                   ))}
                 </select>

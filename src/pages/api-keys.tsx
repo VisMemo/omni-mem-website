@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { Copy, KeyRound, Pencil, RotateCw, Trash2, X } from 'lucide-react'
+import { Copy, KeyRound, Pencil, Trash2, X } from 'lucide-react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -466,16 +466,6 @@ async function handleAction(action: 'rotate' | 'delete', apiKeyId: string) {
                             title="修改备注"
                           >
                             <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink/60 hover:bg-ink/5"
-                            onClick={() => handleAction('rotate', row.id)}
-                            disabled={status === 'loading' || Boolean(row.deleted_at)}
-                            aria-label="轮换"
-                            title="轮换密钥"
-                          >
-                            <RotateCw className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
