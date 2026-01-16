@@ -5798,7 +5798,7 @@ section {
 .mintlify-prose {
   font-size: 15px;
   line-height: 1.7;
-  color: #52525b;
+  color: #1a1a1f; /* Darker for better readability */
 }
 
 .mintlify-prose p {
@@ -5891,6 +5891,41 @@ section {
   font-weight: 600;
   color: rgb(var(--ink));
   margin: 16px 0 8px 0;
+}
+
+.mintlify-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 14px;
+}
+
+.mintlify-prose table th,
+.mintlify-prose table td {
+  border: 1px solid rgba(var(--ink), 0.1);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.mintlify-prose table th {
+  background: rgba(var(--teal), 0.05);
+  font-weight: 600;
+  color: rgb(var(--ink));
+}
+
+.mintlify-prose table td {
+  color: #1a1a1f; /* Darker for better readability */
+}
+
+.mintlify-prose table tr:nth-child(even) {
+  background: rgba(var(--ink), 0.02);
+}
+
+.mintlify-prose table code {
+  background: rgba(61, 166, 166, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
 }
 
 /* Callouts */

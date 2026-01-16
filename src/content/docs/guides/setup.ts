@@ -72,12 +72,10 @@ Both steps take about 2 minutes total.`,
 
 ### Best Practices
 
-| Practice | Why |
-|----------|-----|
-| Use separate keys for dev/prod | Easier debugging and usage tracking |
-| Never commit keys to git | Use environment variables instead |
-| Rotate keys periodically | Security hygiene |
-| Label keys descriptively | Know which app uses which key |
+- **Use separate keys for dev/prod** — Easier debugging and usage tracking
+- **Never commit keys to git** — Use environment variables instead
+- **Rotate keys periodically** — Security hygiene
+- **Label keys descriptively** — Know which app uses which key
 
 ### Example Usage
 
@@ -103,12 +101,10 @@ mem = Memory(api_key="qbk_your_key_here")
 
 ### 最佳实践
 
-| 实践 | 原因 |
-|------|------|
-| 为开发/生产使用不同密钥 | 更容易调试和追踪用量 |
-| 不要将密钥提交到 git | 使用环境变量代替 |
-| 定期轮换密钥 | 安全习惯 |
-| 使用描述性标签 | 知道哪个应用使用哪个密钥 |
+- **为开发/生产使用不同密钥** — 更容易调试和追踪用量
+- **不要将密钥提交到 git** — 使用环境变量代替
+- **定期轮换密钥** — 安全习惯
+- **使用描述性标签** — 知道哪个应用使用哪个密钥
 
 ### 使用示例
 
@@ -133,12 +129,10 @@ mem = Memory(api_key="qbk_your_key_here")
       content: {
         en: `Omni Memory uses LLMs to process your conversations and extract structured knowledge:
 
-| What We Extract | Example |
-|-----------------|---------|
-| **Entities** | People (Caroline), Places (West Lake), Organizations |
-| **Events** | "Meeting tomorrow at 3pm", "Trip to Seattle next week" |
-| **Relationships** | "Caroline is going to the conference" |
-| **Temporal Info** | Dates, times, durations |
+- **Entities** — People, places, organizations
+- **Events** — Meetings, trips, deadlines
+- **Relationships** — Connections between entities
+- **Temporal Info** — Dates, times, durations
 
 **Without an LLM configured, you'll see this error:**
 
@@ -157,12 +151,10 @@ We use a **BYOK model** — you provide your own LLM API key. This means:
 - ✅ **Data privacy** — Your LLM key, your terms`,
         zh: `Omni Memory 使用 LLM 处理您的对话并提取结构化知识：
 
-| 提取内容 | 示例 |
-|----------|------|
-| **实体** | 人物（Caroline）、地点（西湖）、组织 |
-| **事件** | "明天下午3点开会"、"下周去西雅图出差" |
-| **关系** | "Caroline 要参加会议" |
-| **时间信息** | 日期、时间、持续时间 |
+- **实体** — 人物、地点、组织
+- **事件** — 会议、旅行、截止日期
+- **关系** — 实体之间的连接
+- **时间信息** — 日期、时间、持续时间
 
 **如果没有配置 LLM，您会看到此错误：**
 
@@ -205,28 +197,22 @@ OmemValidationError: http_400: Missing required data for core ingest
 1. Go to **Dashboard → Memory Policy** (记忆策略)
 2. Scroll to **"Add LLM Key"** (添加 LLM 密钥) section
 3. Fill in the form:
-
-| Field | Description | Example |
-|-------|-------------|---------|
-| **Label** (备注) | A name to identify this key | "My OpenAI Key" |
-| **LLM Key** (LLM 密钥) | Your API key from the provider | \`sk-proj-xxx...\` |
-| **Provider** (平台) | Select from dropdown | OpenAI |
-| **Model** (模型名称) | Auto-loads after selecting provider | gpt-4o-mini |
-
+   - **Label** (备注) — A name to identify this key (e.g., "My OpenAI Key")
+   - **LLM Key** (LLM 密钥) — Your API key from the provider (e.g., \`sk-proj-xxx...\`)
+   - **Provider** (平台) — Select from dropdown (e.g., OpenAI)
+   - **Model** (模型名称) — Auto-loads after selecting provider (e.g., gpt-4o-mini)
 4. Click **Add** (添加)
 5. Set **Binding Scope** (绑定范围):
-   - **All API Keys** (所有 API 密钥) — This LLM key is used for all your Omni Memory API keys
+   - **All API Keys** (所有 API 密钥) — This LLM key is used for all your Omni Memory API keys (recommended for most users)
    - **Specific API Key** — Only used when that specific API key makes requests
 
 ### Recommended Setup
 
 For most users, we recommend:
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| Provider | OpenAI or DeepSeek | Best balance of quality/cost |
-| Model | gpt-4o-mini or deepseek-chat | Cost-effective, good extraction |
-| Binding | All API Keys | Simplest setup |`,
+- **Provider:** OpenAI or DeepSeek (best balance of quality/cost)
+- **Model:** gpt-4o-mini or deepseek-chat (cost-effective, good extraction)
+- **Binding:** All API Keys (simplest setup)`,
         zh: `### 支持的提供商
 
 | 提供商 | 模型 | 获取 API 密钥 |
@@ -244,28 +230,22 @@ For most users, we recommend:
 1. 进入**控制台 → 记忆策略**
 2. 滚动到**"添加 LLM 密钥"**部分
 3. 填写表单：
-
-| 字段 | 描述 | 示例 |
-|------|------|------|
-| **备注** | 用于识别此密钥的名称 | "我的 OpenAI 密钥" |
-| **LLM 密钥** | 来自提供商的 API 密钥 | \`sk-proj-xxx...\` |
-| **平台** | 从下拉菜单选择 | OpenAI |
-| **模型名称** | 选择平台后自动加载 | gpt-4o-mini |
-
+   - **备注** — 用于识别此密钥的名称（如"我的 OpenAI 密钥"）
+   - **LLM 密钥** — 来自提供商的 API 密钥（如 \`sk-proj-xxx...\`）
+   - **平台** — 从下拉菜单选择（如 OpenAI）
+   - **模型名称** — 选择平台后自动加载（如 gpt-4o-mini）
 4. 点击**添加**
 5. 设置**绑定范围**：
-   - **所有 API 密钥** — 此 LLM 密钥用于您所有的 Omni Memory API 密钥
+   - **所有 API 密钥** — 此 LLM 密钥用于您所有的 Omni Memory API 密钥（大多数用户推荐）
    - **特定 API 密钥** — 仅在该特定 API 密钥发出请求时使用
 
 ### 推荐设置
 
 对于大多数用户，我们推荐：
 
-| 设置 | 值 | 原因 |
-|------|-----|------|
-| 平台 | OpenAI 或 DeepSeek | 质量/成本最佳平衡 |
-| 模型 | gpt-4o-mini 或 deepseek-chat | 性价比高，提取效果好 |
-| 绑定 | 所有 API 密钥 | 最简单的设置 |`,
+- **平台：** OpenAI 或 DeepSeek（质量/成本最佳平衡）
+- **模型：** gpt-4o-mini 或 deepseek-chat（性价比高，提取效果好）
+- **绑定：** 所有 API 密钥（最简单的设置）`,
       },
     },
     {
@@ -374,42 +354,30 @@ else:
         zh: '高级：多个 LLM 密钥',
       },
       content: {
-        en: `You can configure multiple LLM keys for different use cases:
+        en: `You can configure multiple LLM keys for different use cases. For example:
 
-### Use Case 1: Different Models for Dev vs Prod
+**Use Case 1: Different Models for Dev vs Prod**
+- Dev API key → Use cheaper model (gpt-4o-mini)
+- Prod API key → Use better model (gpt-4o)
 
-| API Key | LLM Key | Model | Purpose |
-|---------|---------|-------|---------|
-| \`qbk_dev_...\` | OpenAI Dev | gpt-4o-mini | Cheaper for development |
-| \`qbk_prod_...\` | OpenAI Prod | gpt-4o | Better quality for production |
-
-### Use Case 2: Cost Optimization
-
-| API Key | LLM Key | Model | Purpose |
-|---------|---------|-------|---------|
-| \`qbk_agent_...\` | DeepSeek | deepseek-chat | High-volume agent (cheap) |
-| \`qbk_premium_...\` | OpenAI | gpt-4o | Premium users (best quality) |
+**Use Case 2: Cost Optimization**
+- High-volume agent → Use DeepSeek (cheap)
+- Premium users → Use OpenAI (best quality)
 
 ### How to Set Up
 
 1. Add multiple LLM keys in Memory Policy
 2. For each LLM key, change **Binding Scope** from "All API Keys" to a specific API key
 3. Requests using that API key will use the bound LLM`,
-        zh: `您可以为不同用例配置多个 LLM 密钥：
+        zh: `您可以为不同用例配置多个 LLM 密钥。例如：
 
-### 用例 1：开发环境和生产环境使用不同模型
+**用例 1：开发环境和生产环境使用不同模型**
+- 开发 API 密钥 → 使用更便宜的模型（gpt-4o-mini）
+- 生产 API 密钥 → 使用更好的模型（gpt-4o）
 
-| API 密钥 | LLM 密钥 | 模型 | 用途 |
-|----------|----------|------|------|
-| \`qbk_dev_...\` | OpenAI Dev | gpt-4o-mini | 开发环境更便宜 |
-| \`qbk_prod_...\` | OpenAI Prod | gpt-4o | 生产环境更好质量 |
-
-### 用例 2：成本优化
-
-| API 密钥 | LLM 密钥 | 模型 | 用途 |
-|----------|----------|------|------|
-| \`qbk_agent_...\` | DeepSeek | deepseek-chat | 高流量 Agent（便宜） |
-| \`qbk_premium_...\` | OpenAI | gpt-4o | 高级用户（最佳质量） |
+**用例 2：成本优化**
+- 高流量 Agent → 使用 DeepSeek（便宜）
+- 高级用户 → 使用 OpenAI（最佳质量）
 
 ### 如何设置
 

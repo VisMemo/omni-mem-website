@@ -88,7 +88,7 @@ function buildSearchIndex(locale: Locale): SearchItem[] {
 }
 
 export function DocsPage({ locale, onNavigate, onLocaleToggle }: DocsPageProps) {
-  const [currentSlug, setCurrentSlug] = useState('sdk/python')
+  const [currentSlug, setCurrentSlug] = useState('guides/setup')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -120,7 +120,7 @@ export function DocsPage({ locale, onNavigate, onLocaleToggle }: DocsPageProps) 
         }, 300)
       }
     } else if (path === '/docs' || path === '/docs/') {
-      setCurrentSlug('sdk/python')
+      setCurrentSlug('guides/setup')
     }
   }, [])
 
@@ -162,8 +162,8 @@ export function DocsPage({ locale, onNavigate, onLocaleToggle }: DocsPageProps) 
 
   const handleNavClick = useCallback((href: string) => {
     const [path, hash] = href.split('#')
-    const slug = path.replace('/docs/', '').replace('/docs', 'sdk/python')
-    setCurrentSlug(slug || 'sdk/python')
+    const slug = path.replace('/docs/', '').replace('/docs', 'guides/setup')
+    setCurrentSlug(slug || 'guides/setup')
     onNavigate(path)
     setSidebarOpen(false)
     setSearchOpen(false)
@@ -549,6 +549,34 @@ function Prose({ content, onNav }: { content: string; onNav?: (href: string) => 
     html = html.replace(/:::warning\n([\s\S]*?):::/g, '<div class="callout warning"><div class="callout-icon">⚠️</div><div class="callout-content">$1</div></div>')
     html = html.replace(/:::tip\n([\s\S]*?):::/g, '<div class="callout tip"><div class="callout-icon">✨</div><div class="callout-content">$1</div></div>')
 
+    // Tables (before code blocks to avoid conflicts)
+    html = html.replace(/\n\|(.+)\|\n\|([-:| ]+)\|\n((?:\|.+\|\n?)+)/g, (match, header, separator, body) => {
+      const headers = header.split('|').filter(c => c.trim()).map(h => {
+        const trimmed = h.trim()
+        // Process markdown in headers (bold, links, etc.)
+        let processed = trimmed
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        return `<th>${processed}</th>`
+      }).join('')
+      
+      const rows = body.trim().split('\n').filter(row => row.trim()).map(row => {
+        const cells = row.split('|').filter(c => c.trim()).map(c => {
+          const trimmed = c.trim()
+          // Process markdown in cells (bold, links, code, etc.)
+          let processed = trimmed
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+          return `<td>${processed}</td>`
+        }).join('')
+        return `<tr>${cells}</tr>`
+      }).join('')
+      
+      return `<table class="mintlify-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`
+    })
+
     // Code blocks (before inline code)
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="code-block"><code class="lang-$1">$2</code></pre>')
 
@@ -630,7 +658,8 @@ function Prose({ content, onNav }: { content: string; onNav?: (href: string) => 
           block.startsWith('<ol') ||
           block.startsWith('<pre') ||
           block.startsWith('<div') ||
-          block.startsWith('<li')) {
+          block.startsWith('<li') ||
+          block.startsWith('<table')) {
         return block
       }
       return `<p>${block}</p>`
