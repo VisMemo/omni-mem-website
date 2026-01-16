@@ -48,6 +48,31 @@ export const quickstartPage: DocPage = {
       },
     },
     {
+      id: 'configure-llm',
+      heading: {
+        en: 'Configure LLM Provider (Required)',
+        zh: '配置 LLM 提供商（必需）',
+      },
+      content: {
+        en: `**Important:** Before using the SDK, you must configure an LLM provider. Omni Memory uses LLMs to extract entities, events, and semantic information from your conversations.
+
+1. Go to Dashboard → Memory Policy
+2. Add your LLM key (e.g., OpenAI \`sk-...\`, DeepSeek, Qwen, etc.)
+3. Select the provider and model
+4. Set binding to "All API Keys" (or bind to specific keys)
+
+Supported providers: OpenAI, OpenRouter, Qwen, GLM, Gemini, DeepSeek, Moonshot`,
+        zh: `**重要提示：** 使用 SDK 之前，必须配置 LLM 提供商。Omni Memory 使用 LLM 从对话中提取实体、事件和语义信息。
+
+1. 进入控制台 → 记忆策略
+2. 添加您的 LLM 密钥（如 OpenAI \`sk-...\`、DeepSeek、通义千问等）
+3. 选择平台和模型
+4. 将绑定范围设置为"所有 API 密钥"（或绑定到特定密钥）
+
+支持的提供商：OpenAI、OpenRouter、通义千问、智谱、Gemini、DeepSeek、Moonshot`,
+      },
+    },
+    {
       id: 'basic-usage',
       heading: {
         en: 'Basic Usage (30 seconds)',
