@@ -92,15 +92,15 @@ export function DashboardShell({
   const mobileNav = navOpen ? (
     <div className="fixed inset-0 z-40 lg:hidden">
       <div
-        className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
+        className="mobile-nav-backdrop absolute inset-0 bg-ink/30 backdrop-blur-sm"
         onClick={() => setNavOpen(false)}
       />
-      <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-ivory p-6 shadow-xl">
+      <div className="mobile-nav-panel absolute left-0 top-0 flex h-full w-72 flex-col bg-ivory p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">{labels.nav}</div>
+          <div className="nav-section-title text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">{labels.nav}</div>
           <button
             type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/60"
+            className="nav-close-btn flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/60"
             aria-label={labels.closeNav}
             onClick={() => setNavOpen(false)}
           >
@@ -116,14 +116,14 @@ export function DashboardShell({
               setNavOpen(false)
             }}
           />
-          <div className="mt-6 border-t border-ink/10 pt-4">
+          <div className="nav-account-section mt-6 border-t border-ink/10 pt-4">
             {error ? <p className="text-xs text-red-600">{error}</p> : null}
             {session ? (
               <div className="space-y-3">
-                <p className="text-xs text-ink/60">{accountLabel}</p>
+                <p className="nav-account-email text-xs text-ink/60">{accountLabel}</p>
                 <button
                   type="button"
-                  className="w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory hover:bg-teal transition-colors"
+                  className="nav-btn-signout w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory"
                   onClick={handleSignOut}
                   disabled={isSigningOut}
                 >
@@ -137,7 +137,7 @@ export function DashboardShell({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
+                  className="nav-btn-secondary rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
                   onClick={onSignIn}
                   disabled={!onSignIn}
                 >
@@ -145,7 +145,7 @@ export function DashboardShell({
                 </button>
                 <button
                   type="button"
-                  className="rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory hover:bg-seafoam transition-colors"
+                  className="nav-btn-primary rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory"
                   onClick={onSignUp ?? onSignIn}
                   disabled={!onSignUp && !onSignIn}
                 >
@@ -164,7 +164,7 @@ export function DashboardShell({
       {mobileNav}
       <button
         type="button"
-        className="fixed left-4 top-28 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
+        className="nav-hamburger fixed left-4 top-28 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-white/80 text-ink/70 lg:hidden"
         onClick={() => setNavOpen(true)}
         aria-label={labels.openNav}
       >
@@ -173,16 +173,16 @@ export function DashboardShell({
 
       <div className="mx-auto flex w-full max-w-[1360px] gap-8 px-3 py-8">
         <aside className="dashboard-sidebar w-64 shrink-0">
-          <div className="rounded-xl bg-white/70 p-4">
+          <div className="sidebar-card rounded-xl bg-white/70 p-4">
             <NavSections sections={sections} currentPath={currentPath} onNavigate={onNavigate} />
-            <div className="mt-6 border-t border-ink/10 pt-4">
+            <div className="nav-account-section mt-6 border-t border-ink/10 pt-4">
               {error ? <p className="text-xs text-red-600">{error}</p> : null}
               {session ? (
                 <div className="space-y-3">
-                  <p className="text-xs text-ink/60">{accountLabel}</p>
+                  <p className="nav-account-email text-xs text-ink/60">{accountLabel}</p>
                   <button
                     type="button"
-                    className="w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory hover:bg-teal transition-colors"
+                    className="nav-btn-signout w-full rounded-md bg-deep-blue px-3 py-2 text-xs font-semibold text-ivory"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >
@@ -196,7 +196,7 @@ export function DashboardShell({
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70 hover:border-teal hover:text-teal transition-colors"
+                    className="nav-btn-secondary rounded-md border border-ink/10 bg-white/80 px-3 py-2 text-xs font-semibold text-ink/70"
                     onClick={onSignIn}
                     disabled={!onSignIn}
                   >
@@ -204,7 +204,7 @@ export function DashboardShell({
                   </button>
                   <button
                     type="button"
-                    className="rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory hover:bg-seafoam transition-colors"
+                    className="nav-btn-primary rounded-md bg-teal px-3 py-2 text-xs font-semibold text-ivory"
                     onClick={onSignUp ?? onSignIn}
                     disabled={!onSignUp && !onSignIn}
                   >
@@ -215,7 +215,7 @@ export function DashboardShell({
             </div>
           </div>
         </aside>
-        <main className="min-w-0 flex-1">
+        <main className="dashboard-main min-w-0 flex-1">
           <h1 className="sr-only">{title}</h1>
           {children}
         </main>
@@ -233,31 +233,34 @@ function NavSections({
   currentPath: string
   onNavigate: (path: string) => void
 }) {
+  let itemIndex = 0
+
   return (
-    <div className="space-y-6">
-      {sections.map((section) => (
-        <div key={section.title} className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+    <div className="nav-sections space-y-6">
+      {sections.map((section, sectionIdx) => (
+        <div key={section.title} className="nav-section space-y-2" style={{ animationDelay: `${sectionIdx * 100}ms` }}>
+          <p className="nav-section-title text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
             {section.title}
           </p>
-          <div className="space-y-1">
+          <div className="nav-items space-y-1">
             {section.items.map((item) => {
               const isActive = currentPath === item.path
               const Icon = item.icon
+              const currentIndex = itemIndex++
               return (
                 <button
                   key={item.path}
                   type="button"
                   onClick={() => onNavigate(item.path)}
-                  className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
-                    isActive
-                      ? 'bg-deep-blue text-ivory shadow-sm'
-                      : 'text-ink/70 hover:bg-teal/10 hover:text-teal'
+                  className={`nav-item flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm ${
+                    isActive ? 'nav-item-active' : 'nav-item-inactive'
                   }`}
+                  style={{ animationDelay: `${150 + currentIndex * 50}ms` }}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  {Icon ? <Icon className="h-4 w-4" /> : null}
-                  <span>{item.label}</span>
+                  {Icon ? <Icon className="nav-item-icon h-4 w-4" /> : null}
+                  <span className="nav-item-label">{item.label}</span>
+                  {isActive && <span className="nav-active-indicator" />}
                 </button>
               )
             })}
