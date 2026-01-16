@@ -3,7 +3,7 @@ name: Omni Memory
 version: 1.0.0
 description: Long-term memory for AI agents - store, search, and retrieve conversational memories
 tags: [memory, AI, agents, SDK, API, TKG, knowledge-graph]
-updated: 2026-01-15
+updated: 2026-01-16
 ---
 
 # Omni Memory
@@ -62,7 +62,7 @@ pip install omem
 | Method | Purpose | Returns |
 |--------|---------|---------|
 | `mem.add(session_id, messages)` | Store conversation | None (fire-and-forget) |
-| `mem.search(query, limit=10)` | Semantic search | `SearchResult` |
+| `mem.search(query, limit=10, session_id=None)` | Semantic search | `SearchResult` |
 | `mem.explain_event(item)` | Get TKG context for result | `EventContext` or None |
 | `mem.get_entity_history(name)` | All evidence for entity | `List[Evidence]` |
 | `mem.get_evidence_for(item)` | Source for search result | `List[Evidence]` |
@@ -105,13 +105,16 @@ mem.add("conv-002", [
 
 ---
 
-### `mem.search(query, limit=10, fail_silent=False)`
+### `mem.search(query, limit=10, session_id=None, fail_silent=False)`
 
 Search memories using natural language.
 
 **Parameters:**
 - `query` (str): Natural language question
 - `limit` (int): Max results (default: 10)
+- `session_id` (str, optional): Filter results to a specific conversation/session.
+  When provided, only memories from that session are returned. Use for multi-tenant
+  apps or conversation-scoped retrieval.
 - `fail_silent` (bool): Return empty result on error instead of raising
 
 **Returns:** `SearchResult` with:
@@ -137,6 +140,16 @@ if result:
 **For agent robustness:**
 ```python
 result = mem.search("query", fail_silent=True)  # Never raises
+```
+
+**Session-scoped search:**
+```python
+# Store in different sessions
+mem.add("project-alpha", [{"role": "user", "content": "Alpha details..."}])
+mem.add("project-beta", [{"role": "user", "content": "Beta details..."}])
+
+# Search only within project-alpha
+result = mem.search("project details", session_id="project-alpha")
 ```
 
 ---
