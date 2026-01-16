@@ -899,7 +899,7 @@ function FooterSection({ content }: { content: FooterContent }) {
           <div className="footer-bottom-links">
             <a href="#">Home</a>
             <a href="#">About</a>
-            <a href="/docs/api">API</a>
+            <a href="/docs">API</a>
             <a href="/careers">Join us</a>
           </div>
         </div>
@@ -1089,7 +1089,7 @@ const contentByLocale: Record<Locale, AppContent> = {
           label: 'Developers',
           dropdown: [
             { label: 'Documentation', href: '/docs' },
-            { label: 'API', href: '/docs/api' },
+            { label: 'API', href: '/docs' },
             { label: 'Support', href: '/support' },
           ]
         },

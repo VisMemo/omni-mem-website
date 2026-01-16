@@ -52,7 +52,7 @@ export const contentEN = {
         label: 'Developers',
         dropdown: [
           { label: 'Documentation', href: '/docs', icon: '📚' },
-          { label: 'API Reference', href: '/docs/api', icon: 'API' },
+          { label: 'API Reference', href: '/docs', icon: 'API' },
           { label: 'Support', href: '/support', icon: '💬' },
           { label: 'Discord', href: 'https://discord.gg/omnimemory', icon: '🎮' },
         ]
