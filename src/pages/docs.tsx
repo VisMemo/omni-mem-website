@@ -551,7 +551,7 @@ function Prose({ content, onNav }: { content: string; onNav?: (href: string) => 
 
     // Tables (before code blocks to avoid conflicts)
     html = html.replace(/\n\|(.+)\|\n\|([-:| ]+)\|\n((?:\|.+\|\n?)+)/g, (match, header, separator, body) => {
-      const headers = header.split('|').filter(c => c.trim()).map(h => {
+      const headers = header.split('|').filter((c: string) => c.trim()).map((h: string) => {
         const trimmed = h.trim()
         // Process markdown in headers (bold, links, etc.)
         let processed = trimmed
@@ -560,8 +560,8 @@ function Prose({ content, onNav }: { content: string; onNav?: (href: string) => 
         return `<th>${processed}</th>`
       }).join('')
       
-      const rows = body.trim().split('\n').filter(row => row.trim()).map(row => {
-        const cells = row.split('|').filter(c => c.trim()).map(c => {
+      const rows = body.trim().split('\n').filter((row: string) => row.trim()).map((row: string) => {
+        const cells = row.split('|').filter((c: string) => c.trim()).map((c: string) => {
           const trimmed = c.trim()
           // Process markdown in cells (bold, links, code, etc.)
           let processed = trimmed
