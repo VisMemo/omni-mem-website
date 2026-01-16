@@ -33,18 +33,30 @@ export const quickstartPage: DocPage = {
       ],
     },
     {
-      id: 'get-api-key',
+      id: 'setup',
       heading: {
-        en: 'Get Your API Key',
-        zh: '获取 API 密钥',
+        en: 'Set Up Your Account (One-Time)',
+        zh: '设置账户（一次性）',
       },
       content: {
-        en: `1. Sign up at [omnimemory.ai](https://omnimemory.ai)
-2. Go to Dashboard → API Keys
-3. Create a new API key (starts with \`qbk_\`)`,
-        zh: `1. 在 [omnimemory.ai](https://omnimemory.ai) 注册
-2. 进入控制台 → API 密钥
-3. 创建新的 API 密钥（以 \`qbk_\` 开头）`,
+        en: `Before using the SDK, complete these one-time setup steps:
+
+1. **Sign up** at [omnimemory.ai](https://omnimemory.ai)
+2. **Create an API Key** — Dashboard → API Keys → Create New (starts with \`qbk_\`)
+3. **Configure LLM** — Dashboard → Memory Policy → Add your LLM key (e.g., OpenAI \`sk-...\`)
+
+⚠️ **LLM configuration is required!** Without it, you'll get a "Missing required data" error.
+
+👉 **[Detailed Setup Guide](/docs/guides/setup)** — Step-by-step instructions with troubleshooting`,
+        zh: `使用 SDK 之前，请完成以下一次性设置步骤：
+
+1. **注册** [omnimemory.ai](https://omnimemory.ai)
+2. **创建 API 密钥** — 控制台 → API 密钥 → 创建新密钥（以 \`qbk_\` 开头）
+3. **配置 LLM** — 控制台 → 记忆策略 → 添加您的 LLM 密钥（如 OpenAI \`sk-...\`）
+
+⚠️ **LLM 配置是必需的！** 没有它，您会收到"缺少必需数据"错误。
+
+👉 **[详细设置指南](/docs/guides/setup)** — 包含故障排除的分步说明`,
       },
     },
     {
@@ -169,13 +181,13 @@ class MyAgent:
         zh: '下一步',
       },
       content: {
-        en: `- [SDK Reference](/docs/sdk/python) - Full API documentation
-- [API Reference](/docs/api) - HTTP API for direct integration
-- [Multi-user Apps](/docs/guides/multi-user) - User isolation patterns
+        en: `- [Account Setup Guide](/docs/guides/setup) - API keys & LLM configuration (BYOK)
+- [SDK Reference](/docs/sdk/python) - Full API documentation
+- [Agent Integration](/docs/guides/agent) - Add memory to your LLM agent
 - [Error Handling](/docs/reference/errors) - Graceful degradation`,
-        zh: `- [SDK 参考](/docs/sdk/python) - 完整 API 文档
-- [API 参考](/docs/api) - HTTP API 直接集成
-- [多用户应用](/docs/guides/multi-user) - 用户隔离模式
+        zh: `- [账户设置指南](/docs/guides/setup) - API 密钥和 LLM 配置 (BYOK)
+- [SDK 参考](/docs/sdk/python) - 完整 API 文档
+- [Agent 集成](/docs/guides/agent) - 为 LLM Agent 添加记忆
 - [错误处理](/docs/reference/errors) - 优雅降级`,
       },
     },

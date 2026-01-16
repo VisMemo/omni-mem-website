@@ -36,7 +36,7 @@ export const javascriptSdkPage: DocPage = {
 - Use the [Python SDK](/docs/sdk/python) if you're working with a Python backend
 
 **Stay Updated:**
-- Star our [GitHub repository](https://github.com/omnimemory) to get notified
+- Star our [GitHub repository](https://github.com/VisMemo) to get notified
 - Follow us on Twitter for announcements`,
         zh: `JavaScript SDK 目前正在开发中，即将推出。
 
@@ -52,7 +52,7 @@ export const javascriptSdkPage: DocPage = {
 - 如果您使用 Python 后端，可以使用 [Python SDK](/docs/sdk/python)
 
 **保持关注：**
-- Star 我们的 [GitHub 仓库](https://github.com/omnimemory) 以获取通知
+- Star 我们的 [GitHub 仓库](https://github.com/VisMemo) 以获取通知
 - 在 Twitter 上关注我们获取公告`,
       },
     },
@@ -152,14 +152,14 @@ const userMem = new Memory({
       content: {
         en: `Want to be notified when the JavaScript SDK is released?
 
-- Star our [GitHub repository](https://github.com/omnimemory)
+- Star our [GitHub repository](https://github.com/VisMemo)
 - Join our [Discord community](https://discord.gg/omnimemory)
 - Follow [@omnimemory](https://twitter.com/omnimemory) on Twitter
 
 We're actively developing the SDK and expect to release it soon!`,
         zh: `想要在 JavaScript SDK 发布时收到通知？
 
-- Star 我们的 [GitHub 仓库](https://github.com/omnimemory)
+- Star 我们的 [GitHub 仓库](https://github.com/VisMemo)
 - 加入我们的 [Discord 社区](https://discord.gg/omnimemory)
 - 在 Twitter 上关注 [@omnimemory](https://twitter.com/omnimemory)
 
