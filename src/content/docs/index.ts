@@ -23,6 +23,7 @@ export {
 export { javascriptSdkPage } from './sdk/javascript';
 
 // Guides
+export { setupGuidePage } from './guides/setup';
 export { agentIntegrationPage } from './guides/agent';
 export { multiSpeakerPage } from './guides/multi-speaker';
 
@@ -67,6 +68,11 @@ export const docsNavigation: DocsNav = {
     {
       title: { en: 'Getting Started', zh: '开始使用' },
       items: [
+        {
+          title: { en: 'Account Setup', zh: '账户设置' },
+          href: '/docs/guides/setup',
+          description: { en: 'Create API key & configure LLM (BYOK)', zh: '创建 API 密钥并配置 LLM (BYOK)' },
+        },
         {
           title: { en: 'Python SDK', zh: 'Python SDK' },
           href: '/docs/sdk/python',
@@ -140,6 +146,7 @@ export const docsNavigation: DocsNav = {
 import { conceptsPage } from './concepts';
 import { pythonSdkPage } from './sdk/python';
 import { javascriptSdkPage } from './sdk/javascript';
+import { setupGuidePage } from './guides/setup';
 import { agentIntegrationPage } from './guides/agent';
 import { multiSpeakerPage } from './guides/multi-speaker';
 import { pipelinesPage } from './pipelines';
@@ -148,6 +155,7 @@ import { limitsPage } from './reference/limits';
 import { changelogPage } from './reference/changelog';
 
 export const allDocPages = [
+  setupGuidePage,
   pythonSdkPage,
   javascriptSdkPage,
   conceptsPage,
