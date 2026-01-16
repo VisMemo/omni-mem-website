@@ -4,6 +4,7 @@ import {
   conceptsPage,
   pythonSdkPage,
   javascriptSdkPage,
+  setupGuidePage,
   agentIntegrationPage,
   multiSpeakerPage,
   pipelinesPage,
@@ -25,6 +26,7 @@ interface DocsPageProps {
 }
 
 const pageMap: Record<string, DocPage> = {
+  'guides/setup': setupGuidePage,
   'sdk/python': pythonSdkPage,
   'sdk/javascript': javascriptSdkPage,
   'concepts': conceptsPage,
@@ -37,6 +39,7 @@ const pageMap: Record<string, DocPage> = {
 }
 
 const pageOrder = [
+  'guides/setup',
   'sdk/python',
   'sdk/javascript',
   'concepts',
