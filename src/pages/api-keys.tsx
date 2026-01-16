@@ -7,7 +7,6 @@ type ApiKeyRow = {
   id: string
   label: string | null
   key_prefix: string | null
-  revoked_at: string | null
   deleted_at: string | null
   created_at: string | null
 }
@@ -421,16 +420,10 @@ async function handleAction(action: 'rotate' | 'delete', apiKeyId: string) {
                 </tr>
               ) : (
                 rows.map((row) => {
-                  const statusLabel = row.deleted_at
-                    ? '已删除'
-                    : row.revoked_at
-                      ? '已撤销'
-                      : '启用'
+                  const statusLabel = row.deleted_at ? '已删除' : '启用'
                   const statusClass = row.deleted_at
                     ? 'bg-red-500/10 text-red-600'
-                    : row.revoked_at
-                      ? 'bg-ink/5 text-ink/60'
-                      : 'bg-emerald-500/10 text-emerald-600'
+                    : 'bg-emerald-500/10 text-emerald-600'
                   return (
                     <tr key={row.id} className="border-t border-ink/5">
                       <td className="px-4 py-3 font-medium">{row.label ?? '-'}</td>
