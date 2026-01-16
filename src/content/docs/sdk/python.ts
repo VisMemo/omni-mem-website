@@ -66,12 +66,20 @@ export const pythonSdkPage: DocPage = {
 
 1. **Initialize** - Create a Memory instance with your API key
 2. **Save** - Add conversations to memory
-3. **Search** - Query your memories`,
+3. **Search** - Query your memories
+
+:::warning
+**Async Processing:** \`add()\` returns immediately (fire-and-forget). The backend takes **5-30 seconds** to process memories before they're searchable. If you need to search right after adding, use \`wait=True\`.
+:::`,
         zh: `只需三行代码：
 
 1. **初始化** - 使用 API 密钥创建 Memory 实例
 2. **保存** - 将对话添加到记忆中
-3. **搜索** - 查询记忆`,
+3. **搜索** - 查询记忆
+
+:::warning
+**异步处理：** \`add()\` 会立即返回（即发即忘）。后端需要 **5-30 秒** 处理记忆才能被搜索到。如需立即搜索，请使用 \`wait=True\`。
+:::`,
       },
       codeExamples: [
         {
@@ -81,12 +89,13 @@ export const pythonSdkPage: DocPage = {
 
 mem = Memory(api_key="qbk_xxx")  # That's it!
 
-# Save a conversation
+# Save a conversation (returns immediately, processing is async)
 mem.add("conv-001", [
     {"role": "user", "content": "Meeting with Caroline tomorrow at West Lake"},
     {"role": "assistant", "content": "Got it, I'll remember that"},
 ])
 
+# ⚠️ Wait 5-30 seconds for processing, OR use wait=True (see below)
 # Search memories
 result = mem.search("When am I going to West Lake?")
 if result:
@@ -141,41 +150,55 @@ mem = Memory(
         zh: '保存对话',
       },
       content: {
-        en: `Use \`add()\` to save conversations to memory. Fire-and-forget by default; optionally block until processing completes.
+        en: `Use \`add()\` to save conversations to memory.
+
+:::info
+**Default Behavior (Fire-and-Forget):** \`add()\` returns \`None\` immediately. Processing happens asynchronously on the backend (5-30 seconds). This is ideal for production agents where you don't need to search immediately after adding.
+
+**Blocking Mode:** Use \`wait=True\` to block until processing completes. Returns a \`JobStatus\` object. Use this for testing or when you need immediate searchability.
+:::
 
 **Parameters:**
 - **conversation_id** (str): Unique identifier for the conversation
 - **messages** (list): Messages in OpenAI format (role, content, optional name)
-- **wait** (bool): If True, block until backend processing completes
-- **timeout_s** (float): Timeout in seconds when wait=True`,
-        zh: `使用 \`add()\` 将对话保存到记忆中。默认即发即忘；可选等待处理完成后再返回。
+- **wait** (bool): If True, block until backend processing completes (default: False)
+- **timeout_s** (float): Timeout in seconds when wait=True (default: 30.0)`,
+        zh: `使用 \`add()\` 将对话保存到记忆中。
+
+:::info
+**默认行为（即发即忘）：** \`add()\` 立即返回 \`None\`。处理在后端异步进行（5-30 秒）。这适用于不需要在添加后立即搜索的生产环境 Agent。
+
+**阻塞模式：** 使用 \`wait=True\` 阻塞直到处理完成。返回 \`JobStatus\` 对象。用于测试或需要立即搜索的场景。
+:::
 
 **参数：**
 - **conversation_id** (str)：对话的唯一标识符
 - **messages** (list)：OpenAI 格式的消息列表（role, content，可选 name）
-- **wait** (bool)：若为 True，则阻塞直到后端处理完成
-- **timeout_s** (float)：wait=True 时的超时时间（秒）`,
+- **wait** (bool)：若为 True，则阻塞直到后端处理完成（默认：False）
+- **timeout_s** (float)：wait=True 时的超时时间（秒）（默认：30.0）`,
       },
       codeExamples: [
         {
           language: 'python',
-          code: `# Save a multi-speaker conversation
+          code: `# ============================================================
+# Option 1: Fire-and-forget (DEFAULT - recommended for agents)
+# ============================================================
+# Returns immediately, processing happens async (5-30 seconds)
 mem.add("conv-001", [
     {"role": "user", "name": "Caroline", "content": "Hey Mel! How have you been?"},
     {"role": "user", "name": "Melanie", "content": "Hey Caroline! I'm swamped with work."},
-    {"role": "user", "name": "Caroline", "content": "I'm going to a tech conference next week."},
 ])
+# ⚠️ Searching immediately after will return EMPTY results!
+# Wait 5-30 seconds, or use wait=True
 
-# Single-user conversation with assistant
-mem.add("conv-002", [
-    {"role": "user", "content": "Book a meeting tomorrow at 3pm"},
-    {"role": "assistant", "content": "Done! Meeting scheduled for tomorrow at 3pm."},
-])
-
-# Wait for completion (immediate searchability)
-result = mem.add("conv-003", messages, wait=True, timeout_s=30.0)
+# ============================================================
+# Option 2: Wait for completion (for testing / immediate search)
+# ============================================================
+result = mem.add("conv-002", messages, wait=True, timeout_s=60.0)
 if result and result.completed:
-    mem.search("yesterday meeting")`,
+    # Now safe to search immediately
+    found = mem.search("yesterday meeting")
+    print(found.to_prompt())`,
         },
       ],
     },
