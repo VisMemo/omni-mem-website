@@ -31,13 +31,17 @@ from omem import Memory
 # Initialize with your API key
 mem = Memory(api_key="qbk_xxx")
 
-# Store a conversation
+# Store a conversation (returns immediately - async processing)
 mem.add("conv-001", [
     {"role": "user", "name": "Caroline", "content": "I went to a support group yesterday."},
     {"role": "user", "name": "Melanie", "content": "That's awesome! How did it go?"},
 ])
 
-# Search memories (after ~5-30 seconds processing)
+# ⚠️ IMPORTANT: Memories take 5-30 seconds to process before becoming searchable
+# For immediate searchability, use wait=True:
+# mem.add("conv-001", messages, wait=True, timeout_s=60.0)
+
+# Search memories (after processing completes)
 result = mem.search("What did Caroline do recently?")
 if result:
     print(result.to_prompt())  # Ready for LLM context injection
@@ -61,7 +65,8 @@ pip install omem
 
 | Method | Purpose | Returns |
 |--------|---------|---------|
-| `mem.add(session_id, messages)` | Store conversation | None (fire-and-forget) |
+| `mem.add(session_id, messages)` | Store conversation (async) | None (fire-and-forget) |
+| `mem.add(..., wait=True)` | Store and wait for completion | `JobStatus` |
 | `mem.search(query, limit=10)` | Semantic search | `SearchResult` |
 | `mem.explain_event(item)` | Get TKG context for result | `EventContext` or None |
 | `mem.get_entity_history(name)` | All evidence for entity | `List[Evidence]` |
@@ -69,13 +74,19 @@ pip install omem
 
 ---
 
-### `mem.add(session_id, messages)`
+### `mem.add(session_id, messages, wait=False, timeout_s=30.0)`
 
 Store a conversation in memory.
 
 **Parameters:**
 - `session_id` (str): Unique conversation identifier
 - `messages` (list): List of message dicts
+- `wait` (bool): If True, block until processing completes (default: False)
+- `timeout_s` (float): Timeout in seconds when wait=True (default: 30.0)
+
+**Returns:**
+- `None` when `wait=False` (default) - processing is async
+- `JobStatus` when `wait=True` - contains `completed`, `status`, `error` fields
 
 **Message Format:**
 ```python
@@ -88,17 +99,21 @@ Store a conversation in memory.
 
 **Example:**
 ```python
-# Multi-speaker (recommended)
+# Fire-and-forget (default) - returns immediately
 mem.add("conv-001", [
     {"role": "user", "name": "Caroline", "content": "Hey Mel!"},
     {"role": "user", "name": "Melanie", "content": "Hey Caroline!"},
 ])
+# ⚠️ Memories not immediately searchable - wait 5-30 seconds
 
-# Single user with assistant
-mem.add("conv-002", [
+# Wait for completion - blocks until processed
+result = mem.add("conv-002", [
     {"role": "user", "content": "Book a meeting at 3pm"},
     {"role": "assistant", "content": "Done!"},
-])
+], wait=True, timeout_s=60.0)
+if result.completed:
+    # Now safe to search immediately
+    mem.search("meeting")
 ```
 
 **Important:** The `name` field creates distinct entities in the TKG. Without it, all messages are attributed to a generic "user" entity.

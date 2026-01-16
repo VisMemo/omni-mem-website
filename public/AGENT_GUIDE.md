@@ -31,13 +31,17 @@ from omem import Memory
 # Initialize with your API key
 mem = Memory(api_key="qbk_xxx")
 
-# Store a conversation
+# Store a conversation (returns immediately - async processing)
 mem.add("conv-001", [
     {"role": "user", "name": "Caroline", "content": "I went to a support group yesterday."},
     {"role": "user", "name": "Melanie", "content": "That's awesome! How did it go?"},
 ])
 
-# Search memories (after ~5-30 seconds processing)
+# ⚠️ IMPORTANT: Memories take 5-30 seconds to process before becoming searchable
+# For immediate searchability, use wait=True:
+# mem.add("conv-001", messages, wait=True, timeout_s=60.0)
+
+# Search memories (after processing completes)
 result = mem.search("What did Caroline do recently?")
 if result:
     print(result.to_prompt())  # Ready for LLM context injection
@@ -61,21 +65,28 @@ pip install omem
 
 | Method | Purpose | Returns |
 |--------|---------|---------|
-| `mem.add(session_id, messages)` | Store conversation | None (fire-and-forget) |
-| `mem.search(query, limit=10, session_id=None)` | Semantic search | `SearchResult` |
+| `mem.add(session_id, messages)` | Store conversation (async) | None (fire-and-forget) |
+| `mem.add(..., wait=True)` | Store and wait for completion | `JobStatus` |
+| `mem.search(query, limit=10)` | Semantic search | `SearchResult` |
 | `mem.explain_event(item)` | Get TKG context for result | `EventContext` or None |
 | `mem.get_entity_history(name)` | All evidence for entity | `List[Evidence]` |
 | `mem.get_evidence_for(item)` | Source for search result | `List[Evidence]` |
 
 ---
 
-### `mem.add(session_id, messages)`
+### `mem.add(session_id, messages, wait=False, timeout_s=30.0)`
 
 Store a conversation in memory.
 
 **Parameters:**
 - `session_id` (str): Unique conversation identifier
 - `messages` (list): List of message dicts
+- `wait` (bool): If True, block until processing completes (default: False)
+- `timeout_s` (float): Timeout in seconds when wait=True (default: 30.0)
+
+**Returns:**
+- `None` when `wait=False` (default) - processing is async
+- `JobStatus` when `wait=True` - contains `completed`, `status`, `error` fields
 
 **Message Format:**
 ```python
@@ -88,17 +99,21 @@ Store a conversation in memory.
 
 **Example:**
 ```python
-# Multi-speaker (recommended)
+# Fire-and-forget (default) - returns immediately
 mem.add("conv-001", [
     {"role": "user", "name": "Caroline", "content": "Hey Mel!"},
     {"role": "user", "name": "Melanie", "content": "Hey Caroline!"},
 ])
+# ⚠️ Memories not immediately searchable - wait 5-30 seconds
 
-# Single user with assistant
-mem.add("conv-002", [
+# Wait for completion - blocks until processed
+result = mem.add("conv-002", [
     {"role": "user", "content": "Book a meeting at 3pm"},
     {"role": "assistant", "content": "Done!"},
-])
+], wait=True, timeout_s=60.0)
+if result.completed:
+    # Now safe to search immediately
+    mem.search("meeting")
 ```
 
 **Important:** The `name` field creates distinct entities in the TKG. Without it, all messages are attributed to a generic "user" entity.
@@ -331,10 +346,32 @@ except OmemClientError as e:
 
 ## Important Notes
 
-1. **Processing delay**: Memories become searchable ~5-30 seconds after `add()`
+### ⚠️ Async Processing (Critical)
+
+**The `add()` method is asynchronous by default:**
+
+```python
+# Returns immediately (None) - processing happens in background
+mem.add("conv-001", messages)  
+
+# ❌ WRONG: Searching immediately will return EMPTY results!
+result = mem.search("query")  # Empty! Processing not complete.
+
+# ✅ Option 1: Wait for processing (for testing / immediate search)
+mem.add("conv-001", messages, wait=True, timeout_s=60.0)
+result = mem.search("query")  # Works!
+
+# ✅ Option 2: Natural delay in production agents
+# In real agent conversations, enough time passes between
+# add() and search() that processing completes naturally.
+```
+
+### Other Notes
+
+1. **Processing time**: Backend takes 5-30 seconds to process memories
 2. **Multi-speaker**: Use `name` field to distinguish speakers (essential for TKG entity extraction)
 3. **Data isolation**: All data is isolated per API key
-4. **Fire-and-forget**: `add()` returns immediately; processing is async
+4. **Fire-and-forget**: Default `add()` returns immediately; use `wait=True` to block
 
 ---
 
