@@ -1,18 +1,18 @@
 import type { DocPage, SdkClass } from '../types';
 
 // =============================================================================
-// Python SDK Reference
+// Python SDK Quick Start (Combined quickstart + SDK reference)
 // =============================================================================
 
 export const pythonSdkPage: DocPage = {
   slug: 'sdk/python',
   title: {
-    en: 'Python SDK',
-    zh: 'Python SDK',
+    en: 'Python SDK Quick Start',
+    zh: 'Python SDK 快速开始',
   },
   description: {
-    en: 'Complete reference for the omem Python SDK. Give your AI agents long-term memory.',
-    zh: 'omem Python SDK 完整参考。为你的 AI Agent 赋予长期记忆。',
+    en: 'Get started with Omni Memory in 5 minutes. Give your AI agents long-term memory with just a few lines of code.',
+    zh: '5 分钟快速上手 Omni Memory。只需几行代码即可为你的 AI Agent 赋予长期记忆。',
   },
   sections: [
     {
@@ -22,8 +22,8 @@ export const pythonSdkPage: DocPage = {
         zh: '安装',
       },
       content: {
-        en: 'Install the SDK using pip:',
-        zh: '使用 pip 安装 SDK：',
+        en: `Install the SDK using pip:`,
+        zh: `使用 pip 安装 SDK：`,
       },
       codeExamples: [
         {
@@ -40,16 +40,370 @@ export const pythonSdkPage: DocPage = {
       },
       content: {
         en: `- Python 3.8+
-- An API key from [qbrain.ai](https://qbrain.ai)`,
+- An API key from [omnimemory.ai](https://omnimemory.ai)
+
+**Get Your API Key:**
+1. Sign up at [omnimemory.ai](https://omnimemory.ai)
+2. Go to Dashboard → API Keys
+3. Create a new API key (starts with \`qbk_\`)`,
         zh: `- Python 3.8+
-- 来自 [qbrain.ai](https://qbrain.ai) 的 API 密钥`,
+- 来自 [omnimemory.ai](https://omnimemory.ai) 的 API 密钥
+
+**获取 API 密钥：**
+1. 在 [omnimemory.ai](https://omnimemory.ai) 注册
+2. 进入控制台 → API 密钥
+3. 创建新的 API 密钥（以 \`qbk_\` 开头）`,
+      },
+    },
+    {
+      id: 'basic-usage',
+      heading: {
+        en: 'Basic Usage (30 seconds)',
+        zh: '基本用法（30 秒上手）',
+      },
+      content: {
+        en: `Three lines of code is all you need:
+
+1. **Initialize** - Create a Memory instance with your API key
+2. **Save** - Add conversations to memory
+3. **Search** - Query your memories`,
+        zh: `只需三行代码：
+
+1. **初始化** - 使用 API 密钥创建 Memory 实例
+2. **保存** - 将对话添加到记忆中
+3. **搜索** - 查询记忆`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          title: 'Python',
+          code: `from omem import Memory
+
+mem = Memory(api_key="qbk_xxx")  # That's it!
+
+# Save a conversation
+mem.add("conv-001", [
+    {"role": "user", "content": "Meeting with Caroline tomorrow at West Lake"},
+    {"role": "assistant", "content": "Got it, I'll remember that"},
+])
+
+# Search memories
+result = mem.search("When am I going to West Lake?")
+if result:
+    print(result.to_prompt())  # Formatted for LLM context`,
+        },
+      ],
+    },
+    {
+      id: 'initialization',
+      heading: {
+        en: 'Initialization Options',
+        zh: '初始化选项',
+      },
+      content: {
+        en: `The Memory class supports several initialization options:
+
+- **api_key** (required): Your API key starting with \`qbk_\`
+- **user_id** (optional): User identifier for memory isolation in multi-user apps
+- **endpoint** (optional): Override service endpoint for self-hosted deployments
+- **timeout_s** (optional): Request timeout in seconds (default: 30.0)`,
+        zh: `Memory 类支持多种初始化选项：
+
+- **api_key**（必填）：以 \`qbk_\` 开头的 API 密钥
+- **user_id**（可选）：用于多用户应用中记忆隔离的用户标识符
+- **endpoint**（可选）：自托管部署时覆盖服务端点
+- **timeout_s**（可选）：请求超时秒数（默认：30.0）`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          title: 'Initialization Examples',
+          code: `from omem import Memory
+
+# Minimal - just API key
+mem = Memory(api_key="qbk_xxx")
+
+# With user isolation (for multi-user apps)
+mem = Memory(api_key="qbk_xxx", user_id="user-123")
+
+# Self-hosted deployment
+mem = Memory(
+    api_key="your-token",
+    endpoint="https://my-server.com/api/v1/memory"
+)`,
+        },
+      ],
+    },
+    {
+      id: 'add-method',
+      heading: {
+        en: 'Saving Conversations',
+        zh: '保存对话',
+      },
+      content: {
+        en: `Use \`add()\` to save conversations to memory. Fire-and-forget by default; optionally block until processing completes.
+
+**Parameters:**
+- **conversation_id** (str): Unique identifier for the conversation
+- **messages** (list): Messages in OpenAI format (role, content, optional name)
+- **wait** (bool): If True, block until backend processing completes
+- **timeout_s** (float): Timeout in seconds when wait=True`,
+        zh: `使用 \`add()\` 将对话保存到记忆中。默认即发即忘；可选等待处理完成后再返回。
+
+**参数：**
+- **conversation_id** (str)：对话的唯一标识符
+- **messages** (list)：OpenAI 格式的消息列表（role, content，可选 name）
+- **wait** (bool)：若为 True，则阻塞直到后端处理完成
+- **timeout_s** (float)：wait=True 时的超时时间（秒）`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          code: `# Save a multi-speaker conversation
+mem.add("conv-001", [
+    {"role": "user", "name": "Caroline", "content": "Hey Mel! How have you been?"},
+    {"role": "user", "name": "Melanie", "content": "Hey Caroline! I'm swamped with work."},
+    {"role": "user", "name": "Caroline", "content": "I'm going to a tech conference next week."},
+])
+
+# Single-user conversation with assistant
+mem.add("conv-002", [
+    {"role": "user", "content": "Book a meeting tomorrow at 3pm"},
+    {"role": "assistant", "content": "Done! Meeting scheduled for tomorrow at 3pm."},
+])
+
+# Wait for completion (immediate searchability)
+result = mem.add("conv-003", messages, wait=True, timeout_s=30.0)
+if result and result.completed:
+    mem.search("yesterday meeting")`,
+        },
+      ],
+    },
+    {
+      id: 'search-method',
+      heading: {
+        en: 'Searching Memories',
+        zh: '搜索记忆',
+      },
+      content: {
+        en: `Use \`search()\` to find relevant memories using natural language.
+
+**Parameters:**
+- **query** (str): Natural language search question
+- **limit** (int): Maximum results to return (default: 10)
+- **fail_silent** (bool): Return empty result on error instead of raising (recommended for agents)`,
+        zh: `使用 \`search()\` 通过自然语言搜索相关记忆。
+
+**参数：**
+- **query** (str)：自然语言搜索问题
+- **limit** (int)：最多返回的结果数量（默认：10）
+- **fail_silent** (bool)：出错时返回空结果而不是抛出异常（推荐用于 Agent）`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          code: `result = mem.search("meeting with Caroline")
+
+# Check if results exist
+if result:
+    # Iterate over results
+    for item in result:
+        print(f"[{item.score:.2f}] {item.text}")
+
+    # Format for LLM context injection
+    prompt = result.to_prompt()
+
+# For agent robustness - never raises
+result = mem.search("query", fail_silent=True)`,
+        },
+      ],
+    },
+    {
+      id: 'agent-integration',
+      heading: {
+        en: 'Agent Integration Pattern',
+        zh: 'Agent 集成模式',
+      },
+      content: {
+        en: `Here's a minimal pattern for adding memory to any LLM-based agent:`,
+        zh: `以下是将记忆添加到任何基于 LLM 的 Agent 的最简模式：`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          title: 'Agent Integration Pattern',
+          code: `from omem import Memory
+
+class MyAgent:
+    def __init__(self, api_key: str, user_id: str = None):
+        self.mem = Memory(api_key=api_key, user_id=user_id)
+        self.messages = []
+
+    def chat(self, user_input: str) -> str:
+        # 1. Record user message
+        self.messages.append({"role": "user", "content": user_input})
+
+        # 2. Search relevant memories
+        memory_context = ""
+        result = self.mem.search(user_input, fail_silent=True)
+        if result:
+            memory_context = f"\\n\\n[Relevant Memories]\\n{result.to_prompt()}"
+
+        # 3. Call LLM with memory context
+        response = your_llm.chat(
+            system=f"You are a helpful assistant.{memory_context}",
+            messages=self.messages,
+        )
+
+        # 4. Record assistant response
+        self.messages.append({"role": "assistant", "content": response})
+        return response
+
+    def end_conversation(self):
+        # 5. Save conversation to memory when done
+        if self.messages:
+            self.mem.add(f"conv-{uuid4()}", self.messages)
+            self.messages = []`,
+        },
+      ],
+    },
+    {
+      id: 'error-handling',
+      heading: {
+        en: 'Error Handling',
+        zh: '错误处理',
+      },
+      content: {
+        en: `The SDK is designed with agent robustness in mind: **memory service failures should not break your agent's conversation flow.**
+
+**Exception Types:**
+- \`OmemClientError\` - Base exception for all SDK errors
+- \`OmemRateLimitError\` - Rate limit exceeded (has \`retry_after_s\` attribute)`,
+        zh: `SDK 的设计原则是保证 Agent 健壮性：**记忆服务故障不应中断 Agent 的对话流程。**
+
+**异常类型：**
+- \`OmemClientError\` - 所有 SDK 错误的基类
+- \`OmemRateLimitError\` - 超出速率限制（包含 \`retry_after_s\` 属性）`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          title: 'Graceful Degradation',
+          code: `from omem import Memory, OmemClientError, OmemRateLimitError
+
+mem = Memory(api_key="qbk_xxx")
+
+# Option 1: fail_silent for search (recommended for agents)
+result = mem.search("query", fail_silent=True)
+# Returns empty SearchResult on error, never raises
+
+# Option 2: try-except for explicit handling
+try:
+    mem.add("conv", messages)
+except OmemRateLimitError as e:
+    print(f"Rate limited. Retry after {e.retry_after_s}s")
+except OmemClientError as e:
+    print(f"Memory error: {e}")
+    # Continue conversation without memory`,
+        },
+      ],
+    },
+    {
+      id: 'multi-user',
+      heading: {
+        en: 'Multi-User Applications',
+        zh: '多用户应用',
+      },
+      content: {
+        en: `Each user can have their own isolated memory space. Simply pass \`user_id\` during initialization:`,
+        zh: `每个用户可以拥有独立的记忆空间。只需在初始化时传入 \`user_id\`：`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          code: `# Create isolated memory instances for different users
+mem_alice = Memory(api_key="qbk_xxx", user_id="alice")
+mem_bob = Memory(api_key="qbk_xxx", user_id="bob")
+
+# Each user's memories are isolated
+mem_alice.add("conv-1", [{"role": "user", "content": "I love coffee"}])
+mem_bob.add("conv-1", [{"role": "user", "content": "I love tea"}])
+
+# Searches are scoped to each user
+mem_alice.search("what do I like?")  # → coffee
+mem_bob.search("what do I like?")    # → tea`,
+        },
+      ],
+    },
+    {
+      id: 'advanced-features',
+      heading: {
+        en: 'Advanced: TKG Features',
+        zh: '高级：TKG 功能',
+      },
+      content: {
+        en: `The SDK exposes the Temporal Knowledge Graph (TKG) for advanced use cases:
+
+- **explain_event(item)** - Get full context for a search result (entities, knowledge, places)
+- **get_entity_history(entity)** - Get all utterances related to an entity
+- **get_evidence_for(item)** - Get source evidence for a specific result
+
+These are useful for citing sources, debugging knowledge, and building grounded responses.`,
+        zh: `SDK 公开了时序知识图谱（TKG）用于高级用例：
+
+- **explain_event(item)** - 获取搜索结果的完整上下文（实体、知识、地点）
+- **get_entity_history(entity)** - 获取与实体相关的所有话语
+- **get_evidence_for(item)** - 获取特定结果的源证据
+
+这些功能对于引用来源、调试知识和构建有根据的响应非常有用。`,
+      },
+      codeExamples: [
+        {
+          language: 'python',
+          title: 'TKG Example',
+          code: `result = mem.search("Caroline support group", limit=1)
+item = result.items[0]
+
+# Get full TKG context
+ctx = mem.explain_event(item)
+if ctx:
+    print(f"Entities: {ctx.entities}")
+    for k in ctx.knowledge:
+        print(f"Fact: {k.summary}")
+
+# Get entity history
+history = mem.get_entity_history("Caroline", limit=10)
+for e in history:
+    print(f"[{e.timestamp}] {e.text}")`,
+        },
+      ],
+    },
+    {
+      id: 'next-steps',
+      heading: {
+        en: 'Next Steps',
+        zh: '下一步',
+      },
+      content: {
+        en: `- [Core Concepts](/docs/concepts) - Understand how memory works
+- [Agent Integration Guide](/docs/guides/agent) - Detailed integration patterns
+- [Multi-Speaker Guide](/docs/guides/multi-speaker) - Handle group conversations
+- [Error Handling](/docs/reference/errors) - Graceful degradation patterns
+- [API Reference](/docs/api/memory) - HTTP API for other languages
+- [GitHub Repository](omnimemory.ai) - Source code and examples`,
+        zh: `- [核心概念](/docs/concepts) - 了解记忆如何工作
+- [Agent 集成指南](/docs/guides/agent) - 详细的集成模式
+- [多说话人指南](/docs/guides/multi-speaker) - 处理群组对话
+- [错误处理](/docs/reference/errors) - 优雅降级模式
+- [API 参考](/docs/api/memory) - 其他语言的 HTTP API
+- [GitHub 仓库](omnimemory.ai) - 源代码和示例`,
       },
     },
   ],
 };
 
 // =============================================================================
-// Memory Class Reference
+// Memory Class Reference (exported for detailed API docs)
 // =============================================================================
 
 export const memoryClass: SdkClass = {
@@ -65,8 +419,8 @@ export const memoryClass: SdkClass = {
         type: 'str',
         required: true,
         description: {
-          en: 'Your API key (starts with `qbk_`). Get one at qbrain.ai.',
-          zh: '你的 API 密钥（以 `qbk_` 开头）。在 qbrain.ai 获取。',
+          en: 'Your API key (starts with `qbk_`). Get one at omnimemory.ai.',
+          zh: '你的 API 密钥（以 `qbk_` 开头）。在 omnimemory.ai 获取。',
         },
       },
       {
@@ -109,252 +463,13 @@ export const memoryClass: SdkClass = {
 mem = Memory(api_key="qbk_xxx")
 
 # With user isolation (for multi-user apps)
-mem = Memory(api_key="qbk_xxx", user_id="user-123")
-
-# Self-hosted deployment
-mem = Memory(
-    api_key="your-token",
-    endpoint="https://my-server.com/api/v1/memory"
-)`,
+mem = Memory(api_key="qbk_xxx", user_id="user-123")`,
     },
   },
-  methods: [
-    {
-      name: 'add',
-      signature: 'add(conversation_id: str, messages: list[dict]) -> None',
-      description: {
-        en: 'Save a conversation to memory. Fire-and-forget - returns immediately while processing happens asynchronously.',
-        zh: '将对话保存到记忆中。即发即忘 - 立即返回，处理在后台异步进行。',
-      },
-      parameters: [
-        {
-          name: 'conversation_id',
-          type: 'str',
-          required: true,
-          description: {
-            en: 'Unique identifier for the conversation.',
-            zh: '对话的唯一标识符。',
-          },
-        },
-        {
-          name: 'messages',
-          type: 'list[dict]',
-          required: true,
-          description: {
-            en: 'List of messages in OpenAI format (role, content).',
-            zh: 'OpenAI 格式的消息列表（role, content）。',
-          },
-        },
-      ],
-      returns: {
-        type: 'None',
-        description: {
-          en: 'Returns immediately. Memories become searchable after 5-30 seconds of backend processing.',
-          zh: '立即返回。记忆在后台处理 5-30 秒后可被搜索。',
-        },
-      },
-      example: {
-        language: 'python',
-        code: `# Save a complete conversation
-mem.add("conv-001", [
-    {"role": "user", "content": "Book a meeting tomorrow at 3pm"},
-    {"role": "assistant", "content": "Done! Meeting scheduled for tomorrow at 3pm."},
-    {"role": "user", "content": "Thanks!"},
-])
-
-# Note: Call once per conversation (not per message) for best results`,
-      },
-    },
-    {
-      name: 'search',
-      signature: 'search(query: str, *, limit: int = 10, fail_silent: bool = False) -> SearchResult',
-      description: {
-        en: 'Search memories using natural language. Returns strongly-typed results with relevance scores.',
-        zh: '使用自然语言搜索记忆。返回带有相关性分数的强类型结果。',
-      },
-      parameters: [
-        {
-          name: 'query',
-          type: 'str',
-          required: true,
-          description: {
-            en: 'Natural language search question.',
-            zh: '自然语言搜索问题。',
-          },
-        },
-        {
-          name: 'limit',
-          type: 'int',
-          required: false,
-          default: '10',
-          description: {
-            en: 'Maximum number of results to return.',
-            zh: '最多返回的结果数量。',
-          },
-        },
-        {
-          name: 'fail_silent',
-          type: 'bool',
-          required: false,
-          default: 'False',
-          description: {
-            en: 'If True, return empty result on error instead of raising exception.',
-            zh: '如果为 True，出错时返回空结果而不是抛出异常。',
-          },
-        },
-      ],
-      returns: {
-        type: 'SearchResult',
-        description: {
-          en: 'Search results with truthy check, iteration, and LLM formatting support.',
-          zh: '支持真值检查、迭代和 LLM 格式化的搜索结果。',
-        },
-      },
-      example: {
-        language: 'python',
-        code: `result = mem.search("meeting with Caroline")
-
-# Check if results exist
-if result:
-    # Iterate over results
-    for item in result:
-        print(f"[{item.score:.2f}] {item.text}")
-    
-    # Format for LLM context injection
-    prompt = result.to_prompt()
-
-# For agent robustness - never raises
-result = mem.search("query", fail_silent=True)`,
-      },
-    },
-    {
-      name: 'conversation',
-      signature: 'conversation(conversation_id: str) -> Conversation',
-      description: {
-        en: 'Create a conversation buffer for incremental message collection. Useful when messages arrive one at a time.',
-        zh: '创建对话缓冲区用于增量消息收集。适用于消息逐条到达的场景。',
-      },
-      parameters: [
-        {
-          name: 'conversation_id',
-          type: 'str',
-          required: true,
-          description: {
-            en: 'Unique identifier for the conversation.',
-            zh: '对话的唯一标识符。',
-          },
-        },
-      ],
-      returns: {
-        type: 'Conversation',
-        description: {
-          en: 'A conversation buffer that can be used as a context manager.',
-          zh: '可用作上下文管理器的对话缓冲区。',
-        },
-      },
-      example: {
-        language: 'python',
-        code: `# Option 1: Context manager (auto-commits on exit)
-with mem.conversation("conv-001") as conv:
-    conv.add({"role": "user", "content": "Hello"})
-    conv.add({"role": "assistant", "content": "Hi there!"})
-# Auto-commits here
-
-# Option 2: Manual control
-conv = mem.conversation("conv-001")
-conv.add({"role": "user", "content": "First message"})
-conv.add({"role": "assistant", "content": "Reply"})
-result = conv.commit()  # Returns AddResult with job_id`,
-      },
-    },
-  ],
+  methods: [],
 };
 
-// =============================================================================
-// Error Handling
-// =============================================================================
-
-export const errorHandlingSection: DocPage['sections'][0] = {
-  id: 'error-handling',
-  heading: {
-    en: 'Error Handling',
-    zh: '错误处理',
-  },
-  content: {
-    en: `The SDK is designed with agent robustness in mind: **memory service failures should not break your agent's conversation flow.**
-
-### Exception Types
-
-| Exception | Description |
-|-----------|-------------|
-| \`OmemClientError\` | Base exception for all SDK errors |
-| \`OmemRateLimitError\` | Rate limit exceeded (has \`retry_after_s\` attribute) |
-
-### Graceful Degradation Pattern`,
-    zh: `SDK 的设计原则是保证 Agent 健壮性：**记忆服务故障不应中断 Agent 的对话流程。**
-
-### 异常类型
-
-| 异常 | 描述 |
-|------|------|
-| \`OmemClientError\` | 所有 SDK 错误的基类 |
-| \`OmemRateLimitError\` | 超出速率限制（包含 \`retry_after_s\` 属性） |
-
-### 优雅降级模式`,
-  },
-  codeExamples: [
-    {
-      language: 'python',
-      title: 'Graceful Degradation',
-      code: `from omem import Memory, OmemClientError, OmemRateLimitError
-
-mem = Memory(api_key="qbk_xxx")
-
-# Option 1: fail_silent for search (recommended for agents)
-result = mem.search("query", fail_silent=True)
-# Returns empty SearchResult on error, never raises
-
-# Option 2: try-except for explicit handling
-try:
-    mem.add("conv", messages)
-except OmemRateLimitError as e:
-    print(f"Rate limited. Retry after {e.retry_after_s}s")
-except OmemClientError as e:
-    print(f"Memory error: {e}")
-    # Continue conversation without memory`,
-    },
-  ],
-};
-
-// =============================================================================
-// Multi-User Apps
-// =============================================================================
-
-export const multiUserSection: DocPage['sections'][0] = {
-  id: 'multi-user',
-  heading: {
-    en: 'Multi-User Applications',
-    zh: '多用户应用',
-  },
-  content: {
-    en: `Each user can have their own isolated memory space. Simply pass \`user_id\` during initialization:`,
-    zh: `每个用户可以拥有独立的记忆空间。只需在初始化时传入 \`user_id\`：`,
-  },
-  codeExamples: [
-    {
-      language: 'python',
-      code: `# Create isolated memory instances for different users
-mem_alice = Memory(api_key="qbk_xxx", user_id="alice")
-mem_bob = Memory(api_key="qbk_xxx", user_id="bob")
-
-# Each user's memories are isolated
-mem_alice.add("conv-1", [{"role": "user", "content": "I love coffee"}])
-mem_bob.add("conv-1", [{"role": "user", "content": "I love tea"}])
-
-# Searches are scoped to each user
-mem_alice.search("what do I like?")  # → coffee
-mem_bob.search("what do I like?")    # → tea`,
-    },
-  ],
-};
-
+// Keep exports for backwards compatibility
+export const errorHandlingSection = pythonSdkPage.sections.find(s => s.id === 'error-handling')!;
+export const multiUserSection = pythonSdkPage.sections.find(s => s.id === 'multi-user')!;
+export const tkgFeaturesSection = pythonSdkPage.sections.find(s => s.id === 'advanced-features')!;

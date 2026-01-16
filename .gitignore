@@ -31,3 +31,6 @@ test.png
 # Logs
 *.log
 npm-debug.log*
+
+# Internal docs (not for git)
+process.md

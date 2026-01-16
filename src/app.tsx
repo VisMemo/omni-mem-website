@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { BarChart3, Home, KeyRound, Settings, UploadCloud, UserCircle, Play, Check, X, Linkedin, Github } from 'lucide-react'
+import { Analytics } from '@vercel/analytics/react'
 import { DashboardShell, type DashboardLink } from './components/dashboard-shell'
 import { useSupabaseSession } from './hooks/use-supabase-session'
 import { DashboardPage } from './pages/dashboard'
@@ -12,6 +13,7 @@ import { ProfilePage } from './pages/profile'
 import { SignInPage } from './pages/auth/sign-in'
 import { SignUpPage } from './pages/auth/sign-up'
 import { PasswordResetPage } from './pages/auth/password-reset'
+import { UpdatePasswordPage } from './pages/auth/update-password'
 import { DocsPage } from './pages/docs'
 import { FaqPage } from './pages/faq'
 
@@ -23,9 +25,14 @@ export function App() {
   const [isScrolled, setIsScrolled] = useState(false)
   const content = contentByLocale[locale]
   const { session, isLoading: isSessionLoading } = useSupabaseSession()
+  const accountDisplayName =
+    session?.user?.user_metadata?.name ??
+    (session?.user?.email ? session.user.email.split('@')[0] : null)
+  const accountEmail = session?.user?.email ?? null
   const signInPath = buildLocalePathname({ pathname: ROUTE_PATHS.signIn, locale })
   const signUpPath = buildLocalePathname({ pathname: ROUTE_PATHS.signUp, locale })
   const passwordResetPath = buildLocalePathname({ pathname: ROUTE_PATHS.passwordReset, locale })
+  const updatePasswordPath = buildLocalePathname({ pathname: ROUTE_PATHS.updatePassword, locale })
   const dashboardPath = buildLocalePathname({ pathname: ROUTE_PATHS.dashboard, locale })
   const apiKeysPath = buildLocalePathname({ pathname: ROUTE_PATHS.apiKeys, locale })
   const uploadsPath = buildLocalePathname({ pathname: ROUTE_PATHS.uploads, locale })
@@ -34,6 +41,7 @@ export function App() {
   const profilePath = buildLocalePathname({ pathname: ROUTE_PATHS.profile, locale })
   const homePath = '/'
   const isMarketing = routeKey === 'marketing'
+  const isDocs = routeKey === 'docs'
   const isProtectedRoute = ['dashboard', 'apiKeys', 'uploads', 'usage', 'memoryPolicy', 'profile'].includes(routeKey)
 
   useEffect(() => {
@@ -64,25 +72,35 @@ export function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
-    if (normalizedPath !== window.location.pathname) {
-      const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
-      window.history.replaceState(null, '', nextUrl)
-      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
-    }
+    // Sync locale to document and localStorage
     document.documentElement.lang = locale
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
+
+    // Update URL to reflect current locale (URL-based i18n)
+    const currentPath = window.location.pathname
+    const pathLocale = getLocaleFromPathname({ pathname: currentPath })
+    const strippedPath = stripLocaleFromPathname({ pathname: currentPath })
+
+    // Build the correct URL for current locale
+    const correctPath = buildLocalePathname({ pathname: strippedPath, locale })
+    if (currentPath !== correctPath) {
+      const nextUrl = `${correctPath}${window.location.search}${window.location.hash}`
+      window.history.replaceState(null, '', nextUrl)
+    }
   }, [locale])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     function handlePopState() {
-      const normalizedPath = stripLocaleFromPathname({ pathname: window.location.pathname })
-      if (normalizedPath !== window.location.pathname) {
-        const nextUrl = `${normalizedPath}${window.location.search}${window.location.hash}`
-        window.history.replaceState(null, '', nextUrl)
+      const pathname = window.location.pathname
+      // Sync locale from URL
+      const pathLocale = getLocaleFromPathname({ pathname })
+      if (pathLocale && pathLocale !== locale) {
+        setLocale(pathLocale)
       }
-      setRouteKey(getRouteFromPathname({ pathname: normalizedPath }))
+      // Get route from stripped path
+      const strippedPath = stripLocaleFromPathname({ pathname })
+      setRouteKey(getRouteFromPathname({ pathname: strippedPath }))
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -96,7 +114,9 @@ export function App() {
   }, [isProtectedRoute, isSessionLoading, routeKey, session, signInPath])
 
   function handleLocaleToggle() {
-    setLocale(locale === 'en' ? 'zh' : 'en')
+    const newLocale = locale === 'en' ? 'zh' : 'en'
+    setLocale(newLocale)
+    // URL will be updated by the useEffect that watches locale
   }
 
   function handleSignInClick() { navigateTo(signInPath) }
@@ -104,8 +124,11 @@ export function App() {
 
   function navigateTo(pathname: string) {
     if (typeof window === 'undefined') return
-    window.history.pushState({}, '', pathname)
-    setRouteKey(getRouteFromPathname({ pathname }))
+    // Build locale-aware path
+    const strippedPath = stripLocaleFromPathname({ pathname })
+    const localePath = buildLocalePathname({ pathname: strippedPath, locale })
+    window.history.pushState({}, '', localePath)
+    setRouteKey(getRouteFromPathname({ pathname: strippedPath }))
   }
 
   const dashboardLinks: DashboardLink[] = locale === 'zh' ? [
@@ -135,7 +158,11 @@ export function App() {
     }
   })()
 
-  const mainClassName = isProtectedRoute ? 'min-h-[70vh]' : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
+  const mainClassName = isProtectedRoute
+    ? 'min-h-[70vh]'
+    : isDocs
+      ? 'min-h-[70vh] pt-0'
+      : 'min-h-[70vh] px-6 pb-24 pt-28 sm:px-8'
 
   return (
     <div className="min-h-screen bg-white">
@@ -190,6 +217,14 @@ export function App() {
                 {content.navbar.ctaLabel}
               </a>
             )}
+            {!isMarketing && session ? (
+              <div className="hidden flex-col items-end text-xs text-ink/60 sm:flex">
+                <span className="font-semibold text-ink">
+                  {accountDisplayName ?? '账户'}
+                </span>
+                {accountEmail ? <span>{accountEmail}</span> : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </nav>
@@ -240,17 +275,32 @@ export function App() {
           )}
           {routeKey === 'passwordReset' && (
             <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
-              <PasswordResetPage signInPath={signInPath} onNavigate={navigateTo} />
+              <PasswordResetPage
+                signInPath={signInPath}
+                dashboardPath={dashboardPath}
+                updatePasswordPath={updatePasswordPath}
+                onNavigate={navigateTo}
+              />
+            </div>
+          )}
+          {routeKey === 'updatePassword' && (
+            <div className="mx-auto flex w-full max-w-5xl justify-center py-16">
+              <UpdatePasswordPage
+                dashboardPath={dashboardPath}
+                signInPath={signInPath}
+                onNavigate={navigateTo}
+              />
             </div>
           )}
           {routeKey === 'docs' && (
-            <DocsPage locale={locale} onNavigate={navigateTo} />
+            <DocsPage locale={locale} onNavigate={navigateTo} onLocaleToggle={handleLocaleToggle} />
           )}
           {routeKey === 'faq' && (
             <FaqPage locale={locale} />
           )}
         </main>
       )}
+      <Analytics />
     </div>
   )
 }
@@ -281,21 +331,36 @@ function HeroSection({ content }: { content: HeroContent }) {
 
 // ============ DEMO SECTION (PLACEHOLDER) ============
 function DemoSection() {
+  const [activeTab, setActiveTab] = useState<'conversation' | 'video'>('conversation')
+
   return (
-    <section className="demo-section-placeholder">
+    <section className="demo-section">
       <div className="container-v2">
-        <div className="placeholder-inner">
-          <div className="placeholder-content">
-            <div className="placeholder-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-            </div>
-            <h3 className="placeholder-title">Interactive Demo</h3>
-            <p className="placeholder-description">Experience Omni Memory in action. Interactive demo coming soon.</p>
-          </div>
-          <div className="placeholder-particles">
-            <span></span><span></span><span></span><span></span><span></span><span></span>
+        <h2 className="demo-section-title">Introducing OmniMemory</h2>
+        <div className="demo-tabs">
+          <button
+            className={`demo-tab ${activeTab === 'conversation' ? 'active' : ''}`}
+            onClick={() => setActiveTab('conversation')}
+          >
+            Conversation
+          </button>
+          <button
+            className={`demo-tab ${activeTab === 'video' ? 'active' : ''}`}
+            onClick={() => setActiveTab('video')}
+          >
+            Video
+          </button>
+        </div>
+        <div className="demo-content">
+          <h3 className="demo-content-title">
+            {activeTab === 'conversation' ? 'Interactive Demo' : 'Video Demo'}
+          </h3>
+          <div className="demo-placeholder">
+            <p className="demo-placeholder-text">
+              {activeTab === 'conversation'
+                ? 'Experience Omni Memory in action. Interactive demo coming soon.'
+                : 'Watch how Omni Memory works. Video demo coming soon.'}
+            </p>
           </div>
         </div>
       </div>
@@ -304,62 +369,174 @@ function DemoSection() {
 }
 
 // ============ BENCHMARK SECTION ============
+// Benchmarks: LoCoMo + LongMemEval - see process.md for tracking
 function BenchmarkSection({ content }: { content: StatsContent }) {
+  const [activeBenchmark, setActiveBenchmark] = useState<'locomo' | 'longmemeval'>('locomo')
+
   return (
     <section className="benchmark-section">
       <div className="container-v2">
-        <p className="module-eyebrow">Benchmark Results</p>
-        <h2 className="module-title">Leading Performance on LoCoMo</h2>
-        <p className="module-subtitle">Omni Memory achieves state-of-the-art results on long-context memory benchmarks.</p>
+        <p className="module-eyebrow">Multimodal Benchmarks</p>
+        <h2 className="module-title">Memory Across All Modalities</h2>
+        <p className="module-subtitle">Omni Memory processes and remembers context from conversations, audio, and video.</p>
 
-        <div className="benchmark-placeholder">
-          <div className="benchmark-chart">
-            <div className="chart-title">J-Score Accuracy (%)</div>
-            <div className="chart-bars">
-              <div className="chart-bar-group">
-                <div className="chart-bar-label">Omni Memory</div>
-                <div className="chart-bar-container">
-                  <div className="chart-bar chart-bar-primary" style={{ width: '77.8%' }}>
-                    <span className="chart-bar-value">77.8%</span>
-                  </div>
+        {/* Modality Tabs */}
+        <div className="benchmark-tabs">
+          <button
+            className={`benchmark-tab ${activeBenchmark === 'locomo' ? 'active' : ''}`}
+            onClick={() => setActiveBenchmark('locomo')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            LoCoMo
+          </button>
+          <button
+            className={`benchmark-tab ${activeBenchmark === 'longmemeval' ? 'active' : ''}`}
+            onClick={() => setActiveBenchmark('longmemeval')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            LongMemEval
+          </button>
+          <button className="benchmark-tab disabled" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            Audio
+            <span className="tab-badge">Soon</span>
+          </button>
+          <button className="benchmark-tab disabled" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+            </svg>
+            Video
+            <span className="tab-badge">Soon</span>
+          </button>
+        </div>
+
+        {activeBenchmark === 'locomo' && (
+          <div className="benchmark-content">
+            <div className="benchmark-info">
+              <h3 className="benchmark-modality-title">LoCoMo Benchmark</h3>
+              <p className="benchmark-modality-desc">Long-context conversation memory evaluation with multi-hop reasoning</p>
+              <div className="benchmark-modality-stats">
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">77.8%</span>
+                  <span className="benchmark-stat-label">J-Score Accuracy</span>
+                </div>
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">4</span>
+                  <span className="benchmark-stat-label">Task Categories</span>
+                </div>
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">&lt;700ms</span>
+                  <span className="benchmark-stat-label">Retrieval Latency</span>
                 </div>
               </div>
-              <div className="chart-bar-group">
-                <div className="chart-bar-label">GPT-4 + RAG</div>
-                <div className="chart-bar-container">
-                  <div className="chart-bar chart-bar-secondary" style={{ width: '62%' }}>
-                    <span className="chart-bar-value">62%</span>
+            </div>
+
+            <div className="benchmark-chart">
+              <div className="chart-title">LoCoMo Benchmark - J-Score Accuracy (%)</div>
+              <div className="chart-bars">
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">Omni Memory</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-primary" style={{ width: '77.8%' }}>
+                      <span className="chart-bar-value">77.8%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="chart-bar-group">
-                <div className="chart-bar-label">Claude + RAG</div>
-                <div className="chart-bar-container">
-                  <div className="chart-bar chart-bar-secondary" style={{ width: '58%' }}>
-                    <span className="chart-bar-value">58%</span>
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">GPT-4 + RAG</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-secondary" style={{ width: '62%' }}>
+                      <span className="chart-bar-value">62%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="chart-bar-group">
-                <div className="chart-bar-label">MemGPT</div>
-                <div className="chart-bar-container">
-                  <div className="chart-bar chart-bar-secondary" style={{ width: '45%' }}>
-                    <span className="chart-bar-value">45%</span>
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">Claude + RAG</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-secondary" style={{ width: '58%' }}>
+                      <span className="chart-bar-value">58%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">MemGPT</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-secondary" style={{ width: '45%' }}>
+                      <span className="chart-bar-value">45%</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="benchmark-stats">
-            {content.items.map((stat, i) => (
-              <div key={i} className="benchmark-stat">
-                <span className="benchmark-stat-value">{stat.value}</span>
-                <span className="benchmark-stat-label">{stat.label}</span>
+        {activeBenchmark === 'longmemeval' && (
+          <div className="benchmark-content">
+            <div className="benchmark-info">
+              <h3 className="benchmark-modality-title">LongMemEval Benchmark</h3>
+              <p className="benchmark-modality-desc">Comprehensive evaluation across 6 memory dimensions</p>
+              <div className="benchmark-modality-stats">
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">82%</span>
+                  <span className="benchmark-stat-label">Overall Accuracy</span>
+                </div>
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">95.6%</span>
+                  <span className="benchmark-stat-label">Session Assistant</span>
+                </div>
+                <div className="benchmark-stat">
+                  <span className="benchmark-stat-value">86.8%</span>
+                  <span className="benchmark-stat-label">Temporal Reasoning</span>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className="benchmark-chart">
+              <div className="chart-title">LongMemEval - Overall Accuracy (%)</div>
+              <div className="chart-bars">
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">Omni Memory</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-primary" style={{ width: '82%' }}>
+                      <span className="chart-bar-value">82%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">Mem0</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-secondary" style={{ width: '66.4%' }}>
+                      <span className="chart-bar-value">66.4%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="chart-bar-group">
+                  <div className="chart-bar-label">Zep</div>
+                  <div className="chart-bar-container">
+                    <div className="chart-bar chart-bar-secondary" style={{ width: '63.8%' }}>
+                      <span className="chart-bar-value">63.8%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )
@@ -657,6 +834,7 @@ function FooterSection({ content }: { content: FooterContent }) {
   return (
     <footer className="footer-v2">
       <div className="container-v2">
+        {/* Top Section: Brand + 3 Link Columns */}
         <div className="footer-grid-v2">
           <div className="footer-brand-v2">
             <div className="footer-logo-v2">
@@ -664,64 +842,65 @@ function FooterSection({ content }: { content: FooterContent }) {
               <span>{content.brandName}</span>
             </div>
             <p className="footer-tagline-v2">{content.tagline}</p>
-            <div className="footer-social-v2">
-              <a href="#" className="social-icon"><X size={18} /></a>
-              <a href="#" className="social-icon"><Linkedin size={18} /></a>
-              <a href="#" className="social-icon"><Github size={18} /></a>
-              <a href="#" className="social-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                </svg>
-              </a>
-              <div className="wechat-wrapper">
-                <a href="#" className="social-icon wechat-trigger">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446C13.285 8.602 16.312 8.02 18 8.02l.075-.001V7.91c0-3.998-4.016-7.271-9.309-7.271l-.075-.001zm-2.82 4.328a1.192 1.192 0 1 1 0 2.384 1.192 1.192 0 0 1 0-2.384zm5.636 0a1.192 1.192 0 1 1 0 2.384 1.192 1.192 0 0 1 0-2.384zM16.94 9.208c-4.058 0-7.358 2.804-7.358 6.261 0 3.461 3.3 6.26 7.358 6.26.834 0 1.64-.102 2.399-.335a.637.637 0 0 1 .53.072l1.591.932a.292.292 0 0 0 .146.049c.138 0 .25-.114.25-.254 0-.062-.024-.122-.04-.182l-.333-1.242a.478.478 0 0 1 .177-.543c1.537-1.123 2.537-2.794 2.537-4.664 0-3.457-3.3-6.354-7.257-6.354zm-2.68 3.636a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953zm5.36 0a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953z"/>
-                  </svg>
-                </a>
-                <div className="wechat-qr-popup">
-                  <div className="wechat-qr-content">
-                    <p className="wechat-qr-title">WeChat</p>
-                    <div className="wechat-qr-placeholder">
-                      <span>QR Code</span>
-                    </div>
-                    <p className="wechat-qr-text">Scan to follow</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="footer-links-col">
-            <h4 className="footer-col-title">Links</h4>
-            {content.links.map((link, i) => (
-              <a key={i} href={link.href} className="footer-link-v2">{link.label}</a>
-            ))}
+            <h4 className="footer-col-title">USE CASE</h4>
+            <a href="#" className="footer-link-v2">AI Assistants</a>
+            <a href="#" className="footer-link-v2">Healthcare</a>
+            <a href="#" className="footer-link-v2">Customer Service</a>
+            <a href="#" className="footer-link-v2">Education</a>
           </div>
 
           <div className="footer-links-col">
-            <h4 className="footer-col-title">Developers</h4>
+            <h4 className="footer-col-title">SOLUTION</h4>
+            <a href="#how-it-works" className="footer-link-v2">How it Works</a>
+            <a href="#enterprise" className="footer-link-v2">Enterprise</a>
             <a href="/docs" className="footer-link-v2">Documentation</a>
-            <a href="/docs/api" className="footer-link-v2">API Reference</a>
-            <a href="https://discord.gg/omnimemory" className="footer-link-v2">Discord</a>
-            <a href="/support" className="footer-link-v2">Support</a>
+            <a href="#pricing" className="footer-link-v2">Pricing</a>
           </div>
 
           <div className="footer-links-col">
-            <h4 className="footer-col-title">Company</h4>
-            <a href="/research" className="footer-link-v2">Research</a>
-            <a href="/careers" className="footer-link-v2">Careers</a>
-            <a href="#" className="footer-link-v2">Blog</a>
-            <a href="#" className="footer-link-v2">Contact</a>
+            <h4 className="footer-col-title">CONTACT</h4>
+            <a href="mailto:contact@omnimemory.ai" className="footer-link-v2">E. contact@omnimemory.ai</a>
+            <a href="https://omnimemory.ai" className="footer-link-v2">W. omnimemory.ai</a>
           </div>
         </div>
 
+        {/* Middle Section: Social Icons + Subscription */}
+        <div className="footer-middle">
+          <div className="footer-social-v2">
+            <a href="#" className="social-icon"><X size={20} /></a>
+            <a href="#" className="social-icon"><Linkedin size={20} /></a>
+            <a href="#" className="social-icon"><Github size={20} /></a>
+            <a href="#" className="social-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+            </a>
+          </div>
+          <div className="footer-subscribe">
+            <h4 className="footer-subscribe-title">SUBSCRIPTION</h4>
+            <form className="footer-subscribe-form" onSubmit={(e) => e.preventDefault()}>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="footer-subscribe-input"
+                required
+              />
+              <button type="submit" className="footer-subscribe-btn">SUBMIT</button>
+            </form>
+          </div>
+        </div>
+
+        {/* Bottom Section: Copyright + Nav Links */}
         <div className="footer-bottom-v2">
           <span>{content.copyright}</span>
           <div className="footer-bottom-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Cookies</a>
+            <a href="#">Home</a>
+            <a href="#">About</a>
+            <a href="/docs/api">API</a>
+            <a href="/careers">Join us</a>
           </div>
         </div>
       </div>
@@ -737,8 +916,17 @@ function getLocaleFromPathname({ pathname }: { pathname: string }): Locale | nul
   return null
 }
 
-function buildLocalePathname({ pathname }: { pathname: string; locale: Locale }): string {
-  return pathname
+function buildLocalePathname({ pathname, locale }: { pathname: string; locale: Locale }): string {
+  // For English (default), no prefix needed
+  // For other locales, add prefix
+  if (locale === 'en') {
+    return pathname
+  }
+  // Don't double-prefix if already has locale
+  if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+    return pathname
+  }
+  return `/${locale}${pathname}`
 }
 
 function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
@@ -754,6 +942,7 @@ function getRouteFromPathname({ pathname }: { pathname: string }): RouteKey {
   if (strippedPath.startsWith(ROUTE_PATHS.signIn)) return 'signIn'
   if (strippedPath.startsWith(ROUTE_PATHS.signUp)) return 'signUp'
   if (strippedPath.startsWith(ROUTE_PATHS.passwordReset)) return 'passwordReset'
+  if (strippedPath.startsWith(ROUTE_PATHS.updatePassword)) return 'updatePassword'
   return 'marketing'
 }
 
@@ -844,6 +1033,7 @@ const ROUTE_PATHS = {
   signIn: '/auth/sign-in',
   signUp: '/auth/sign-up',
   passwordReset: '/auth/password-reset',
+  updatePassword: '/update-password',
 } as const
 
 // ============ CODE SAMPLES ============
@@ -896,32 +1086,24 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       navLinks: [
         {
-          label: 'Product',
-          dropdown: [
-            { label: 'How It Works', href: '#how-it-works' },
-            { label: 'Enterprise', href: '#enterprise' },
-            { label: 'Pricing', href: '#pricing' },
-            { label: 'Console', href: '/dashboard' },
-          ]
-        },
-        {
           label: 'Developers',
           dropdown: [
             { label: 'Documentation', href: '/docs' },
-            { label: 'API Reference', href: '/docs/api' },
+            { label: 'API', href: '/docs/api' },
             { label: 'Support', href: '/support' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory' },
           ]
         },
         {
           label: 'Solutions',
           dropdown: [
-            { label: 'AI Assistants', href: '#' },
-            { label: 'Healthcare', href: '#' },
-            { label: 'Customer Service', href: '#' },
+            { label: 'AI Companion Robot', href: '#' },
+            { label: 'Chatbot', href: '#' },
+            { label: 'Robotics', href: '#' },
           ]
         },
         { label: 'Research', href: '/research' },
+        { label: 'Pricing', href: '#pricing' },
+        { label: 'Docs', href: '/docs' },
         { label: 'Join Us', href: '/careers' },
       ],
       ctaLabel: 'Get Started',
@@ -938,7 +1120,7 @@ const contentByLocale: Record<Locale, AppContent> = {
       items: [
         { value: '#1', label: 'LoCoMo Benchmark' },
         { value: '77.8%', label: 'J-Score Accuracy' },
-        { value: '<1s', label: 'Retrieval Latency' },
+        { value: '<700 ms', label: 'Retrieval Latency' },
       ],
     },
     features: {
@@ -1039,32 +1221,24 @@ const contentByLocale: Record<Locale, AppContent> = {
       brandName: 'Omni Memory',
       navLinks: [
         {
-          label: '产品',
-          dropdown: [
-            { label: '工作原理', href: '#how-it-works' },
-            { label: '企业版', href: '#enterprise' },
-            { label: '价格', href: '#pricing' },
-            { label: '控制台', href: '/dashboard' },
-          ]
-        },
-        {
           label: '开发者',
           dropdown: [
             { label: '文档', href: '/docs' },
-            { label: 'API 参考', href: '/docs/api' },
+            { label: 'API', href: '/docs/api' },
             { label: '支持', href: '/support' },
-            { label: 'Discord', href: 'https://discord.gg/omnimemory' },
           ],
         },
         {
           label: '解决方案',
           dropdown: [
-            { label: 'AI 助手', href: '#' },
-            { label: '医疗健康', href: '#' },
-            { label: '客户服务', href: '#' },
+            { label: 'AI 伴侣机器人', href: '#' },
+            { label: '聊天机器人', href: '#' },
+            { label: '机器人技术', href: '#' },
           ]
         },
         { label: '研究', href: '/research' },
+        { label: '价格', href: '#pricing' },
+        { label: '文档', href: '/docs' },
         { label: '加入我们', href: '/careers' },
       ],
       ctaLabel: '开始使用',
@@ -1181,7 +1355,20 @@ const contentByLocale: Record<Locale, AppContent> = {
 
 // ============ TYPES ============
 type Locale = 'en' | 'zh'
-type RouteKey = 'marketing' | 'docs' | 'faq' | 'dashboard' | 'apiKeys' | 'uploads' | 'usage' | 'memoryPolicy' | 'profile' | 'signIn' | 'signUp' | 'passwordReset'
+type RouteKey =
+  | 'marketing'
+  | 'docs'
+  | 'faq'
+  | 'dashboard'
+  | 'apiKeys'
+  | 'uploads'
+  | 'usage'
+  | 'memoryPolicy'
+  | 'profile'
+  | 'signIn'
+  | 'signUp'
+  | 'passwordReset'
+  | 'updatePassword'
 
 interface AppContent {
   navbar: NavbarContent

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -19,13 +19,24 @@ type ScopeEntitlements = {
   allow_apikey_scope: boolean
 }
 
+type QdrantNodeCounts = {
+  total?: number
+  by_collection?: Record<string, number>
+  updated_at?: string
+}
+
 type ScopeResponse = {
   scope: string
   entitlements?: ScopeEntitlements | null
+  qdrant_node_counts?: QdrantNodeCounts | null
 }
 
 type BalanceResponse = {
   balance: number
+}
+
+type MemoryPolicyResponse = {
+  default_scope?: 'user' | 'apikey' | null
 }
 
 type GroupBy = 'account' | 'apikey'
@@ -43,9 +54,21 @@ function formatNumber(value?: number | null) {
   return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : '-'
 }
 
-function formatSwitch(value?: boolean | null) {
+function formatMemoryScope(value?: string | null) {
+  if (!value) return '-'
+  if (value === 'apikey') return 'API 密钥隔离'
+  return '用户隔离'
+}
+
+function formatNodesInK(value?: number | null) {
   if (value === null || value === undefined) return '-'
-  return value ? '已开启' : '未开启'
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '-'
+  const truncated = Math.floor((numeric / 1000) * 10) / 10
+  if (Number.isInteger(truncated)) {
+    return `${truncated}k`
+  }
+  return `${truncated.toFixed(1)}k`
 }
 
 function formatDateInput(value: Date) {
@@ -70,36 +93,56 @@ export function DashboardPage() {
   const [overviewMessage, setOverviewMessage] = useState<string | null>(null)
   const [scopeInfo, setScopeInfo] = useState<ScopeResponse | null>(null)
   const [balanceInfo, setBalanceInfo] = useState<BalanceResponse | null>(null)
+  const [memoryPolicy, setMemoryPolicy] = useState<MemoryPolicyResponse | null>(null)
 
   const accountId = session?.user?.id ?? null
   const accountEmail = session?.user?.email ?? null
   const accessToken = session?.access_token ?? null
+  const accountName = useMemo(() => {
+    if (!session?.user) return ''
+    const metadataName = session.user.user_metadata?.name
+    if (metadataName && String(metadataName).trim()) {
+      return String(metadataName)
+    }
+    return accountEmail ? accountEmail.split('@')[0] : ''
+  }, [accountEmail, session])
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const entitlements = scopeInfo?.entitlements ?? null
+  const qdrantNodeCounts = scopeInfo?.qdrant_node_counts ?? null
+  const memoryScopeLabel = formatMemoryScope(memoryPolicy?.default_scope ?? null)
+  const apikeyLimitLabel = !scopeInfo?.scope
+    ? 'apikey限制：-'
+    : scopeInfo.scope === 'normal'
+      ? 'apikey限制：1个'
+      : 'apikey限制：无限制'
   const groupByLabel = groupBy === 'account' ? '账户' : 'API 密钥'
   const overviewStatusLabel = useMemo(() => {
     if (!accountId) return '未登录'
     if (overviewStatus === 'loading') return '加载中'
     if (overviewStatus === 'error') return '加载失败'
-    return '已接通'
+    return ''
   }, [accountId, overviewStatus])
   const overviewItems = useMemo<OverviewItem[]>(
     () => [
       {
         title: '账户',
-        value: accountId ? accountEmail ?? '已登录' : '未登录',
-        meta: accountId ? `账户 ID：${accountId}` : '登录后查看账户信息。',
+        value: accountId ? accountName || accountEmail || '已登录' : '未登录',
+        meta: accountId ? `邮箱：${accountEmail ?? '-'}` : '登录后查看账户信息。',
         status: overviewStatusLabel,
       },
       {
         title: '套餐',
         value: accountId ? `${scopeInfo?.scope ?? '-'}` : '-',
-        meta: accountId ? `余额：${formatNumber(balanceInfo?.balance)}` : '登录后查看套餐与余额。',
+        meta: accountId ? `余额：${formatNumber(balanceInfo?.balance)}` : '登录后查看账户余额。',
         status: overviewStatusLabel,
       },
       {
         title: '配额',
-        value: accountId ? `${formatNumber(entitlements?.memory_node_limit)} 节点` : '-',
+        value: accountId
+          ? `已用节点 ${formatNodesInK(
+              qdrantNodeCounts?.total ?? 0,
+            )}/节点上限 ${formatNodesInK(entitlements?.memory_node_limit ?? 0)}`
+          : '-',
         meta: accountId
           ? `3 秒限流：${formatNumber(entitlements?.rate_limit_3s)}`
           : '登录后查看配额与限流。',
@@ -109,12 +152,21 @@ export function DashboardPage() {
         title: '权益',
         value: accountId ? `${formatNumber(entitlements?.credit_default)} 积分` : '-',
         meta: accountId
-          ? `API 密钥隔离：${formatSwitch(entitlements?.allow_apikey_scope)}`
+          ? `记忆隔离策略：${memoryScopeLabel} · ${apikeyLimitLabel}`
           : '登录后查看权益配置。',
         status: overviewStatusLabel,
       },
     ],
-    [accountEmail, accountId, balanceInfo, entitlements, overviewStatusLabel, scopeInfo],
+    [
+      accountEmail,
+      accountId,
+      balanceInfo,
+      entitlements,
+      memoryScopeLabel,
+      overviewStatusLabel,
+      qdrantNodeCounts,
+      scopeInfo,
+    ],
   )
 
   useEffect(() => {
@@ -148,11 +200,20 @@ export function DashboardPage() {
               }
               return data
             }),
+          fetch(`${apiBaseUrl}/settings/memory-policy`, { headers })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }: { response: Response; data: MemoryPolicyResponse & { message?: string } }) => {
+              if (!response.ok) {
+                throw new Error(data?.message ?? '加载记忆隔离配置失败。')
+              }
+              return data
+            }),
         ])
       })
-      .then(([scopeData, balanceData]) => {
+      .then(([scopeData, balanceData, memoryPolicyData]) => {
         setScopeInfo(scopeData)
         setBalanceInfo(balanceData)
+        setMemoryPolicy(memoryPolicyData)
         setOverviewStatus('idle')
       })
       .catch((error) => {
@@ -219,9 +280,11 @@ export function DashboardPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
                 {item.title}
               </p>
-              <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/60">
-                {item.status}
-              </span>
+              {item.status ? (
+                <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/60">
+                  {item.status}
+                </span>
+              ) : null}
             </div>
             <div className="mt-3 text-2xl font-semibold text-ink">{item.value}</div>
             <p className="mt-1 text-sm text-ink/60">{item.meta}</p>
@@ -341,3 +404,5 @@ export function DashboardPage() {
     </div>
   )
 }
+
+

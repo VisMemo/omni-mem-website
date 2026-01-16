@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useSupabaseSession } from '../hooks/use-supabase-session'
 import { getApiEnv } from '../lib/env'
 
@@ -14,14 +14,8 @@ interface ScopeResponse {
   entitlements?: ScopeEntitlements | null
 }
 
-function formatAccountId(value?: string | null) {
-  if (!value) return '-'
-  if (value.length <= 12) return value
-  return `${value.slice(0, 6)}-****-****-${value.slice(-4)}`
-}
-
 export function ProfilePage() {
-  const { session, refreshSession } = useSupabaseSession()
+  const { client, session, refreshSession } = useSupabaseSession()
   const apiBaseUrl = useMemo(() => getApiEnv().apiBaseUrl, [])
   const accountId = session?.user?.id ?? null
 
@@ -35,7 +29,16 @@ export function ProfilePage() {
   )
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null)
 
-  const [displayName, setDisplayName] = useState('Qbrain')
+  const [displayName, setDisplayName] = useState('')
+  const [initialDisplayName, setInitialDisplayName] = useState('')
+  const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'error' | 'success'>(
+    'idle',
+  )
+  const [profileMessage, setProfileMessage] = useState<string | null>(null)
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'error' | 'success'>(
+    'idle',
+  )
+  const [emailMessage, setEmailMessage] = useState<string | null>(null)
 
   async function getSession() {
     const active = await refreshSession()
@@ -56,7 +59,7 @@ export function ProfilePage() {
     const data = (await response.json()) as ScopeResponse & { message?: string }
     if (!response.ok) {
       setScopeStatus('error')
-      setScopeMessage(data?.message ?? '加载套餐信息失败。')
+      setScopeMessage(data?.message ?? '套餐信息加载失败。')
       return
     }
     setScopeInfo(data)
@@ -73,16 +76,85 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!session?.user) return
-    if (displayName !== 'Qbrain') return
     const metadataName = session.user.user_metadata?.name
-    if (metadataName) {
-      setDisplayName(String(metadataName))
+    const fallbackName = session.user.email ? session.user.email.split('@')[0] : ''
+    const nextName = metadataName ? String(metadataName) : fallbackName
+    setInitialDisplayName(nextName)
+    setDisplayName((current) => (current ? current : nextName))
+  }, [session])
+
+  async function handleSaveProfile() {
+    if (!session?.user) {
+      setProfileStatus('error')
+      setProfileMessage('登录状态不可用，请刷新后再试。')
       return
     }
-    if (session.user.email) {
-      setDisplayName(session.user.email.split('@')[0])
+
+    const trimmedName = displayName.trim()
+    if (!trimmedName) {
+      setProfileStatus('error')
+      setProfileMessage('账户名称不能为空。')
+      return
     }
-  }, [session, displayName])
+
+    const activeSession = await getSession()
+    if (!activeSession) {
+      setProfileStatus('error')
+      setProfileMessage('会话已过期，请重新登录。')
+      return
+    }
+
+    setProfileStatus('saving')
+    setProfileMessage(null)
+
+    const response = await fetch(`${apiBaseUrl}/settings/account-name`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${activeSession.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Principal-User-Id': activeSession.user.id,
+      },
+      body: JSON.stringify({ name: trimmedName }),
+    })
+    const data = (await response.json().catch(() => ({}))) as { name?: string; message?: string }
+    if (!response.ok) {
+      setProfileStatus('error')
+      setProfileMessage(data?.message ?? '账户名称更新失败。')
+      return
+    }
+
+    await refreshSession()
+    setInitialDisplayName(data?.name ?? trimmedName)
+    setProfileStatus('success')
+    setProfileMessage('账户名称已更新，重新登录可刷新显示。')
+  }
+
+  async function handleEmailUpdate() {
+    if (!client || !session?.user) {
+      setEmailStatus('error')
+      setEmailMessage('登录状态不可用，请刷新后再试。')
+      return
+    }
+
+    const currentEmail = session.user.email ?? ''
+    const nextEmail = window.prompt('请输入新的绑定邮箱', currentEmail)
+    if (!nextEmail || nextEmail.trim() === currentEmail) return
+
+    setEmailStatus('loading')
+    setEmailMessage(null)
+    const { error: updateError } = await client.auth.updateUser({
+      email: nextEmail.trim(),
+    })
+
+    if (updateError) {
+      setEmailStatus('error')
+      setEmailMessage(updateError.message)
+      return
+    }
+
+    setEmailStatus('success')
+    setEmailMessage('已提交换绑请求，请前往新邮箱确认。')
+  }
 
   async function handleUpgrade() {
     const trimmed = upgradeCode.trim()
@@ -118,8 +190,11 @@ export function ProfilePage() {
 
   const entitlements = scopeInfo?.entitlements ?? null
   const emailValue = session?.user?.email ?? '-'
-  const accountIdValue = formatAccountId(session?.user?.id ?? null)
-  const scopeValue = scopeInfo?.scope ?? '-'
+  const trimmedDisplayName = displayName.trim()
+  const canSaveName =
+    Boolean(trimmedDisplayName) &&
+    trimmedDisplayName !== initialDisplayName.trim() &&
+    profileStatus !== 'saving'
   const entitlementItems = [
     { label: '默认额度', value: entitlements?.credit_default ?? '-' },
     { label: '记忆节点上限', value: entitlements?.memory_node_limit ?? '-' },
@@ -138,7 +213,7 @@ export function ProfilePage() {
         <p className="text-sm text-ink/60">管理账户名称、套餐与账单概览。</p>
       </header>
 
-      <section className="rounded-xl bg-white/70 p-6">
+      <section className="rounded-xl bg-white/70 p-6 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-ink">账户资料</h2>
@@ -147,11 +222,21 @@ export function ProfilePage() {
           <button
             type="button"
             className="rounded-md bg-ink px-4 py-2 text-xs font-semibold text-ivory disabled:cursor-not-allowed disabled:opacity-60"
-            disabled
+            onClick={handleSaveProfile}
+            disabled={!canSaveName}
           >
-            保存修改
+            {profileStatus === 'saving' ? '保存中...' : '保存修改'}
           </button>
         </div>
+        {profileMessage ? (
+          <p
+            className={`mt-3 text-xs ${
+              profileStatus === 'error' ? 'text-red-600' : 'text-emerald-600'
+            }`}
+          >
+            {profileMessage}
+          </p>
+        ) : null}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
@@ -166,33 +251,30 @@ export function ProfilePage() {
           </div>
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              管理员邮箱
+              绑定邮箱
             </label>
             <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
+              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60 shadow-none focus:shadow-none"
               value={emailValue}
               readOnly
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              账户 ID
-            </label>
-            <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
-              value={accountIdValue}
-              readOnly
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              套餐级别
-            </label>
-            <input
-              className="h-9 w-full rounded-md border border-ink/10 bg-ink/5 px-3 text-sm text-ink/60"
-              value={scopeValue}
-              readOnly
-            />
+            <button
+              type="button"
+              className="text-xs font-medium text-ink/60 hover:text-teal transition-colors"
+              onClick={handleEmailUpdate}
+              disabled={emailStatus === 'loading'}
+            >
+              {emailStatus === 'loading' ? '处理中...' : '更换绑定邮箱'}
+            </button>
+            {emailMessage ? (
+              <p
+                className={`text-xs ${
+                  emailStatus === 'error' ? 'text-red-600' : 'text-emerald-600'
+                }`}
+              >
+                {emailMessage}
+              </p>
+            ) : null}
           </div>
         </div>
       </section>
